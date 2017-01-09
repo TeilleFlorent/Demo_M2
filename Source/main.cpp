@@ -90,6 +90,7 @@ std::vector<const GLchar*> faces;
 // BLOOM PARA
 static float exposure = 0.65;
 static bool bloom = true;
+static float bloom_downsample = 0.2;
 
 
 /////////////////////////////////////////////////////////
@@ -481,7 +482,7 @@ glBindVertexArray(0);
   {
     glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
     glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[i]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w * bloom_downsample, h * bloom_downsample, 0, GL_RGB, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
@@ -825,7 +826,7 @@ static void draw() {
  glViewport(0, 0, w, h);
  screen_shader.Use();
  glActiveTexture(GL_TEXTURE0);
- glBindTexture(GL_TEXTURE_2D, tex_color_buffer[0] /*pingpongColorbuffers[0]*/);
+ glBindTexture(GL_TEXTURE_2D, /*tex_color_buffer[0]*/ pingpongColorbuffers[0]);
 
  glBindVertexArray(screenVAO);
 
@@ -841,10 +842,10 @@ static void draw() {
  RenderShadowedObjects(true);
 
  // blur calculation
- glViewport(0, 0, w, h);
+ glViewport(0, 0, w * bloom_downsample, h * bloom_downsample);
  blur_process();
 
- // bloom blending calculation
+ // bloom blending calculation => final render
  glViewport(0, 0, w, h);
  bloom_process();
  
@@ -1018,7 +1019,7 @@ void blur_process(){
 
   bool first_ite = true;
   int horizontal = 1; 
-  GLuint amount = 4;
+  GLuint amount = 10;
   blur_shader.Use();
   
   for (GLuint i = 0; i < amount; i++){
@@ -1041,7 +1042,7 @@ void blur_process(){
    }
 
    glUniform1f(glGetUniformLocation(blur_shader.Program, "horizontal"), horizontal);
-   glUniform1f(glGetUniformLocation(blur_shader.Program, "offset_factor"), 2.0);
+   glUniform1f(glGetUniformLocation(blur_shader.Program, "offset_factor"), 1.0);
   
    RenderQuad();
    glBindFramebuffer(GL_FRAMEBUFFER, 0);     
