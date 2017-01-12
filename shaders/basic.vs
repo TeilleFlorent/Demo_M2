@@ -45,13 +45,10 @@ layout (location = 3) in vec3 tangent;
  	FragPos=vec3(modelViewMatrix2 * vec4(vsiPosition,1.0f));
 
  	vsoNormal = mat3(transpose(inverse(modelViewMatrix2))) * normal;  
- 
-	TexCoord = texCoord; //vec2(texCoord.x, 1.0 - texCoord.y);
 
-	if(var == 2.0){
-		if(ShiniSTR == 8.0)
-			TexCoord = texCoord * 0.75; 
- 	}
+	TexCoord = texCoord; //vec2(texCoord.x, 1.0 - texCoord.y);
+	if(var == 1.0)
+		TexCoord = texCoord * 3.0; 
 
 	Tangent = vec3(modelViewMatrix2 * vec4(tangent, 0.0));
 

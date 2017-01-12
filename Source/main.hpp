@@ -51,6 +51,9 @@ struct objet{
   float DiffuseStr;
   float SpecularStr;
   int ShiniStr;
+  float constant;
+  float linear;
+  float quadratic;
   float shadow_darkness;
 };
 typedef struct objet objet;
@@ -80,7 +83,7 @@ static void mobile_move(objet*,int);
 GLuint loadCubemap(vector<const GLchar*>);
 static GLfloat * buildSphere(int, int);
 void Pre_rendu_feu(glm::mat4, glm::mat4,float);
-void RenderShadowedObjects(bool);
+void RenderShadowedObjects(bool, bool);
 void SetBoneTransform(uint , const glm::mat4&, int);
 void camera_script();
 void audio_script(int, double);

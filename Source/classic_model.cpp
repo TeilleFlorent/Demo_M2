@@ -423,8 +423,8 @@
 
        }
 
-       // FOR SWORD ONLY
-        if(this -> model_id == 3){
+         // FOR TABLE1 ONLY
+         if(this -> model_id == 0){
 
             GLboolean skip = false;
 
@@ -435,7 +435,7 @@
 
             if(!skip){
              // base
-               temp1 = "Longsword_LP_DefaultMaterial_BaseColor.png";            
+               temp1 = "diffuse.png";            
                str.Set(temp1);
 
                Texture texture;
@@ -447,56 +447,7 @@
                this->textures_loaded.push_back(texture);  
             
              // normal
-                 temp1 = "Longsword_LP_DefaultMaterial_Normal.png";            
-                 str.Set(temp1);
-            
-                 texture.id = TextureFromFile(str.C_Str() , this->directory);
-                 texture.path = str;
-                 temp1 = "texture_normal";
-                 texture.type = temp1;
-                 textures.push_back(texture);
-                 this->textures_loaded.push_back(texture);  
-               
-              // metallness map
-                 temp1 = "Longsword_LP_DefaultMaterial_RoughnessMetallic.png";            
-                 str.Set(temp1);
-
-                 texture.id = TextureFromFile(str.C_Str() , this->directory);
-                 texture.path = str;
-                 temp1 = "texture_specular";
-                 texture.type = temp1;
-                 textures.push_back(texture);
-                 this->textures_loaded.push_back(texture);  
-               
-           }
-
-       }
-
-       // FOR ROCK2 ONLY
-         if(this -> model_id == 7){
-
-            GLboolean skip = false;
-
-            string temp1;
-            
-            aiString str;
-            
-
-            if(!skip){
-             // base
-               temp1 = "Rock_10_d.tga";            
-               str.Set(temp1);
-
-               Texture texture;
-               texture.id = TextureFromFile(str.C_Str() , this->directory);
-               texture.path = str;
-               temp1 = "texture_diffuse";
-               texture.type = temp1;
-               textures.push_back(texture);
-               this->textures_loaded.push_back(texture);  
-            
-             // normal
-                 temp1 = "Rock_10_n.tga";            
+                 temp1 = "normal.png";            
                  str.Set(temp1);
             
                  texture.id = TextureFromFile(str.C_Str() , this->directory);
@@ -508,190 +459,8 @@
                
            }
 
+           return textures;
        }
-
-       // FOR ROCK1 ONLY
-          if(this -> model_id == 9){
-
-            GLboolean skip = false;
-
-            string temp1;
-            
-            aiString str;
-            
-
-            if(!skip){
-             // base
-               temp1 = "Rock_6_d.png";            
-               str.Set(temp1);
-
-               Texture texture;
-               texture.id = TextureFromFile(str.C_Str() , this->directory);
-               texture.path = str;
-               temp1 = "texture_diffuse";
-               texture.type = temp1;
-               textures.push_back(texture);
-               this->textures_loaded.push_back(texture);  
-            
-             // normal
-                 temp1 = "Rock_6_n.png";            
-                 str.Set(temp1);
-            
-                 texture.id = TextureFromFile(str.C_Str() , this->directory);
-                 texture.path = str;
-                 temp1 = "texture_normal";
-                 texture.type = temp1;
-                 textures.push_back(texture);
-                 this->textures_loaded.push_back(texture);  
-               
-           }
-
-       }
-
-       // FOR TREE ONLY
-       if(this->directory.find("tree2") != std::string::npos){
-
-            GLboolean skip = false;
-
-            string temp1;
-            
-            aiString str;
-
-            mat->GetTexture(type, 0, &str);
-            temp1 = str.data;
-
-            if(temp1.find("branches") != std::string::npos){
-                temp1 = "Tree_Dry_1_branches_Diffuse.jpg";
-            }else{
-                temp1 = "Tree_Dry_1_Diffuse2048.jpg";
-            }
-
-            str.Set(temp1);
-
-            for(GLuint j = 0; j < textures_loaded.size(); j++)
-            {
-                if(textures_loaded[j].path == str && model_id == 6.0)
-                {
-                    string temp = str.data;
-                    textures.push_back(textures_loaded[j]);
-                    //textures.push_back(textures_loaded[j+1]);
-
-                    skip = true; 
-
-                    return textures;
-                }
-            }
-
-            if(!skip){
-
-               Texture texture;
-               texture.id = TextureFromFile(str.C_Str() , this->directory);
-               texture.path = str;
-               temp1 = "texture_diffuse";
-               texture.type = temp1;
-               textures.push_back(texture);
-               this->textures_loaded.push_back(texture);  
-
-
-               return textures;
-
-           }
-
-
-        
-       }
-
-       // FOR SHIELD ONLY
-        if(this -> model_id == 5){
-
-            GLboolean skip = false;
-
-            string temp1;
-            
-            aiString str;
-
-             // base
-            temp1 = "Shield-Texture.jpg";            
-            str.Set(temp1);
-
-            for(GLuint j = 0; j < textures_loaded.size(); j++)
-            {
-                if(textures_loaded[j].path == str && model_id == 5.0)
-                {
-                    string temp = str.data;
-                    textures.push_back(textures_loaded[j]);
-                    textures.push_back(textures_loaded[j+1]);
-                    textures.push_back(textures_loaded[j+2]);
-                    textures.push_back(textures_loaded[j+3]);
-                    textures.push_back(textures_loaded[j+4]);
-
-
-                    skip = true; 
-
-                    return textures;
-                }
-            }
-
-            if(!skip){
-
-               Texture texture;
-               texture.id = TextureFromFile(str.C_Str() , this->directory);
-               texture.path = str;
-               temp1 = "texture_diffuse";
-               texture.type = temp1;
-               textures.push_back(texture);
-               this->textures_loaded.push_back(texture);  
-            
-             // normal
-               temp1 = "Shield-NM.jpg";            
-               str.Set(temp1);
-               texture.id = TextureFromFile(str.C_Str() , this->directory);
-               texture.path = str;
-               temp1 = "texture_normal";
-               texture.type = temp1;
-               textures.push_back(texture);
-               this->textures_loaded.push_back(texture);  
-               
-              // AO map
-               temp1 = "Shield-AO.jpg";            
-               str.Set(temp1);
-
-               texture.id = TextureFromFile(str.C_Str() , this->directory);
-               texture.path = str;
-               temp1 = "texture_specular";
-               texture.type = temp1;
-               textures.push_back(texture);
-               this->textures_loaded.push_back(texture);  
-
-                // specular map
-               temp1 = "Shield-Spec.jpg";            
-               str.Set(temp1);
-
-               texture.id = TextureFromFile(str.C_Str() , this->directory);
-               texture.path = str;
-               temp1 = "texture_specular";
-               texture.type = temp1;
-               textures.push_back(texture);
-               this->textures_loaded.push_back(texture);  
-               
-               // metalness map
-               temp1 = "Shield-Gloss.jpg";            
-               str.Set(temp1);
-
-               texture.id = TextureFromFile(str.C_Str() , this->directory);
-               texture.path = str;
-               temp1 = "texture_metalnes";
-               texture.type = temp1;
-               textures.push_back(texture);
-               this->textures_loaded.push_back(texture);  
-               
-
-               return textures;
-           }
-
-       }
-
-
 
 
     
@@ -702,23 +471,7 @@
             mat->GetTexture(type, i, &str);
             
             string test_path = str.data;
-            
-            // MODIF PATH TEXTURE 
-            if (test_path.find("Paladin_diffuse") != std::string::npos) {
-                test_path = "Paladin_diffuse.png";
-                str.Set(test_path);
-            }
-
-            if (test_path.find("Paladin_specular") != std::string::npos) {
-                test_path = "Paladin_specular.png";
-                str.Set(test_path);
-            }
-
-            if (test_path.find("Paladin_normal") != std::string::npos) {
-                test_path = "Paladin_normal.png";
-                str.Set(test_path);
-            }
-            
+              
             //std::cout << "str = " << str.data << std::endl;
 
 
@@ -742,21 +495,6 @@
                 this->textures_loaded.push_back(texture);  
             }
 
-
-            // FOR FEU MESH ONLY
-            if(this->directory.find("Models/feu/") != std::string::npos){
-
-                Texture texture;
-                string temp = "ohniste4UVcompletnormal1.png";
-                str.Set(temp);
-                texture.id = TextureFromFile(str.C_Str() , this->directory);
-                texture.path = str;
-                temp = "texture_normal";
-                texture.type = temp;
-                textures.push_back(texture);
-                this->textures_loaded.push_back(texture);  
-                
-            }
 
         }
 

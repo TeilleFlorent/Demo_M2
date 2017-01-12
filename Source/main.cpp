@@ -14,6 +14,7 @@ Shader bloom_shader;
 
 // MODELS
 Model house_model;
+Model table_model;
 
 // VAOs
 static GLuint skyboxVAO = 0;
@@ -34,10 +35,21 @@ GLuint pingpongFBO[2];
 GLuint hdrFBO;
 GLuint dephtRBO;
 
+GLuint ssrFBO; 
+
+
+
 // all no models textures
 static GLuint tex_cube_map = 0;
 static GLuint pingpongColorbuffers[2];
 static GLuint tex_color_buffer[2];
+
+static GLuint tex_color_ssr;
+static GLuint tex_depth_ssr;
+
+
+static GLuint tex_albedo_ground2 = 0;
+static GLuint tex_normal_ground2 = 0;
 
 float depth_map_res_seed = /*2048.0*/ 1024.0;
 float depth_map_res_x, depth_map_res_y, depth_map_res_x_house, depth_map_res_y_house;
@@ -54,7 +66,7 @@ static int final_w = w;
 static int final_h = h;
 
 // camera para
-static glm::vec3 cameraPos   = glm::vec3(-0.591501,5.29917,0.0557512);
+static glm::vec3 cameraPos   = glm::vec3(0.0, 3.0 ,0.0);
 static glm::vec3 cameraFront = glm::vec3(0.95, 0.0, -0.3);
 static glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
 static float walk_speed = 0.1;
@@ -68,7 +80,10 @@ static light * lights;
 
 // All objets
 static objet house;
-static objet * ground;
+static objet * table;
+static int nb_table = 3;
+static objet * ground1;
+static objet ground2;
 
 //sphere para
 static int longi = 10;
@@ -132,8 +147,8 @@ int main() {
     // Set texture samples
     basic_shader.Use();
     glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_diffuse1"), 0);
-    glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_specular1"), 1);
-    glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_normal1"), 2);
+    glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_specular1"), 2);
+    glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_normal1"), 1);
     glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_metalness"), 7);
     glUseProgram(0);
 
@@ -153,9 +168,12 @@ int main() {
     glUniform1i(glGetUniformLocation(bloom_shader.Program, "bloom_effect"), 1);
     glUseProgram(0);
 
+    
+    
+    table_model.Load_Model("../Models/cube/Rounded Cube.fbx", 0);
+    table_model.Print_info_model();
 
-    house_model.Load_Model("../Models/house2/Abandoned house.obj", 2);
-    //house_model.Print_info_model();
+   
 
     
     initData();
@@ -301,47 +319,47 @@ static void initData() {
 
  GLfloat skyboxVertices[] = {
 
-  -1.0f,  1.0f, -1.0f,
-  -1.0f, -1.0f, -1.0f,
-  1.0f, -1.0f, -1.0f,
-  1.0f, -1.0f, -1.0f,
-  1.0f,  1.0f, -1.0f,
-  -1.0f,  1.0f, -1.0f,
-
-  -1.0f, -1.0f,  1.0f,
-  -1.0f, -1.0f, -1.0f,
-  -1.0f,  1.0f, -1.0f,
-  -1.0f,  1.0f, -1.0f,
-  -1.0f,  1.0f,  1.0f,
-  -1.0f, -1.0f,  1.0f,
-
-  1.0f, -1.0f, -1.0f,
-  1.0f, -1.0f,  1.0f,
-  1.0f,  1.0f,  1.0f,
-  1.0f,  1.0f,  1.0f,
-  1.0f,  1.0f, -1.0f,
-  1.0f, -1.0f, -1.0f,
-
-  -1.0f, -1.0f,  1.0f,
-  -1.0f,  1.0f,  1.0f,
-  1.0f,  1.0f,  1.0f,
-  1.0f,  1.0f,  1.0f,
-  1.0f, -1.0f,  1.0f,
-  -1.0f, -1.0f,  1.0f,
-
-  -1.0f,  1.0f, -1.0f,
-  1.0f,  1.0f, -1.0f,
-  1.0f,  1.0f,  1.0f,
-  1.0f,  1.0f,  1.0f,
-  -1.0f,  1.0f,  1.0f,
-  -1.0f,  1.0f, -1.0f,
-
-  -1.0f, -1.0f, -1.0f,
-  -1.0f, -1.0f,  1.0f,
-  1.0f, -1.0f, -1.0f,
-  1.0f, -1.0f, -1.0f,
-  -1.0f, -1.0f,  1.0f,
-  1.0f, -1.0f,  1.0f
+      -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, // Bottom-left
+            0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f, // top-right
+            0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, // bottom-right         
+            0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,  // top-right
+            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,  // bottom-left
+            -0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f,// top-left
+            // Front face
+            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom-left
+            0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,  // bottom-right
+            0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,  // top-right
+            0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // top-right
+            -0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,  // top-left
+            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,  // bottom-left
+            // Left face
+            -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-right
+            -0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top-left
+            -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,  // bottom-left
+            -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-left
+            -0.5f, -0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,  // bottom-right
+            -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-right
+            // Right face
+            0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-left
+            0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-right
+            0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top-right         
+            0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,  // bottom-right
+            0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,  // top-left
+            0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // bottom-left     
+            // Bottom face
+            -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, // top-right
+            0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, // top-left
+            0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,// bottom-left
+            0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, // bottom-left
+            -0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, // bottom-right
+            -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, // top-right
+            // Top face
+            -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,// top-left
+            0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom-right
+            0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, // top-right     
+            0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom-right
+            -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,// top-left
+            -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f // bottom-left        
 
 };
 
@@ -387,6 +405,7 @@ glGenVertexArrays(1, &screenVAO);
 glGenFramebuffers(1, &hdrFBO);
 glGenRenderbuffers(1, &dephtRBO);
 glGenFramebuffers(2, pingpongFBO);
+glGenFramebuffers(1, &ssrFBO);
 
 
 //////////////////////////////
@@ -397,10 +416,14 @@ glGenBuffers(1, &skyboxVBO);
 glBindVertexArray(skyboxVAO);
 glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
 glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
-glEnableVertexAttribArray(0);
-glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+ glEnableVertexAttribArray(0);
+ glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
+ glEnableVertexAttribArray(1);
+ glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+ glEnableVertexAttribArray(2);
+ glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
 glBindVertexArray(0);
-
+glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
  //skybox texture
@@ -444,6 +467,35 @@ glBindBuffer(GL_ARRAY_BUFFER, 0);
 glBindVertexArray(0);
 
   //////////////////////////////
+  
+  // TEX DEPTH BUFFER
+  glGenTextures(1, &tex_depth_ssr);
+  glBindTexture(GL_TEXTURE_2D, tex_depth_ssr);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, /*GL_NEAREST*/ GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, /*GL_NEAREST*/ GL_LINEAR);
+  
+  glGenTextures(1, &tex_color_ssr);
+  glBindTexture(GL_TEXTURE_2D, tex_color_ssr);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, ssrFBO);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, tex_depth_ssr, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_color_ssr, 0);
+
+  GLuint attachments[2] = {GL_DEPTH_ATTACHMENT, GL_COLOR_ATTACHMENT0};
+  glDrawBuffers(2, attachments);
+
+  glBindRenderbuffer(GL_RENDERBUFFER, 0);
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    std::cout << "Framebuffer not complete!" << std::endl;
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindTexture(GL_TEXTURE_2D, 0); 
+
 
   // TEX BLOOM PROCESS
   glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
@@ -466,8 +518,8 @@ glBindVertexArray(0);
   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, dephtRBO);
 
-  GLuint attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-  glDrawBuffers(2, attachments);
+  GLuint attachments2[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+  glDrawBuffers(2, attachments2);
 
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -493,8 +545,50 @@ glBindVertexArray(0);
       std::cout << "Framebuffer not complete!" << std::endl;
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  
 
+  // TEX ALBEDO GROUND2  
+  glGenTextures(1, &tex_albedo_ground2);
+  glBindTexture(GL_TEXTURE_2D, tex_albedo_ground2);
 
+  if( (t = IMG_Load("../Textures/ground2/albedo.png")) != NULL ) {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
+    SDL_FreeSurface(t);
+  } else {
+    fprintf(stderr, "Erreur lors du chargement de la texture\n");
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  }
+
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso); // anisotropie
+
+  glGenerateMipmap(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+   // TEX NORMAL GROUND2  
+  glGenTextures(1, &tex_normal_ground2);
+  glBindTexture(GL_TEXTURE_2D, tex_normal_ground2);
+
+  if( (t = IMG_Load("../Textures/ground2/normal.png")) != NULL ) {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
+    SDL_FreeSurface(t);
+  } else {
+    fprintf(stderr, "Erreur lors du chargement de la texture\n");
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  }
+
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso); // anisotropie
+
+  glGenerateMipmap(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, 0);
 
 
 
@@ -505,16 +599,28 @@ lights = new light[3];
 // sun
 lights[0].lightColor = glm::vec3(1.0,1.0,1.0);
 lights[0].lightSpecularColor = glm::vec3(1.0,1.0,1.0);
-lights[0].lightPos = glm::vec3(29.8, 135, -81);
+lights[0].lightPos = glm::vec3(10, 7, 10);
 lights[0].lightColor*= 3.0;
 lights[0].lightSpecularColor*= 3.0;
  
+ 
 
 // OBJECTS INIT
-ground = new objet[1];
+ground1 = new objet[1];
+table = new objet[nb_table];
+
 
 //////////////////////////
  
+ ground1->start=0.0;
+ ground1->dt=0.0;
+ ground1->bouge=0;
+ ground1->t=0.0;
+ ground1->t0=0.0;
+
+
+//////////////////////////
+ /*
  house.AmbientStr = 0.5;
  house.DiffuseStr = 0.8;
  house.SpecularStr = 2.0;
@@ -536,7 +642,78 @@ ground = new objet[1];
  house.t=0.0;
  house.t0=0.0;
 
- house.shadow_darkness = 0.75;
+ house.shadow_darkness = 0.75;*/
+
+//////////////////////////
+
+ for(int i = 0; i < nb_table; i++){
+   table[i].AmbientStr = 0.3;
+   table[i].DiffuseStr = 0.5;
+   table[i].SpecularStr = 0.5;
+   table[i].ShiniStr = 256; // 4 8 16 ... 256 
+   table[i].constant = 1.0;
+   table[i].linear = 0.014;
+   table[i].quadratic = 0.0007;
+
+   table[i].angle=2.47;
+   table[i].acca=0.105;
+   table[i].var=0.0;
+   table[i].scale = 0.0075;
+
+   table[i].alpha = 1.0;
+
+   if(i == 0){
+     table[i].x = - 0.8;
+     table[i].y = 0.2;
+     table[i].z = 0.0;
+   }
+   if(i == 1){
+     table[i].x = 0.0;
+     table[i].y = 0.2;
+     table[i].z = 0.0;
+   }
+   if(i == 2){
+     table[i].x = 0.8;
+     table[i].y = 0.2;
+     table[i].z = 0.0;
+   }
+   table[i].start=0.0;
+   table[i].dt=0.0;
+   table[i].bouge=0;
+   table[i].t=0.0;
+   table[i].t0=0.0;
+
+   table[i].shadow_darkness = 0.75;
+ }
+
+ //////////////////////////
+
+ ground2.AmbientStr = 0.05;
+ ground2.DiffuseStr = 0.1;
+ ground2.SpecularStr = 0.1;
+ ground2.ShiniStr = 64; // 4 8 16 ... 256 
+ ground2.constant = 1.0;
+ ground2.linear = 0.014;
+ ground2.quadratic = 0.0007;
+ 
+ ground2.angle=2.47;
+ ground2.acca=0.105;
+ ground2.var=1.0;
+ ground2.scale = 0.25;
+
+ ground2.alpha = 1.0;
+
+ ground2.x = 0.0;
+ ground2.y = 0.0;
+ ground2.z = 0.0;
+ 
+ ground2.start=0.0;
+ ground2.dt=0.0;
+ ground2.bouge=0;
+ ground2.t=0.0;
+ ground2.t0=0.0;
+
+ ground2.shadow_darkness = 0.75;
 
 
 }
@@ -565,7 +742,7 @@ ground = new objet[1];
 
     manageEvents(win);
 
-    mobile_move(ground,1);
+    mobile_move(ground1,1);
 
     draw();
 
@@ -604,25 +781,25 @@ ground = new objet[1];
 
   if(cameraZ == 1){
 
-     cameraPos -= (camera_speed*ground->dt) * cameraFront;
+     cameraPos -= (camera_speed*ground1->dt) * cameraFront;
 
    }
 
    if(cameraS == 1){
 
-     cameraPos += (camera_speed*ground->dt) * cameraFront;
+     cameraPos += (camera_speed*ground1->dt) * cameraFront;
 
    }
 
    if(cameraQ == 1){
 
-     cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * (camera_speed*ground->dt);
+     cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * (camera_speed*ground1->dt);
 
    }
 
    if(cameraD == 1){
 
-     cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * (camera_speed*ground->dt); 
+     cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * (camera_speed*ground1->dt); 
 
    }
 
@@ -642,7 +819,7 @@ while(SDL_PollEvent(&event))
 
      case SDLK_ESCAPE:
     
-    /* printf("\ntime = %f\n", ground->t);
+    /* printf("\ntime = %f\n", ground1->t);
      std::cout << "x = " << cameraPos.x << ", y = " <<  cameraPos.y << ", z = " <<  cameraPos.z << std::endl;
      std::cout << "pos = " << trees[0].x << " " << trees[0].y << " " << trees[0].z << std::endl;
      std::cout << "angle = " << shield.angle << std::endl;*/
@@ -667,13 +844,17 @@ while(SDL_PollEvent(&event))
      break;
 
      case 'a' :
-     exposure += 0.01;
-     std::cout << "exposure = " << exposure << std::endl;
+     
+     /*table.y += 0.01;
+     std::cout << "test = " << table.y << std::endl;
+     */
      break;
 
      case 'e' :
-     exposure -= 0.01; 
-     std::cout << "exposure = " << exposure << std::endl;
+    /* table.y -= 0.01;
+     std::cout << "test = " << table.y << std::endl;
+    */ 
+    
      break;
 
      case 't' :
@@ -826,28 +1007,31 @@ static void draw() {
  glViewport(0, 0, w, h);
  screen_shader.Use();
  glActiveTexture(GL_TEXTURE0);
- glBindTexture(GL_TEXTURE_2D, /*tex_color_buffer[0]*/ pingpongColorbuffers[0]);
+ glBindTexture(GL_TEXTURE_2D, /*tex_color_buffer[0]*/ /*pingpongColorbuffers[0]*/ tex_color_ssr);
 
  glBindVertexArray(screenVAO);
 
- //glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+ glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
  glBindVertexArray(0);
  glUseProgram(0);
  
 
+  //pre rendu pour SSR
+  glViewport(0, 0, w, h);
+  RenderShadowedObjects(false,true);
 
  // rendu scene normal        
  glViewport(0, 0, w, h);
- RenderShadowedObjects(true);
+ RenderShadowedObjects(true,false);
 
- // blur calculation
+ // blur calculation on bright texture
  glViewport(0, 0, w * bloom_downsample, h * bloom_downsample);
  blur_process();
 
  // bloom blending calculation => final render
  glViewport(0, 0, w, h);
- bloom_process();
+ //bloom_process();
  
 
 
@@ -858,7 +1042,7 @@ static void draw() {
 
 
 
-void RenderShadowedObjects(bool render_into_FBO){
+void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
 
 
  glm::mat4 projectionM,Msend,viewMatrix,Msend2;
@@ -868,16 +1052,24 @@ void RenderShadowedObjects(bool render_into_FBO){
 
 
  glm::mat4 lightProjection, lightView, light_space_matrix, skybox_light_space_matrix;
- GLfloat far =  glm::distance(lights[2].lightPos, glm::vec3(house.x,house.y,house.z)) * 1.2f;
- lightProjection = glm::ortho(-5.0f, 5.0f, -5.0f, 5.0f, 1.0f, far);
- lightView = glm::lookAt(lights[2].lightPos, glm::vec3(house.x,house.y,house.z) , glm::vec3(0.0,1.0,0.0));
- light_space_matrix = lightProjection * lightView;
+ //GLfloat far =  glm::distance(lights[2].lightPos, glm::vec3(house.x,house.y,house.z)) * 1.2f;
+ //lightProjection = glm::ortho(-5.0f, 5.0f, -5.0f, 5.0f, 1.0f, far);
+ //lightView = glm::lookAt(lights[2].lightPos, glm::vec3(house.x,house.y,house.z) , glm::vec3(0.0,1.0,0.0));
+ //light_space_matrix = lightProjection * lightView;
 
 
-  if(render_into_FBO){
+  if(render_into_finalFBO){
     glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 
-  //glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+    //glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  }
+
+  if(render_into_ssrFBO){
+    glBindFramebuffer(GL_FRAMEBUFFER, ssrFBO);
+
+    //glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   }
@@ -914,15 +1106,15 @@ void RenderShadowedObjects(bool render_into_FBO){
 
 
   // DRAW LAMP
-/* lamp_shader.Use();
+ lamp_shader.Use();
  
  glBindVertexArray(lampVAO);
 
  Msend= glm::mat4();
- Msend = glm::translate(Msend, lights[1].lightPos);
- Msend = glm::scale(Msend, glm::vec3(0.02f)); 
+ Msend = glm::translate(Msend, lights[0].lightPos);
+ Msend = glm::scale(Msend, glm::vec3(1.0f)); 
 
- glm::vec3 lampColor(0.2,0.2,0.9);
+ glm::vec3 lampColor(1.0,1.0,1.0);
 
  glUniformMatrix4fv(glGetUniformLocation(lamp_shader.Program, "view"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
  glUniformMatrix4fv(glGetUniformLocation(lamp_shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(Msend));
@@ -932,13 +1124,13 @@ void RenderShadowedObjects(bool render_into_FBO){
  glDrawArrays(GL_TRIANGLES, 0, nbVerticesSphere);
 
  glBindVertexArray(0);
- glUseProgram(0);*/
+ glUseProgram(0);
 
 
 
 
 /////////////////////////////////// DRAW HOUSE
- basic_shader.Use();
+ /*basic_shader.Use();
 
  Msend = glm::mat4();
 
@@ -949,7 +1141,7 @@ void RenderShadowedObjects(bool render_into_FBO){
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "modelViewMatrix"), 1, GL_FALSE, glm::value_ptr(Msend));
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "projectionMatrix"), 1, GL_FALSE, glm::value_ptr(projectionM));
- glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "lightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(light_space_matrix));
+ //glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "lightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(light_space_matrix));
  glUniform1f(glGetUniformLocation(basic_shader.Program, "send_bias"), 0.01);
 
 
@@ -980,12 +1172,113 @@ void RenderShadowedObjects(bool render_into_FBO){
  glEnable(GL_CULL_FACE);
  glCullFace(GL_BACK);
  house_model.Draw(basic_shader, Msend2, false);
- glDisable(GL_CULL_FACE);
-    
+ glDisable(GL_CULL_FACE);*/
 
- if(render_into_FBO){
+
+ //////////// DRAW GROUND 2
+ 
+ basic_shader.Use();
+
+ Msend = glm::mat4();
+
+ Msend = glm::translate(Msend, glm::vec3(ground2.x,ground2.y,ground2.z));
+ //Msend = glm::rotate(Msend, ground2.angle, glm::vec3(0.0, 1.0 , 0.0));
+ Msend = glm::scale(Msend, glm::vec3(ground2.scale * 20.0f,ground2.scale * 0.1f, ground2.scale * 20.0f)); 
+
+ glActiveTexture(GL_TEXTURE0);
+ glBindTexture(GL_TEXTURE_2D, tex_albedo_ground2);  
+ glActiveTexture(GL_TEXTURE1);
+ glBindTexture(GL_TEXTURE_2D, tex_normal_ground2); 
+
+ glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
+ glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "modelViewMatrix"), 1, GL_FALSE, glm::value_ptr(Msend));
+ glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "projectionMatrix"), 1, GL_FALSE, glm::value_ptr(projectionM));
+ //glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "lightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(light_space_matrix));
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "send_bias"), 0.01);
+
+
+
+ glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightPos[0]"),1, &lights[0].lightPos[0]);
+ glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightColor[0]"),1, &lights[0].lightColor[0]);
+ glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightSpecularColor[0]"),1, &lights[0].lightSpecularColor[0]);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "constant[0]"), ground2.constant);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "linear[0]"),  ground2.linear);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "quadratic[0]"), ground2.quadratic);
+
+
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "ambientSTR"), ground2.AmbientStr);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "diffuseSTR"), ground2.DiffuseStr);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "specularSTR"), ground2.SpecularStr);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "ShiniSTR"), ground2.ShiniStr);
+
+ 
+ glUniform3fv(glGetUniformLocation(basic_shader.Program, "viewPos"), 1, &cameraPos[0]);
+
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "alpha"), ground2.alpha);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "var"), ground2.var);    
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "depth_test"), 0.0);    
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "face_cube"), -1.0);     
+
+
+ glBindVertexArray(skyboxVAO);
+ 
+ glDrawArrays(GL_TRIANGLES, 0, 36);
+ glBindVertexArray(0);
+ glUseProgram(0);
+
+
+//// DRAW TABLE
+ basic_shader.Use();
+
+ for(int i = 0; i < nb_table; i++){
+ Msend = glm::mat4();
+
+ Msend = glm::translate(Msend, glm::vec3(table[i].x,table[i].y,table[i].z));
+ //Msend = glm::rotate(Msend, table[i].angle, glm::vec3(0.0, 1.0 , 0.0));
+ Msend = glm::scale(Msend, glm::vec3(table[i].scale)); 
+
+
+ glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
+ glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "modelViewMatrix"), 1, GL_FALSE, glm::value_ptr(Msend));
+ glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "projectionMatrix"), 1, GL_FALSE, glm::value_ptr(projectionM));
+ //glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "lightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(light_space_matrix));
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "send_bias"), 0.01);
+
+
+
+ glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightPos[0]"),1, &lights[0].lightPos[0]);
+ glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightColor[0]"),1, &lights[0].lightColor[0]);
+ glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightSpecularColor[0]"),1, &lights[0].lightSpecularColor[0]);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "constant[0]"), table[i].constant);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "linear[0]"),  table[i].linear);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "quadratic[0]"), table[i].quadratic);
+
+
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "ambientSTR"), table[i].AmbientStr);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "diffuseSTR"), table[i].DiffuseStr);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "specularSTR"), table[i].SpecularStr);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "ShiniSTR"), table[i].ShiniStr);
+
+ 
+ glUniform3fv(glGetUniformLocation(basic_shader.Program, "viewPos"), 1, &cameraPos[0]);
+
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "alpha"), table[i].alpha);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "var"), table[i].var);    
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "depth_test"), 0.0);    
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "face_cube"), -1.0);     
+
+
+ table_model.Draw(basic_shader, Msend2, false);
+
+} 
+ glUseProgram(0);
+
+    
+ ///////////////////////////////////////////////////////////////////////
+
+ //if(render_into_FBO){
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
- }
+ //}
 
  glBindVertexArray(0);
  glUseProgram(0);

@@ -42,23 +42,12 @@ uniform float diffuseSTR;
 uniform float specularSTR;
 uniform float shadow_darkness;
 
-uniform float fire_intensity;
-uniform float VL_intensity;
-
 uniform float alpha;
 uniform float var;
 uniform float depth_test;
 uniform float face_cube;
-uniform float send_bias;
-uniform int shadow_point_light;
 
-uniform float fog_density;
-uniform float fog_equation;
-uniform vec4 fog_color;
-uniform vec3 mid_fog_position;
-
-uniform mat4 lightSpaceMatrix;
-
+uniform float factor;
 
 uniform sampler2D texture_diffuse1;
 uniform sampler2D texture_specular1;
@@ -93,15 +82,15 @@ LightRes LightCalculation(int num_light, vec3 norm, vec3 color, vec3 light_color
     vec3 viewDir = normalize(viewPos - FragPos);
     float spec = 0.0;
     vec3 halfwayDir = normalize(lightDir + viewDir);
-    spec = pow(max(dot(norm, halfwayDir), 0.0), 256);     
+    spec = pow(max(dot(norm, halfwayDir), 0.0), ShiniSTR);     
     
     specular = spec * specularSTR * light_specular_color; 
 
     // add specular mapping
-    if(var == 1.0)
+    /*if(var == 1.0)
       specular *= texture(texture_specular1, TexCoord).r;
     if(var == 5.0)
-      specular *= texture(texture_metalness, TexCoord).r;    
+      specular *= texture(texture_metalness, TexCoord).r;*/    
 
     /*vec3 viewDir = normalize(viewPos - FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);
@@ -114,10 +103,6 @@ LightRes LightCalculation(int num_light, vec3 norm, vec3 color, vec3 light_color
   float distance = length(LightPos[num_light] - FragPos);
   float attenuation = 1.0f / (constant[num_light] + linear[num_light] * distance + quadratic[num_light] * (distance * distance)); 
 
-
-  if(var == 5.0){
-    attenuation *= 1.5;
-  }
 
   res.ambient = ambient;
   res.diffuse = diffuse;
@@ -137,17 +122,16 @@ LightRes LightCalculation(int num_light, vec3 norm, vec3 color, vec3 light_color
 vec3 normal_mapping_calculation()                                                                     
 {                                                               
     float fact = 1.0;
-    if(var == 2.0 && ShiniSTR != 8.0){
-      fact = 5.0;
-    }
-
+    
     vec3 Normal = normalize(vsoNormal);                                                       
     vec3 temp_tangent;
-    if(var == 0.0){
+
+    if(var == 1.0){
       temp_tangent = normalize(vec3(1.0,0.0,0.0));                                                     
     }else{
       temp_tangent = normalize(Tangent);                                                     
     }
+    
     temp_tangent = normalize(temp_tangent - dot(temp_tangent, Normal) * Normal);                           
     vec3 Bitemp_tangent = cross(temp_tangent, Normal);                                                
     vec3 BumpMapNormal = texture(texture_normal1, TexCoord*fact).xyz;                                
@@ -164,26 +148,20 @@ vec3 normal_mapping_calculation()
 
 void main(void) {
   // re init
-  gl_FragDepth = gl_FragCoord.z;
+  //gl_FragDepth = gl_FragCoord.z;
 
   if(depth_test == 0.0){
 
     vec3 color;
     float final_alpha;
 
-    if(var == 7.0){
-      color = texture(texture_diffuse1, TexCoord).bgr;
-    }else{
-      color = texture(texture_diffuse1, TexCoord).rgb;
-      if(var == 8.0)
-        color *= vec3(1.0,0.85,1.0);
-    }
-
+    color = texture(texture_diffuse1, TexCoord).rgb;  
     
-    /*if(var == 9.0){
+
+    if(var == 0.0){
       //color = texture(texture_normal1, TexCoord).rgb;
-      color = vec3(1.0);
-    }*/
+      //color = vec3(1.0);
+    }
 
 
     final_alpha = alpha;
@@ -192,7 +170,7 @@ void main(void) {
     // LIGHT CALCULATION
     vec3 norm = normalize(vsoNormal);
     // normal mapping
-    if(var == 9.0 || var == 7.0 || var == 5.0 || var == 3.0 || var == 4.0 || var == 0.0 || (var == 2.0 /*&& ShiniSTR != 1.0*/)){
+    if(var == 1.0 || var == 0.0){
        norm = normal_mapping_calculation();
     }
 
@@ -206,16 +184,15 @@ void main(void) {
 
 
     // ADD AO mapping
-    if(var == 5.0 || var == 0.0 || (var == 2.0 && ShiniSTR == 8.0)){
+    /*if(){
       vec3 temp_AO = texture(texture_specular1, TexCoord).rgb;
       float temp = (temp_AO.r + temp_AO.g + temp_AO.b) / 3.0;
       result *= temp;
-      if(var == 2.0 || var == 5.0)
+      if(var == 2.0)
         result *= temp;
-    }
+    }*/
 
 
-    //result = vec3(1.0);
     FragColor = vec4(result, final_alpha);
 
     // second out => draw only brighest fragments
@@ -225,7 +202,7 @@ void main(void) {
     
 
 
-  }else{
+  }/*else{
     if(face_cube != -1.0){
      float far = 1000.0;
      if(var == 5.0)
@@ -235,6 +212,6 @@ void main(void) {
      lightDistance /= far;
      gl_FragDepth = lightDistance; //near * far / ((gl_FragCoord.z * (far - near)) - far);          
     }
-  }
+  }*/
   
 }
