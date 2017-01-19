@@ -35,7 +35,8 @@ GLuint pingpongFBO[2];
 GLuint hdrFBO;
 GLuint dephtRBO;
 
-GLuint ssrFBO; 
+GLuint ssrFBO;
+GLuint ssrRBO; 
 
 
 
@@ -69,6 +70,8 @@ static int final_h = h;
 static glm::vec3 cameraPos   = glm::vec3(0.0, 3.0 ,0.0);
 static glm::vec3 cameraFront = glm::vec3(0.95, 0.0, -0.3);
 static glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
+static float camera_near = 0.1f;
+static float camera_far = 10.0f;
 static float walk_speed = 0.1;
 
 
@@ -104,8 +107,10 @@ std::vector<const GLchar*> faces;
 
 // BLOOM PARA
 static float exposure = 0.65;
-static bool bloom = true;
+static bool bloom = false;
 static float bloom_downsample = 0.2;
+
+static float TEST_size = 1.0;
 
 
 /////////////////////////////////////////////////////////
@@ -147,9 +152,9 @@ int main() {
     // Set texture samples
     basic_shader.Use();
     glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_diffuse1"), 0);
-    glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_specular1"), 2);
     glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_normal1"), 1);
-    glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_metalness"), 7);
+    glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_color_SSR"), 6);
+    glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_depth_SSR"), 7); 
     glUseProgram(0);
 
    
@@ -284,10 +289,10 @@ void load_audio(){
 static void initGL(SDL_Window * win) {
 
 
-  glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
+  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   //glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glEnable(GL_DEPTH_TEST);
-  glClearDepth(1.0);
+  //glClearDepth(1.0);
 
   glDepthFunc(GL_LESS); 
   
@@ -406,6 +411,7 @@ glGenFramebuffers(1, &hdrFBO);
 glGenRenderbuffers(1, &dephtRBO);
 glGenFramebuffers(2, pingpongFBO);
 glGenFramebuffers(1, &ssrFBO);
+glGenRenderbuffers(1, &ssrRBO);
 
 
 //////////////////////////////
@@ -472,8 +478,17 @@ glBindVertexArray(0);
   glGenTextures(1, &tex_depth_ssr);
   glBindTexture(GL_TEXTURE_2D, tex_depth_ssr);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, /*GL_NEAREST*/ GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, /*GL_NEAREST*/ GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+ 
+  /*glGenTextures(1, &tex_depth_ssr);
+  glBindTexture(GL_TEXTURE_2D, tex_depth_ssr);
+  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_FLOAT, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);*/
   
   glGenTextures(1, &tex_color_ssr);
   glBindTexture(GL_TEXTURE_2D, tex_color_ssr);
@@ -484,10 +499,15 @@ glBindVertexArray(0);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
   glBindFramebuffer(GL_FRAMEBUFFER, ssrFBO);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, tex_depth_ssr, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT /*GL_COLOR_ATTACHMENT1*/, GL_TEXTURE_2D, tex_depth_ssr, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_color_ssr, 0);
 
-  GLuint attachments[2] = {GL_DEPTH_ATTACHMENT, GL_COLOR_ATTACHMENT0};
+  /*glBindRenderbuffer(GL_RENDERBUFFER, ssrRBO);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, ssrRBO);*/
+
+  GLuint attachments[2] = {GL_DEPTH_ATTACHMENT,GL_COLOR_ATTACHMENT0};
+  //GLuint attachments[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
   glDrawBuffers(2, attachments);
 
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
@@ -690,7 +710,7 @@ table = new objet[nb_table];
 
  ground2.AmbientStr = 0.05;
  ground2.DiffuseStr = 0.1;
- ground2.SpecularStr = 0.1;
+ ground2.SpecularStr = 0.07;
  ground2.ShiniStr = 64; // 4 8 16 ... 256 
  ground2.constant = 1.0;
  ground2.linear = 0.014;
@@ -751,7 +771,7 @@ table = new objet[nb_table];
     SDL_GL_SwapWindow(win);
 
 
-  /*  printf("1cameraX = %f, cameraY = %f, cameraZ = %f\n",cameraPos.x,cameraPos.y, cameraPos.z); 
+   /* printf("1cameraX = %f, cameraY = %f, cameraZ = %f\n",cameraPos.x,cameraPos.y, cameraPos.z); 
     printf("2cameraX = %f, cameraY = %f, cameraZ = %f\n",cameraFront.x,cameraFront.y, cameraFront.z);
     printf("yaw = %f, pitch = %f\n", yaw, pitch); */
 
@@ -844,6 +864,8 @@ while(SDL_PollEvent(&event))
      break;
 
      case 'a' :
+     TEST_size += 0.1;
+     std::cout << "size = " << TEST_size << std::endl;
      
      /*table.y += 0.01;
      std::cout << "test = " << table.y << std::endl;
@@ -851,18 +873,24 @@ while(SDL_PollEvent(&event))
      break;
 
      case 'e' :
+     TEST_size -= 0.1;
+     std::cout << "size = " << TEST_size << std::endl;
+     
+
     /* table.y -= 0.01;
      std::cout << "test = " << table.y << std::endl;
     */ 
     
      break;
 
+     case 'r' :
+     camera_far += 0.5;
+     std::cout << "far = " << camera_far << std::endl;
+     break;
+
      case 't' :
-     if(bloom){
-      bloom = false;
-     }else{
-      bloom = true;
-     }
+     camera_far -= 0.5;
+     std::cout << "far = " << camera_far << std::endl;        
      break;
 
      case 'y' :
@@ -876,16 +904,12 @@ while(SDL_PollEvent(&event))
 
      
      case 'v' :
+      if(bloom){
+      bloom = false;
+     }else{
+      bloom = true;
+     }
      break;
-
-
-    case 'r' :    
-     if(fly_state == true)
-      fly_state = false;
-    else
-     if(fly_state == false)
-      fly_state = true;
-    break;
 
 
     default:
@@ -988,9 +1012,9 @@ static void draw() {
 
   glm::mat4 projectionM,projectionM2, projectionM3,Msend,viewMatrix;
 
-  projectionM = glm::perspective(45.0f, /* 4.0f/3.0f */(float)w/(float)h, 0.1f, 1000.0f); // rendu de base
-  projectionM2 = glm::perspective(45.0f, (float)depth_map_res_x/(float)depth_map_res_y, 0.1f, 1000.0f); // pre rendu dans depth tex
-  projectionM3 = glm::perspective(45.0f, (float)depth_map_res_x_house/(float)depth_map_res_y_house, 0.1f, 1000.0f); // pre rendu dans depth tex HOUSE
+  projectionM = glm::perspective(45.0f, /* 4.0f/3.0f */(float)w/(float)h, camera_near, camera_far); // rendu de base
+  projectionM2 = glm::perspective(45.0f, (float)depth_map_res_x/(float)depth_map_res_y, camera_near, camera_far); // pre rendu dans depth tex
+  projectionM3 = glm::perspective(45.0f, (float)depth_map_res_x_house/(float)depth_map_res_y_house, camera_near, camera_far); // pre rendu dans depth tex HOUSE
   
   
   viewMatrix=glm::lookAt(cameraPos, (cameraPos) + cameraFront, cameraUp); 
@@ -1002,24 +1026,27 @@ static void draw() {
  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
 
 
-
  //DRAW SCREEN
  glViewport(0, 0, w, h);
  screen_shader.Use();
  glActiveTexture(GL_TEXTURE0);
- glBindTexture(GL_TEXTURE_2D, /*tex_color_buffer[0]*/ /*pingpongColorbuffers[0]*/ tex_color_ssr);
+ glBindTexture(GL_TEXTURE_2D, /*tex_color_buffer[0]*/ /*pingpongColorbuffers[0]*/ tex_depth_ssr);
 
+ glUniform1f(glGetUniformLocation(screen_shader.Program, "camera_near"), camera_near);
+ glUniform1f(glGetUniformLocation(screen_shader.Program, "camera_far"), camera_far);
+ 
  glBindVertexArray(screenVAO);
 
- glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+ //glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
  glBindVertexArray(0);
  glUseProgram(0);
  
+////////////////////////////
 
-  //pre rendu pour SSR
-  glViewport(0, 0, w, h);
-  RenderShadowedObjects(false,true);
+//pre rendu pour SSR
+ glViewport(0, 0, w, h);
+ RenderShadowedObjects(false,true);
 
  // rendu scene normal        
  glViewport(0, 0, w, h);
@@ -1031,7 +1058,7 @@ static void draw() {
 
  // bloom blending calculation => final render
  glViewport(0, 0, w, h);
- //bloom_process();
+ bloom_process();
  
 
 
@@ -1047,7 +1074,7 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
 
  glm::mat4 projectionM,Msend,viewMatrix,Msend2;
 
- projectionM = glm::perspective(45.0f, /* 4.0f/3.0f */(float)w/(float)h, 0.1f, 1000.0f);
+ projectionM = glm::perspective(45.0f, /* 4.0f/3.0f */(float)w/(float)h, camera_near, camera_far);
  viewMatrix=glm::lookAt(cameraPos, (cameraPos) + cameraFront, cameraUp); 
 
 
@@ -1069,12 +1096,12 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
   if(render_into_ssrFBO){
     glBindFramebuffer(GL_FRAMEBUFFER, ssrFBO);
 
-    //glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+    //glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   }
 
-
+  if(!render_into_ssrFBO){
  // DRAW SKYBOX 
  //glDepthMask(GL_FALSE); // desactivé juste pour draw la skybox
  skybox_shader.Use();   
@@ -1097,7 +1124,7 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glBindTexture(GL_TEXTURE_CUBE_MAP, tex_cube_map /*reflection_cubeMap*/ /*tex_shadow_cubeMap*/); // bind les 6 textures du cube map 
 
  glEnable(GL_BLEND);
- glDrawArrays(GL_TRIANGLES, 0, 36);
+//glDrawArrays(GL_TRIANGLES, 0, 36);
  glDisable(GL_BLEND);
 
  glBindVertexArray(0);
@@ -1126,7 +1153,7 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glBindVertexArray(0);
  glUseProgram(0);
 
-
+  }
 
 
 /////////////////////////////////// DRAW HOUSE
@@ -1176,7 +1203,7 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
 
 
  //////////// DRAW GROUND 2
- 
+ if(!render_into_ssrFBO /*true*/){
  basic_shader.Use();
 
  Msend = glm::mat4();
@@ -1189,13 +1216,17 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glBindTexture(GL_TEXTURE_2D, tex_albedo_ground2);  
  glActiveTexture(GL_TEXTURE1);
  glBindTexture(GL_TEXTURE_2D, tex_normal_ground2); 
+ glActiveTexture(GL_TEXTURE6);
+ glBindTexture(GL_TEXTURE_2D, tex_color_ssr);  
+ glActiveTexture(GL_TEXTURE7);
+ glBindTexture(GL_TEXTURE_2D, tex_depth_ssr); 
 
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "modelViewMatrix"), 1, GL_FALSE, glm::value_ptr(Msend));
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "projectionMatrix"), 1, GL_FALSE, glm::value_ptr(projectionM));
  //glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "lightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(light_space_matrix));
- glUniform1f(glGetUniformLocation(basic_shader.Program, "send_bias"), 0.01);
-
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "camera_near"), camera_near);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "camera_far"), camera_far);
 
 
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightPos[0]"),1, &lights[0].lightPos[0]);
@@ -1218,14 +1249,17 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glUniform1f(glGetUniformLocation(basic_shader.Program, "var"), ground2.var);    
  glUniform1f(glGetUniformLocation(basic_shader.Program, "depth_test"), 0.0);    
  glUniform1f(glGetUniformLocation(basic_shader.Program, "face_cube"), -1.0);     
-
+ glUniform1i(glGetUniformLocation(basic_shader.Program, "SSR_pre_rendu"), render_into_ssrFBO);     
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "tex_x_size"), w);     
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "tex_y_size"), h);     
+ 
 
  glBindVertexArray(skyboxVAO);
  
  glDrawArrays(GL_TRIANGLES, 0, 36);
  glBindVertexArray(0);
  glUseProgram(0);
-
+ }
 
 //// DRAW TABLE
  basic_shader.Use();
@@ -1242,7 +1276,8 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "modelViewMatrix"), 1, GL_FALSE, glm::value_ptr(Msend));
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "projectionMatrix"), 1, GL_FALSE, glm::value_ptr(projectionM));
  //glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "lightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(light_space_matrix));
- glUniform1f(glGetUniformLocation(basic_shader.Program, "send_bias"), 0.01);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "camera_near"), camera_near);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "camera_far"), camera_far);
 
 
 
@@ -1265,7 +1300,8 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glUniform1f(glGetUniformLocation(basic_shader.Program, "alpha"), table[i].alpha);
  glUniform1f(glGetUniformLocation(basic_shader.Program, "var"), table[i].var);    
  glUniform1f(glGetUniformLocation(basic_shader.Program, "depth_test"), 0.0);    
- glUniform1f(glGetUniformLocation(basic_shader.Program, "face_cube"), -1.0);     
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "face_cube"), -1.0); 
+ glUniform1i(glGetUniformLocation(basic_shader.Program, "SSR_pre_rendu"), render_into_ssrFBO);    
 
 
  table_model.Draw(basic_shader, Msend2, false);
@@ -1278,6 +1314,8 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
 
  //if(render_into_FBO){
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+   //glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
+  
  //}
 
  glBindVertexArray(0);
@@ -1312,7 +1350,7 @@ void blur_process(){
 
   bool first_ite = true;
   int horizontal = 1; 
-  GLuint amount = 10;
+  GLuint amount = 6;
   blur_shader.Use();
   
   for (GLuint i = 0; i < amount; i++){
@@ -1381,7 +1419,7 @@ static void printFPS(void) {
   f++;
   t = SDL_GetTicks();
   if(t - t0 > 1000) {
-      fprintf(stderr, "FPS = %8.2f\n", (1000.0 * f / (t - t0)));
+      fprintf(stderr, "FPS = %80.2f\n", (1000.0 * f / (t - t0)));
     t0 = t;
     f  = 0;
   }

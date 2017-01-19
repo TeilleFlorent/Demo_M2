@@ -6,5 +6,5 @@ uniform float alpha;
 
 void main()
 {
-    color = vec4(lampColor,alpha);
+    color = vec4(lampColor * 3.0,alpha);
 }

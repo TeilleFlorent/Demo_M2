@@ -1,12 +1,12 @@
 #version 330 
-layout (location = 0) out vec4 FragColor;
-layout (location = 1) out vec4 BrightColor;
+#define point2 vec2
+#define point3 vec3
 
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 FragColor2;
 
 #define NB_LIGHTS 10
-#define G_SCATTERING 0.2
 #define PI 3.14159265358979323846264338
-#define NB_STEPS 10
 
 struct LightRes {    
     vec3 ambient;
@@ -18,14 +18,10 @@ struct LightRes {
 in vec2 TexCoord;
 in vec3 vsoNormal;
 in vec3 FragPos;
+in vec3 cs_FragPos;
 in vec4 position_for_tex;
 in vec3 Tangent;
-in vec4 FragPosLightSpace;
-smooth in vec4 EyeSpacePos;
-
-
-//out vec4 fragColor;
-
+in mat4 Projection_matrix;
 
 uniform vec3 LightPos[NB_LIGHTS];
 uniform vec3 LightColor[NB_LIGHTS];
@@ -46,20 +42,40 @@ uniform float alpha;
 uniform float var;
 uniform float depth_test;
 uniform float face_cube;
+uniform bool SSR_pre_rendu;
 
-uniform float factor;
+uniform float camera_near;
+uniform float camera_far;
 
 uniform sampler2D texture_diffuse1;
 uniform sampler2D texture_specular1;
-uniform sampler2D texture_specular2;
 uniform sampler2D texture_normal1;
-uniform sampler2D texture_metalness;
-uniform sampler2D depth_map_particle;
-uniform sampler2D tex_render_particle;
-uniform samplerCube reflection_cubeMap;
-uniform sampler2D shadow_map1;
-uniform samplerCube shadow_cube_map;
+uniform sampler2D texture_color_SSR;
+uniform sampler2D texture_depth_SSR;
+uniform float tex_x_size;
+uniform float tex_y_size;
 
+
+
+float linearDepth(float depthSample)
+{
+
+/*    float z_b = depthSample;
+    float z_n = 2.0 * z_b - 1.0;
+    float z_e = 2.0 * camera_near * camera_far / (camera_far + camera_near - z_n * (camera_far - camera_near));
+    return z_e;*/
+
+    float n = camera_near; // camera z near
+    float f = camera_far; // camera z far
+    float z = depthSample;
+    return (2.0 * n) / (f + n - z * (f - n));
+
+
+
+/*    float depth = depthSample;
+    return depthSample;
+*/
+}
 
 
 LightRes LightCalculation(int num_light, vec3 norm, vec3 color, vec3 light_color, vec3 light_specular_color){
@@ -145,24 +161,243 @@ vec3 normal_mapping_calculation()
 
 
 
+/*vec3 raytrace(vec3 reflectionVector,float startDepth){
+
+  vec3 color = vec3(0.0f);
+  
+  float size = length(reflectionVector.xy);
+  //float size = 10.0;
+
+  //float stepSize = TEST_size; // A TEST  //rayStepSize; 
+  float stepSize = size * 0.1; // A TEST  //rayStepSize; 
+ 
+
+  vec3 _reflectionVector = normalize(reflectionVector/size);
+  _reflectionVector = _reflectionVector * stepSize;
+        
+  // Current sampling position is at current fragment  
+  vec2 sampledPosition = (position_for_tex.xy / position_for_tex.w);
+  sampledPosition = sampledPosition * 0.5 + 0.5;
+
+  // Current depth at current fragment
+  float currentDepth = startDepth;
+  
+  // The sampled depth at the current sampling position
+  //float sampledDepth = texture(texture_depth_SSR, sampledPosition).r; // A TEST
+  //float sampledDepth = linearDepth( texture(texture_depth_SSR, sampledPosition).r ); // A TEST
+
+
+  // Raytrace as long as in texture space of depth buffer (between 0 and 1)
+  while(sampledPosition.x <= 1.0 && sampledPosition.x >= 0.0 && sampledPosition.y <= 1.0 && sampledPosition.y >= 0.0){
+    // Update sampling position by adding reflection vector's xy and y components
+    sampledPosition = sampledPosition + (_reflectionVector.xy * 1.0);
+    // Updating depth values
+    currentDepth = currentDepth + (_reflectionVector.z * 1.0) * startDepth;
+    
+    //float sampledDepth = texture(texture_depth_SSR, sampledPosition).r; // A TEST
+    float sampledDepth = linearDepth( texture(texture_depth_SSR, sampledPosition).r ); // A TEST
+
+
+    // If current depth is greater than sampled depth of depth buffer, intersection is found
+    if(currentDepth > sampledDepth)
+    {
+      // Delta is for stop the raytracing after the first intersection is found
+      // Not using delta will create "repeating artifacts"
+      float delta = (currentDepth - sampledDepth); // A TEST
+      //float delta = abs(currentDepth - sampledDepth);
+      if(delta < 0.003f )
+      {
+        color = texture(texture_color_SSR, sampledPosition).rgb;
+        break;
+      }
+    }
+  }
+ 
+    //color = vec3(_reflectionVector.x,_reflectionVector.y,_reflectionVector.z);
+
+    return color;
+}
+
+
+vec4 SSR(vec3 _normal){
+  
+  vec3 reflectedColor = vec3(0.0f);
+ 
+  vec3 normal = _normal; //normalize( texture(deferredNormalTex, vert_UV) ).xyz;
+ 
+  vec2 sampledPosition = (position_for_tex.xy / position_for_tex.w);
+  sampledPosition = sampledPosition * 0.5 + 0.5;
+
+  // Depth at current fragment A TEST
+  //float currDepth =  texture(texture_depth_SSR, sampledPosition).r;
+  float currDepth =  linearDepth( texture(texture_depth_SSR, sampledPosition).r );
+
+
+  // Eye position, camera is at (0, 0, 0), we look along negative z, add near plane to correct parallax
+  vec3 eyePosition = normalize( vec3(viewPos.x, viewPos.y, viewPos.z + camera_near) ); // A TEST
+  //vec3 eyePosition = normalize( vec3(0.0, 0.0, camera_near) );
+  vec4 reflectionVector = Projection_matrix * reflect( vec4(-eyePosition, 0), vec4(normal, 0) ) ;
+ 
+  // Call raytrace to get reflected color
+  reflectedColor = raytrace(reflectionVector.xyz, currDepth); 
+ 
+ 
+  return vec4(reflectedColor, 1.0f);
+}
+*/
+
+
+float distanceSquared(point2 A, point2 B) {
+    A -= B;
+    return dot(A, A);
+}
+
+
+// Returns true if the ray hit something
+bool traceScreenSpaceRay1(
+ // Camera-space ray origin, which must be within the view volume
+ point3 csOrig, 
+ 
+ // Unit length camera-space ray direction
+ vec3 csDir,
+ 
+ // A projection matrix that maps to pixel coordinates (not [-1, +1]
+ // normalized device coordinates)
+ mat4x4 proj, 
+ 
+ // The camera-space Z buffer (all negative values)
+ sampler2D csZBuffer,
+ 
+ // Dimensions of csZBuffer
+ vec2 csZBufferSize,
+ 
+ // Camera space thickness to ascribe to each pixel in the depth buffer
+ float zThickness, 
+ 
+ // (Negative number)
+ float nearPlaneZ, 
+ 
+ // Step in horizontal or vertical pixels between samples. This is a float
+ // because integer math is slow on GPUs, but should be set to an integer >= 1
+ float stride,
+ 
+ // Number between 0 and 1 for how far to bump the ray in stride units
+ // to conceal banding artifacts
+ float jitter,
+ 
+ // Maximum number of iterations. Higher gives better images but may be slow
+ const float maxSteps, 
+ 
+ // Maximum camera-space distance to trace before returning a miss
+ float maxDistance, 
+ 
+ // Pixel coordinates of the first intersection with the scene
+ out point2 hitPixel, 
+ 
+ // Camera space location of the ray hit
+ out point3 hitPoint) {
+
+
+    // Clip to the near plane    
+    float rayLength = ((csOrig.z + csDir.z * maxDistance) > nearPlaneZ) ?
+        (nearPlaneZ - csOrig.z) / csDir.z : maxDistance;
+    point3 csEndPoint = csOrig + csDir * rayLength;
+ 
+    // Project into homogeneous clip space
+    vec4 H0 = proj * vec4(csOrig, 1.0);
+    vec4 H1 = proj * vec4(csEndPoint, 1.0);
+    float k0 = 1.0 / H0.w, k1 = 1.0 / H1.w;
+ 
+    // The interpolated homogeneous version of the camera-space points  
+    point3 Q0 = csOrig * k0, Q1 = csEndPoint * k1;
+ 
+    // Screen-space endpoints
+    point2 P0 = H0.xy * k0, P1 = H1.xy * k1;
+ 
+    // If the line is degenerate, make it cover at least one pixel
+    // to avoid handling zero-pixel extent as a special case later
+    P1 += vec2((distanceSquared(P0, P1) < 0.0001) ? 0.01 : 0.0);
+    vec2 delta = P1 - P0;
+ 
+    // Permute so that the primary iteration is in x to collapse
+    // all quadrant-specific DDA cases later
+    bool permute = false;
+    if (abs(delta.x) < abs(delta.y)) { 
+        // This is a more-vertical line
+        permute = true; delta = delta.yx; P0 = P0.yx; P1 = P1.yx; 
+    }
+ 
+    float stepDir = sign(delta.x);
+    float invdx = stepDir / delta.x;
+ 
+    // Track the derivatives of Q and k
+    vec3  dQ = (Q1 - Q0) * invdx;
+    float dk = (k1 - k0) * invdx;
+    vec2  dP = vec2(stepDir, delta.y * invdx);
+ 
+    // Scale derivatives by the desired pixel stride and then
+    // offset the starting values by the jitter fraction
+    dP *= stride; dQ *= stride; dk *= stride;
+    P0 += dP * jitter; Q0 += dQ * jitter; k0 += dk * jitter;
+ 
+    // Slide P from P0 to P1, (now-homogeneous) Q from Q0 to Q1, k from k0 to k1
+    point3 Q = Q0; 
+ 
+    // Adjust end condition for iteration direction
+    float  end = P1.x * stepDir;
+ 
+    float k = k0, stepCount = 0.0, prevZMaxEstimate = csOrig.z;
+    float rayZMin = prevZMaxEstimate, rayZMax = prevZMaxEstimate;
+    float sceneZMax = rayZMax + 100;
+    for (point2 P = P0; 
+         ((P.x * stepDir) <= end) && (stepCount < maxSteps) &&
+         ((rayZMax < sceneZMax - zThickness) || (rayZMin > sceneZMax)) &&
+          (sceneZMax != 0); 
+         P += dP, Q.z += dQ.z, k += dk, ++stepCount) {
+         
+        rayZMin = prevZMaxEstimate;
+        rayZMax = (dQ.z * 0.5 + Q.z) / (dk * 0.5 + k);
+        prevZMaxEstimate = rayZMax;
+        if (rayZMin > rayZMax) { 
+           float t = rayZMin; rayZMin = rayZMax; rayZMax = t;
+        }
+ 
+        hitPixel = permute ? P.yx : P;
+        // You may need hitPixel.y = csZBufferSize.y - hitPixel.y; here if your vertical axis
+        // is different than ours in screen space
+        //sceneZMax = texelFetch(csZBuffer, int2(hitPixel), 0);
+        
+        //sceneZMax = linearDepth(texelFetch(csZBuffer, ivec2(hitPixel), 0)); // A TEST
+        sceneZMax = texelFetch(csZBuffer, ivec2(hitPixel), 0); // A TEST
+    }
+     
+    // Advance Q based on the number of steps
+    Q.xy += dQ.xy * stepCount;
+    hitPoint = Q * (1.0 / k);
+    return (rayZMax >= sceneZMax - zThickness) && (rayZMin < sceneZMax);
+
+
+  //hitPoint = vec3(0.0,1.0,0.0);
+  //return true;
+  }
+
+
 
 void main(void) {
-  // re init
-  //gl_FragDepth = gl_FragCoord.z;
 
-  if(depth_test == 0.0){
 
     vec3 color;
     float final_alpha;
 
     color = texture(texture_diffuse1, TexCoord).rgb;  
-    
 
-    if(var == 0.0){
-      //color = texture(texture_normal1, TexCoord).rgb;
-      //color = vec3(1.0);
+    if(var == 1.0 && !SSR_pre_rendu){
+      //color = texture(texture_depth_SSR, TexCoord).rgb;
+      
+      color = vec3(1.0,0.0,0.0);
     }
 
+  
 
     final_alpha = alpha;
 
@@ -171,17 +406,47 @@ void main(void) {
     vec3 norm = normalize(vsoNormal);
     // normal mapping
     if(var == 1.0 || var == 0.0){
-       norm = normal_mapping_calculation();
+      norm = normal_mapping_calculation();
     }
 
-    LightRes LightRes1 = LightCalculation(0,norm,color,LightColor[0],LightSpecularColor[0] /*vec3(0.0,0.0,1.0)*/);
+    // ADD SSR 
+    if(var == 1.0 && !SSR_pre_rendu){
+      //color = mix(color,vec3(SSR(norm)),0.5f);
+      //color = vec3(SSR(norm));
 
+      //point3 cs_orig = normalize(vec3(0.0, 0.0, camera_near)); // A TEST normalize or not
+      //point3 cs_orig = normalize(cs_FragPos);
+      point3 cs_orig = cs_FragPos;
+      //point3 cs_orig = vec3(cs_FragPos.x,cs_FragPos.y,cs_FragPos.z + camera_near);
+      
+      vec3 cs_dir = vec3(reflect( vec4(-cs_orig, 0), vec4(norm, 0) )); // A TEST * matrix or not
+      //vec3 cs_dir = vec3(Projection_matrix * reflect( vec4(-cs_orig, 0), vec4(norm, 0) )); // A TEST * matrix or not
+      
+      mat4x4 proj = Projection_matrix; // A TEST => la matrix doit map les coordonnées de tex (0.0 à 1.0 ??)
+      vec2 buffer_size = vec2(tex_x_size,tex_y_size);
+      float thickness = 1.0; // A TEST
+      float nearPlaneZ = camera_near; // A TEST (negative value)
+      float stride = 1.0;        //
+      float jitter = 1.0;        //   A
+      float max_step = 15.0;     //  TEST
+      float max_distance = 3.0; //
+      point2 hit_pixel;
+      point3 hit_point;
+
+      bool test = traceScreenSpaceRay1(cs_orig, cs_dir, proj, texture_depth_SSR, buffer_size, thickness,
+       nearPlaneZ, stride, jitter, max_step, max_distance, hit_pixel, hit_point);
+
+      //color = hit_point;
+      color = texture(texture_color_SSR, hit_pixel).rgb;
+    }
+
+
+    LightRes LightRes1 = LightCalculation(0,norm,color,LightColor[0],LightSpecularColor[0] /*vec3(0.0,0.0,1.0)*/);
 
 
     // FINAL LIGHT
     vec3 result = (LightRes1.ambient + LightRes1.diffuse + LightRes1.specular);
    
-
 
     // ADD AO mapping
     /*if(){
@@ -193,25 +458,21 @@ void main(void) {
     }*/
 
 
+    // main out
     FragColor = vec4(result, final_alpha);
 
+
     // second out => draw only brighest fragments
-    float brightness = dot(result, vec3(0.2126, 0.7152, 0.0722));
-    if(brightness > 0.7)
-        BrightColor = vec4(result, 1.0);
-    
-
-
-  }/*else{
-    if(face_cube != -1.0){
-     float far = 1000.0;
-     if(var == 5.0)
-      far = 1000.0 * 1.15;
-
-     float lightDistance = length(FragPos - viewPos);
-     lightDistance /= far;
-     gl_FragDepth = lightDistance; //near * far / ((gl_FragCoord.z * (far - near)) - far);          
-    }
-  }*/
+    if(!SSR_pre_rendu){
+      float brightness = dot(result, vec3(0.2126, 0.7152, 0.0722));
+      if(brightness > 0.7)
+        FragColor2 = vec4(result, 1.0);
+    }/*else{
+      //float depth = depthSample(gl_FragCoord.z);
+      float depth = gl_FragCoord.z;
+      //float depth = vec3(linearDepth(gl_FragCoord.z));
+      gl_FragDepth = gl_FragCoord.z;
+      FragColor2 = vec4(vec3(depth), 1.0);
+    }*/
   
 }

@@ -17,10 +17,11 @@ layout (location = 3) in vec3 tangent;
  out vec3 vsoNormal;
  out vec2 TexCoord;
  out vec3 FragPos;
+ out vec3 cs_FragPos;
  out vec4 position_for_tex;
  out vec3 Tangent;
- out vec4 FragPosLightSpace;
- smooth out vec4 EyeSpacePos;
+ out mat4 Projection_matrix;
+ 
 
  void main(void) {
 
@@ -42,7 +43,8 @@ layout (location = 3) in vec3 tangent;
 
  	position_for_tex = out_position; 
 
- 	FragPos=vec3(modelViewMatrix2 * vec4(vsiPosition,1.0f));
+ 	FragPos = vec3(modelViewMatrix2 * vec4(vsiPosition,1.0f));
+ 	cs_FragPos = vec3(viewMatrix2 * modelViewMatrix2 * vec4(vsiPosition,1.0f));
 
  	vsoNormal = mat3(transpose(inverse(modelViewMatrix2))) * normal;  
 
@@ -52,11 +54,7 @@ layout (location = 3) in vec3 tangent;
 
 	Tangent = vec3(modelViewMatrix2 * vec4(tangent, 0.0));
 
-	if(var == 0.0 || var == 2.0 || var == 4.0){
-		FragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0);
-	}
-
-	EyeSpacePos =  (viewMatrix * modelViewMatrix2) * vec4(vsiPosition, 1.0);
+	Projection_matrix = projectionMatrix;
 
 }
 

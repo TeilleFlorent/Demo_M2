@@ -4,9 +4,34 @@ in vec2 TexCoord;
 in vec3 Positon;
 
 uniform float output_factor;
+uniform float camera_near;
+uniform float camera_far;
+
 
 out vec4 fragColor;
 uniform sampler2D depth_map_feu;
+
+
+
+float linearDepth(float depthSample)
+{
+
+/*    float z_b = depthSample;
+    float z_n = 2.0 * z_b - 1.0;
+    float z_e = 2.0 * camera_near * camera_far / (camera_far + camera_near - z_n * (camera_far - camera_near));
+    return z_e;*/
+
+    float n = camera_near; // camera z near
+    float f = camera_far; // camera z far
+    float z = depthSample;
+    return (2.0 * n) / (f + n - z * (f - n));
+
+
+
+/*    float depth = depthSample;
+    return depthSample;
+*/
+}
 
 
 
@@ -15,24 +40,15 @@ void main(void) {
   vec3 result;
   float final_alpha = 1.0;
 
-  //result = vec3(0.0,0.0,1.0);
-  //float temp_depth = texture(depth_map_feu, TexCoord).r;
-  //temp_depth = 0.1 * 1000.0 / ((temp_depth * (1000.0 - 0.1)) - 1000.0);
-            
-  //result = vec3(temp_depth);
   
-  result = texture(depth_map_feu, TexCoord).rgb;
+/*  result = texture(depth_map_feu, TexCoord).rgb;
   final_alpha = texture(depth_map_feu, TexCoord).a;
+*/
 
-
-  //result = texture(tex_particle, TexCoord).rgb;
-  //final_alpha = texture(tex_particle, TexCoord).a;
-
-  //result = vec3(0.0,0.0,0.0);
-  //final_alpha = 1.0;
+  float temp = texture(depth_map_feu, TexCoord).r;
+  result = vec3(linearDepth(temp));
   
-  //result *= output_factor;
-  
+
   fragColor = vec4(result, final_alpha);
   
 }
