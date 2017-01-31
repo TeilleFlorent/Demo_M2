@@ -2,6 +2,7 @@
 
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
+uniform mat4 projectionMatrix2;
 uniform mat4 viewMatrix;
 uniform mat4 lightSpaceMatrix;
 uniform mat4 cubeMap_viewMatrices[6];
@@ -20,7 +21,7 @@ layout (location = 3) in vec3 tangent;
  out vec3 cs_FragPos;
  out vec4 position_for_tex;
  out vec3 Tangent;
- out mat4 Projection_matrix;
+ out mat4 projection_Matrix2;
  
 
  void main(void) {
@@ -54,7 +55,7 @@ layout (location = 3) in vec3 tangent;
 
 	Tangent = vec3(modelViewMatrix2 * vec4(tangent, 0.0));
 
-	Projection_matrix = projectionMatrix;
+	projection_Matrix2 = projectionMatrix;
 
 }
 

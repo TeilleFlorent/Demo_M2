@@ -125,4 +125,10 @@ void print_mat4(glm::mat4 matrix){
 }
 
 
+glm::vec3 computeClipInfo(float zn, float zf) { 
+
+  return glm::vec3(zn  * zf, zn - zf, zf);
+  //return glm::vec3(zn, -1.0f, +1.0f);
+}
+
 

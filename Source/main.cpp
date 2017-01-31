@@ -1072,10 +1072,12 @@ static void draw() {
 void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
 
 
- glm::mat4 projectionM,Msend,viewMatrix,Msend2;
+ glm::mat4 projectionM,Msend,viewMatrix,Msend2, projectionM2;
 
  projectionM = glm::perspective(45.0f, /* 4.0f/3.0f */(float)w/(float)h, camera_near, camera_far);
  viewMatrix=glm::lookAt(cameraPos, (cameraPos) + cameraFront, cameraUp); 
+ projectionM2 = glm::ortho(/*-5.0f*/ /*-(w/2.0f)*/ 0.0f, /*5.0f*/ /*(w/2.0f)*/ (float)w, /*-5.0f*/ /*-(h/2.0f)*/ 0.0f, /*5.0f*/ /*(h/2.0f)*/ (float)h, -camera_near, -camera_far);
+ 
 
 
  glm::mat4 lightProjection, lightView, light_space_matrix, skybox_light_space_matrix;
@@ -1083,6 +1085,7 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  //lightProjection = glm::ortho(-5.0f, 5.0f, -5.0f, 5.0f, 1.0f, far);
  //lightView = glm::lookAt(lights[2].lightPos, glm::vec3(house.x,house.y,house.z) , glm::vec3(0.0,1.0,0.0));
  //light_space_matrix = lightProjection * lightView;
+ glm::vec3 clip_info = computeClipInfo(-camera_near, -camera_far);
 
 
   if(render_into_finalFBO){
@@ -1224,9 +1227,13 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "modelViewMatrix"), 1, GL_FALSE, glm::value_ptr(Msend));
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "projectionMatrix"), 1, GL_FALSE, glm::value_ptr(projectionM));
+ glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "projectionMatrix2"), 1, GL_FALSE, glm::value_ptr(projectionM));
+ 
  //glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "lightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(light_space_matrix));
  glUniform1f(glGetUniformLocation(basic_shader.Program, "camera_near"), camera_near);
  glUniform1f(glGetUniformLocation(basic_shader.Program, "camera_far"), camera_far);
+ glUniform3fv(glGetUniformLocation(basic_shader.Program, "clip_info"),1, &clip_info[0]);
+ 
 
 
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightPos[0]"),1, &lights[0].lightPos[0]);

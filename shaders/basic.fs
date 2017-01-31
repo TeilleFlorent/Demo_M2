@@ -21,7 +21,7 @@ in vec3 FragPos;
 in vec3 cs_FragPos;
 in vec4 position_for_tex;
 in vec3 Tangent;
-in mat4 Projection_matrix;
+in mat4 projection_Matrix2;
 
 uniform vec3 LightPos[NB_LIGHTS];
 uniform vec3 LightColor[NB_LIGHTS];
@@ -46,6 +46,9 @@ uniform bool SSR_pre_rendu;
 
 uniform float camera_near;
 uniform float camera_far;
+uniform vec3 clip_info;
+uniform mat4 projectionMatrix2;
+
 
 uniform sampler2D texture_diffuse1;
 uniform sampler2D texture_specular1;
@@ -252,6 +255,10 @@ float distanceSquared(point2 A, point2 B) {
     return dot(A, A);
 }
 
+float reconstructCSZ(float depthBufferValue, vec3 c) {
+      return c[0] / (depthBufferValue * c[1] + c[2]);
+}
+
 
 // Returns true if the ray hit something
 bool traceScreenSpaceRay1(
@@ -363,12 +370,16 @@ bool traceScreenSpaceRay1(
         }
  
         hitPixel = permute ? P.yx : P;
+        
+        hitPixel.y = csZBufferSize.y - hitPixel.y;
+        
         // You may need hitPixel.y = csZBufferSize.y - hitPixel.y; here if your vertical axis
         // is different than ours in screen space
-        //sceneZMax = texelFetch(csZBuffer, int2(hitPixel), 0);
         
         //sceneZMax = linearDepth(texelFetch(csZBuffer, ivec2(hitPixel), 0)); // A TEST
-        sceneZMax = texelFetch(csZBuffer, ivec2(hitPixel), 0); // A TEST
+        sceneZMax = texelFetch(csZBuffer, ivec2(hitPixel), 0).r; 
+        sceneZMax = reconstructCSZ(sceneZMax, clip_info); // A TEST
+    
     }
      
     // Advance Q based on the number of steps
@@ -415,29 +426,44 @@ void main(void) {
       //color = vec3(SSR(norm));
 
       //point3 cs_orig = normalize(vec3(0.0, 0.0, camera_near)); // A TEST normalize or not
+      //point3 cs_orig = (vec3(0.0, 0.0, camera_near)); // A TEST normalize or not
       //point3 cs_orig = normalize(cs_FragPos);
       point3 cs_orig = cs_FragPos;
       //point3 cs_orig = vec3(cs_FragPos.x,cs_FragPos.y,cs_FragPos.z + camera_near);
       
-      vec3 cs_dir = vec3(reflect( vec4(-cs_orig, 0), vec4(norm, 0) )); // A TEST * matrix or not
-      //vec3 cs_dir = vec3(Projection_matrix * reflect( vec4(-cs_orig, 0), vec4(norm, 0) )); // A TEST * matrix or not
       
-      mat4x4 proj = Projection_matrix; // A TEST => la matrix doit map les coordonnées de tex (0.0 à 1.0 ??)
+      vec3 cs_dir =(vec3(reflect( vec4(-cs_orig, 0), vec4(norm, 0) ))); // A TEST normalize or not
+      //vec3 cs_dir = normalize(vec3(reflect( vec4(-cs_orig, 0), vec4(norm, 0) ))); // A TEST * matrix or not
+      //vec3 cs_dir = vec3(projectionMatrix2 * reflect( vec4(-cs_orig, 0), vec4(norm, 0) )); // A TEST * matrix or not
+      //vec3 cs_dir = normalize(vec3(projectionMatrix2 * reflect( vec4(-cs_orig, 0), vec4(norm, 0) ))); // A TEST * matrix or not
+      
+
+      //mat4x4 proj = projection_Matrix2; // A TEST => la matrix doit map les coordonnées de tex (0.0 à 1.0 ??)
+      mat4x4 proj = projectionMatrix2; // A TEST => la matrix doit map les coordonnées de tex (0.0 à 1.0 ??)
+      
       vec2 buffer_size = vec2(tex_x_size,tex_y_size);
-      float thickness = 1.0; // A TEST
-      float nearPlaneZ = camera_near; // A TEST (negative value)
+      float thickness = 1.0; // A TEST 1 2 5 1000
+      float nearPlaneZ = camera_near * -1.0; // A TEST (negative value)
       float stride = 1.0;        //
-      float jitter = 1.0;        //   A
-      float max_step = 15.0;     //  TEST
-      float max_distance = 3.0; //
+      ivec2 c = ivec2(gl_FragCoord.xy);
+      float jitter = 0.0 /*((c.x+c.y)&1)*0.5*/;        //   A
+      float max_step = 1.0;     //  TEST
+      float max_distance = 1.0; //
       point2 hit_pixel;
       point3 hit_point;
 
       bool test = traceScreenSpaceRay1(cs_orig, cs_dir, proj, texture_depth_SSR, buffer_size, thickness,
        nearPlaneZ, stride, jitter, max_step, max_distance, hit_pixel, hit_point);
 
-      //color = hit_point;
-      color = texture(texture_color_SSR, hit_pixel).rgb;
+      //color = hit_point;       
+      //vec2 sampledPosition = (hit_point.xy);
+      vec2 sampledPosition = (hit_pixel);
+      sampledPosition = sampledPosition * 0.5 + 0.5;
+      //sampledPosition = hit_pixel;
+
+      //if(test)
+        color = texture(texture_color_SSR, sampledPosition).rgb;
+    
     }
 
 
