@@ -20,8 +20,9 @@ in vec3 vsoNormal;
 in vec3 FragPos;
 in vec3 cs_FragPos;
 in vec4 position_for_tex;
-in vec3 Tangent;
-in mat4 projection_Matrix2;
+in vec3 TangentLightPos;
+in vec3 TangentViewPos;
+in vec3 TangentFragPos;
 
 uniform vec3 LightPos[NB_LIGHTS];
 uniform vec3 LightColor[NB_LIGHTS];
@@ -49,10 +50,13 @@ uniform float camera_far;
 uniform vec3 clip_info;
 uniform mat4 projectionMatrix2;
 
+uniform float height_scale;
 
-uniform sampler2D texture_diffuse1;
+
+uniform sampler2D texture_diffuse1; 
 uniform sampler2D texture_specular1;
-uniform sampler2D texture_normal1;
+uniform sampler2D texture_normal1; 
+uniform sampler2D texture_height1; 
 uniform sampler2D texture_color_SSR;
 uniform sampler2D texture_depth_SSR;
 uniform float tex_x_size;
@@ -81,7 +85,7 @@ float linearDepth(float depthSample)
 }
 
 
-LightRes LightCalculation(int num_light, vec3 norm, vec3 color, vec3 light_color, vec3 light_specular_color){
+LightRes LightCalculation(int num_light, vec3 norm, vec3 viewDir, vec3 color, vec3 light_color, vec3 light_specular_color){
 
   LightRes res;
 
@@ -90,7 +94,8 @@ LightRes LightCalculation(int num_light, vec3 norm, vec3 color, vec3 light_color
 
   //diffuse
   vec3 diffuse = vec3(0.0,0.0,0.0); 
-  vec3 lightDir = normalize(LightPos[num_light] - FragPos);          
+  //vec3 lightDir = normalize(LightPos[num_light] - FragPos);          
+  vec3 lightDir = normalize(TangentLightPos - TangentFragPos);
   if(diffuseSTR > 0.0){
     float diff = max(dot(norm, lightDir),0.0);
     diffuse = diff * (diffuseSTR) * color * light_color;
@@ -98,7 +103,6 @@ LightRes LightCalculation(int num_light, vec3 norm, vec3 color, vec3 light_color
   //specular
   vec3 specular = vec3(0.0,0.0,0.0);
   if(specularSTR > 0.0){
-    vec3 viewDir = normalize(viewPos - FragPos);
     float spec = 0.0;
     vec3 halfwayDir = normalize(lightDir + viewDir);
     spec = pow(max(dot(norm, halfwayDir), 0.0), ShiniSTR);     
@@ -137,30 +141,92 @@ LightRes LightCalculation(int num_light, vec3 norm, vec3 color, vec3 light_color
 
 
 
+vec2 parallax_mapping_calculation(vec2 texCoords, vec3 final_view_dir){
 
-vec3 normal_mapping_calculation()                                                                     
+  vec2 res_tex_coord;  
+
+ // number of depth layers
+    const float minLayers = 10;
+    const float maxLayers = 20;
+    float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), final_view_dir)));  
+    // calculate the size of each layer
+    float layerDepth = 1.0 / numLayers;
+    // depth of current layer
+    float currentLayerDepth = 0.0;
+    // the amount to shift the texture coordinates per layer (from vector P)
+    vec2 P = final_view_dir.xy / final_view_dir.z * height_scale; // A TEST 
+    vec2 deltaTexCoords = P / numLayers;
+  
+    // get initial values
+    vec2  currentTexCoords     = texCoords;
+    float currentDepthMapValue = texture(texture_height1, currentTexCoords).r;
+      
+    while(currentLayerDepth < currentDepthMapValue)
+    {
+        // shift texture coordinates along direction of P
+        currentTexCoords -= deltaTexCoords;
+        // get depthmap value at current texture coordinates
+        currentDepthMapValue = texture(texture_height1, currentTexCoords).r;  
+        // get depth of next layer
+        currentLayerDepth += layerDepth;  
+    }
+    
+    // -- parallax occlusion mapping interpolation from here on
+    // get texture coordinates before collision (reverse operations)
+    vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
+
+    // get depth after and before collision for linear interpolation
+    float afterDepth  = currentDepthMapValue - currentLayerDepth;
+    float beforeDepth = texture(texture_height1, prevTexCoords).r - currentLayerDepth + layerDepth;
+ 
+    // interpolation of texture coordinates
+    float weight = afterDepth / (afterDepth - beforeDepth);
+    vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
+
+
+    // set both result
+    res_tex_coord = finalTexCoords;
+    //final_view_dir = new_viewDir;
+
+    return res_tex_coord;
+}
+
+
+
+vec3 normal_mapping_calculation(vec2 final_tex_coord)                                                                     
 {                                                               
-    float fact = 1.0;
+   /* float fact = 1.0;
     
     vec3 Normal = normalize(vsoNormal);                                                       
     vec3 temp_tangent;
 
     if(var == 1.0){
-      temp_tangent = normalize(vec3(1.0,0.0,0.0));                                                     
+      temp_tangent = normalize(vec3(-1.0,0.0,0.0));                                                     
     }else{
       temp_tangent = normalize(Tangent);                                                     
     }
     
     temp_tangent = normalize(temp_tangent - dot(temp_tangent, Normal) * Normal);                           
     vec3 Bitemp_tangent = cross(temp_tangent, Normal);                                                
-    vec3 BumpMapNormal = texture(texture_normal1, TexCoord*fact).xyz;                                
+    vec3 BumpMapNormal = texture(texture_normal1, final_tex_coord*fact).xyz;                                
     BumpMapNormal = 2.0 * BumpMapNormal - vec3(1.0, 1.0, 1.0);                              
     vec3 NewNormal;                                                                         
     mat3 TBN = mat3(temp_tangent, Bitemp_tangent, Normal);                                            
     NewNormal = TBN * BumpMapNormal;                                                        
     NewNormal = normalize(NewNormal);                                                       
-    return NewNormal;                                                                       
+    return NewNormal;      */
+
+
+    vec3 res_normal = vsoNormal;
+   
+    res_normal = texture(texture_normal1, final_tex_coord).rgb;
+  
+    res_normal = normalize(res_normal * 2.0 - 1.0);   
+
+    return res_normal;
+
 }
+
 
 
 
@@ -394,21 +460,35 @@ bool traceScreenSpaceRay1(
 
 
 
-void main(void) {
+void main() {
 
 
     vec3 color;
     float final_alpha;
+    vec2 final_tex_coord;
+    vec3 final_view_dir;
 
-    color = texture(texture_diffuse1, TexCoord).rgb;  
+    final_tex_coord = TexCoord;
+    //final_view_dir = normalize(viewPos - FragPos);
+    final_view_dir = normalize(TangentViewPos - TangentFragPos);
 
-    if(var == 1.0 && !SSR_pre_rendu){
-      //color = texture(texture_depth_SSR, TexCoord).rgb;
-      
-      color = vec3(1.0,0.0,0.0);
+    // get parallax mapping tex coord
+    if(var == 0.0 || var == 1.0){
+
+      final_tex_coord = parallax_mapping_calculation(TexCoord, final_view_dir);
+
+     /* if(final_tex_coord.x > 1.0 || final_tex_coord.y > 1.0 || final_tex_coord.x < 0.0 || final_tex_coord.y < 0.0)
+        discard;*/
     }
 
-  
+    color = texture(texture_diffuse1, final_tex_coord).rgb;  
+
+    if(var == 1.0 || var == 0.0 && !SSR_pre_rendu){
+      //color = texture(texture_depth_SSR, final_tex_coord).rgb;
+      
+      color = vec3(1.0,1.0,1.0);
+    }  
+
 
     final_alpha = alpha;
 
@@ -417,7 +497,9 @@ void main(void) {
     vec3 norm = normalize(vsoNormal);
     // normal mapping
     if(var == 1.0 || var == 0.0){
-      norm = normal_mapping_calculation();
+    
+      norm = normal_mapping_calculation(final_tex_coord);
+  
     }
 
     // ADD SSR 
@@ -462,12 +544,12 @@ void main(void) {
       //sampledPosition = hit_pixel;
 
       //if(test)
-        color = texture(texture_color_SSR, sampledPosition).rgb;
+        //color = texture(texture_color_SSR, sampledPosition).rgb;
     
     }
 
 
-    LightRes LightRes1 = LightCalculation(0,norm,color,LightColor[0],LightSpecularColor[0] /*vec3(0.0,0.0,1.0)*/);
+    LightRes LightRes1 = LightCalculation(0, norm, final_view_dir, color, LightColor[0], LightSpecularColor[0] /*vec3(0.0,0.0,1.0)*/);
 
 
     // FINAL LIGHT
@@ -476,7 +558,7 @@ void main(void) {
 
     // ADD AO mapping
     /*if(){
-      vec3 temp_AO = texture(texture_specular1, TexCoord).rgb;
+      vec3 temp_AO = texture(texture_specular1, final_tex_coord).rgb;
       float temp = (temp_AO.r + temp_AO.g + temp_AO.b) / 3.0;
       result *= temp;
       if(var == 2.0)

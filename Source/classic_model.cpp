@@ -21,6 +21,8 @@
         GLuint diffuseNr = 1;
         GLuint specularNr = 1;
         GLuint normalNr = 1;
+        GLuint heightNr = 1;
+
 
         for(GLuint i = 0; i < this->textures.size(); i++)
         {
@@ -41,7 +43,10 @@
                 ss << specularNr++; // bricolage pour generer le string pour l'uniform avec le bon numero de texture
             if(name == "texture_normal")
                 ss << normalNr++; // bricolage pour generer le string pour l'uniform avec le bon numero de texture
+            if(name == "texture_height")
+                ss << heightNr++; // bricolage pour generer le string pour l'uniform avec le bon numero de texture
             
+
             number = ss.str(); 
 
             // du coup envoi le string correct correspondant a la texture traité
@@ -55,13 +60,11 @@
         // draw le mesh
         glBindVertexArray(this->VAO);
         
-        if(id == 2.0)
-            glUniform1f(glGetUniformLocation(shader.Program, "ShiniSTR"), this->shininess);
-
-        if(id == 5.0){
+      
+      /*  if(id == 5.0){
            glActiveTexture(GL_TEXTURE7);
            glBindTexture(GL_TEXTURE_2D, this->textures[4].id);
-        }
+        }*/
 
         glDrawElements(GL_TRIANGLES, this->indices.size(), GL_UNSIGNED_INT, 0);
         //glDrawArrays(GL_TRIANGLES, 0, this->indices.size());
@@ -315,7 +318,7 @@
             // Diffuse maps
             vector<Texture> diffuseMaps = this->loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse", num_mesh);
             textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-            if(model_id != 2 && model_id != 3 && model_id != 5){
+            if(model_id != 0){
             // Specular maps
                 vector<Texture> specularMaps = this->loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular", num_mesh);
                 textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
@@ -346,83 +349,6 @@
 
         vector<Texture> textures;
 
-
-        // FOR HOUSE MESH ONLY
-        if(this -> model_id == 2){
-
-            GLboolean skip = false;
-
-            string temp1,temp2,temp3;
-            if(num_mesh == 87 || num_mesh == 89 || num_mesh == 90 || num_mesh == 112 || num_mesh == 129 || num_mesh == 130 || num_mesh == 131 || (num_mesh >=132 && num_mesh <= 144) 
-                || num_mesh == 154 || num_mesh == 160 || num_mesh == 162 || num_mesh == 163 || num_mesh == 164 || num_mesh == 167 || (num_mesh >= 168 && num_mesh <= 184)){
-                temp1 = "walls/wood_roof.jpg";
-                temp2 = "walls/wall_normal.jpg";
-            }else{
-                if(num_mesh == 207){
-                    temp1 = "floor/concrete_base_color.png";
-                    temp2 = "floor/concrete_normal.png";
-                    temp3 = "floor/concrete_AO.png";
-                }else{
-                    temp1 = "walls/wood_wall.jpg";
-                    temp2 = "walls/wall_normal.jpg";
-                }
-            }
-    
-            aiString str;
-            str.Set(temp1);
-            
-
-            for(GLuint j = 0; j < textures_loaded.size(); j++)
-            {
-                if(textures_loaded[j].path == str)
-                {
-                    string temp = str.data;
-                    textures.push_back(textures_loaded[j]);
-                    if(temp.find("jpg") != std::string::npos){
-                        textures.push_back(textures_loaded[j+1]);
-                    }
-
-                    skip = true; 
-                    break;
-                }
-                
-            }
-            if(!skip){
-             // base
-               Texture texture;
-               texture.id = TextureFromFile(str.C_Str() , this->directory);
-               texture.path = str;
-               temp1 = "texture_diffuse";
-               texture.type = temp1;
-               textures.push_back(texture);
-               this->textures_loaded.push_back(texture);  
-            
-             // normal
-               if(!temp2.empty()){
-                 str.Set(temp2);
-                 texture.id = TextureFromFile(str.C_Str() , this->directory);
-                 texture.path = str;
-                 temp2 = "texture_normal";
-                 texture.type = temp2;
-                 textures.push_back(texture);
-                 this->textures_loaded.push_back(texture);  
-               }
-
-              // AO
-               if(!temp3.empty()){
-                 str.Set(temp3);
-                 texture.id = TextureFromFile(str.C_Str() , this->directory);
-                 texture.path = str;
-                 temp3 = "texture_specular";
-                 texture.type = temp3;
-                 textures.push_back(texture);
-                 this->textures_loaded.push_back(texture);  
-               }
-
-           }
-
-       }
-
          // FOR TABLE1 ONLY
          if(this -> model_id == 0){
 
@@ -435,7 +361,7 @@
 
             if(!skip){
              // base
-               temp1 = "diffuse.png";            
+               temp1 = "albedo.png";            
                str.Set(temp1);
 
                Texture texture;
@@ -446,6 +372,7 @@
                textures.push_back(texture);
                this->textures_loaded.push_back(texture);  
             
+
              // normal
                  temp1 = "normal.png";            
                  str.Set(temp1);
@@ -455,7 +382,20 @@
                  temp1 = "texture_normal";
                  texture.type = temp1;
                  textures.push_back(texture);
+                 this->textures_loaded.push_back(texture); 
+
+                 // height
+                 temp1 = "height.png";            
+                 str.Set(temp1);
+
+                 texture.id = TextureFromFile(str.C_Str() , this->directory);
+                 texture.path = str;
+                 temp1 = "texture_height";
+                 texture.type = temp1;
+                 textures.push_back(texture);
                  this->textures_loaded.push_back(texture);  
+
+
                
            }
 
@@ -520,9 +460,9 @@
     t = IMG_Load(filename.c_str());
 
 
-    /*std::cout << "test1 = " << path << std::endl;
+   /* std::cout << "test1 = " << path << std::endl;
     std::cout << "test2 = " << directory << std::endl;     
-    std::cout << "test3 = " << filename << std::endl;     */
+    std::cout << "test3 = " << filename << std::endl;   */  
     
 
 /*    if(!t)

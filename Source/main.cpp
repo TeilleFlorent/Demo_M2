@@ -71,7 +71,7 @@ static glm::vec3 cameraPos   = glm::vec3(0.0, 3.0 ,0.0);
 static glm::vec3 cameraFront = glm::vec3(0.95, 0.0, -0.3);
 static glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
 static float camera_near = 0.1f;
-static float camera_far = 10.0f;
+static float camera_far = 100.0f;
 static float walk_speed = 0.1;
 
 
@@ -110,7 +110,8 @@ static float exposure = 0.65;
 static bool bloom = false;
 static float bloom_downsample = 0.2;
 
-static float TEST_size = 1.0;
+// PARALLAX PARA
+static float height_scale = 0.0;
 
 
 /////////////////////////////////////////////////////////
@@ -572,7 +573,7 @@ glBindVertexArray(0);
   glGenTextures(1, &tex_albedo_ground2);
   glBindTexture(GL_TEXTURE_2D, tex_albedo_ground2);
 
-  if( (t = IMG_Load("../Textures/ground2/albedo.png")) != NULL ) {
+  if( (t = IMG_Load("../Textures/ground1/albedo.png")) != NULL ) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
     SDL_FreeSurface(t);
   } else {
@@ -593,7 +594,7 @@ glBindVertexArray(0);
   glGenTextures(1, &tex_normal_ground2);
   glBindTexture(GL_TEXTURE_2D, tex_normal_ground2);
 
-  if( (t = IMG_Load("../Textures/ground2/normal.png")) != NULL ) {
+  if( (t = IMG_Load("../Textures/ground1/normal.png")) != NULL ) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
     SDL_FreeSurface(t);
   } else {
@@ -668,9 +669,9 @@ table = new objet[nb_table];
 
  for(int i = 0; i < nb_table; i++){
    table[i].AmbientStr = 0.3;
-   table[i].DiffuseStr = 0.5;
-   table[i].SpecularStr = 0.5;
-   table[i].ShiniStr = 256; // 4 8 16 ... 256 
+   table[i].DiffuseStr = 0.4;
+   table[i].SpecularStr = 0.4;
+   table[i].ShiniStr = /*256*/ 32; // 4 8 16 ... 256 
    table[i].constant = 1.0;
    table[i].linear = 0.014;
    table[i].quadratic = 0.0007;
@@ -708,10 +709,10 @@ table = new objet[nb_table];
 
  //////////////////////////
 
- ground2.AmbientStr = 0.05;
- ground2.DiffuseStr = 0.1;
- ground2.SpecularStr = 0.07;
- ground2.ShiniStr = 64; // 4 8 16 ... 256 
+ ground2.AmbientStr = 0.05*4;
+ ground2.DiffuseStr = 0.1*4;
+ ground2.SpecularStr = 0.07*4;
+ ground2.ShiniStr = 256; // 4 8 16 ... 256 
  ground2.constant = 1.0;
  ground2.linear = 0.014;
  ground2.quadratic = 0.0007;
@@ -864,22 +865,16 @@ while(SDL_PollEvent(&event))
      break;
 
      case 'a' :
-     TEST_size += 0.1;
-     std::cout << "size = " << TEST_size << std::endl;
+     height_scale += 0.001;
+     std::cout << "test = " << height_scale << std::endl;
      
-     /*table.y += 0.01;
-     std::cout << "test = " << table.y << std::endl;
-     */
+     
      break;
 
      case 'e' :
-     TEST_size -= 0.1;
-     std::cout << "size = " << TEST_size << std::endl;
+     height_scale -= 0.001;
+     std::cout << "test = " << height_scale << std::endl;
      
-
-    /* table.y -= 0.01;
-     std::cout << "test = " << table.y << std::endl;
-    */ 
     
      break;
 
@@ -1235,6 +1230,8 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "clip_info"),1, &clip_info[0]);
  
 
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "height_scale"), height_scale);
+
 
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightPos[0]"),1, &lights[0].lightPos[0]);
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightColor[0]"),1, &lights[0].lightColor[0]);
@@ -1271,12 +1268,12 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
 //// DRAW TABLE
  basic_shader.Use();
 
- for(int i = 0; i < nb_table; i++){
+ for(int i = 0; i < /*nb_table*/1; i++){
  Msend = glm::mat4();
 
  Msend = glm::translate(Msend, glm::vec3(table[i].x,table[i].y,table[i].z));
  //Msend = glm::rotate(Msend, table[i].angle, glm::vec3(0.0, 1.0 , 0.0));
- Msend = glm::scale(Msend, glm::vec3(table[i].scale)); 
+ Msend = glm::scale(Msend, glm::vec3(table[i].scale) * 10.0f); 
 
 
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
