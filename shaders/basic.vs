@@ -20,6 +20,7 @@ layout (location = 0) in vec3 vsiPosition;
 layout (location = 1) in vec3 normal;
 layout (location = 2) in vec2 texCoord;
 layout (location = 3) in vec3 tangent;
+layout (location = 4) in vec3 bitangent;
 
  out vec3 vsoNormal;
  out vec2 TexCoord;
@@ -29,6 +30,7 @@ layout (location = 3) in vec3 tangent;
  out vec3 TangentLightPos;
  out vec3 TangentViewPos;
  out vec3 TangentFragPos;
+ out vec3 Tangent;
 
  void main(void) {
 
@@ -59,28 +61,34 @@ layout (location = 3) in vec3 tangent;
 	// normal calculation
 	mat3 normalMatrix = mat3(transpose(inverse(modelViewMatrix2)));
     vsoNormal = normalize(normalMatrix * normal);
-	mat3 normalMatrix2 = mat3(modelViewMatrix2);
     
+    Tangent = vec3(modelViewMatrix2 * vec4(tangent, 0.0));
 
 	// TBN calculation
-	vec3 T;
-	T = normalize(normalMatrix2 * tangent);
-	
 	if(var == 1.0){
-		T = normalize(normalMatrix2 * vec3(1.0,0.0,0.0));   
+		/*vec3 T;
+		T = normalize(normalMatrix2 * tangent);
+
+		if(var == 1.0){
+			T = normalize(normalMatrix2 * vec3(1.0,1.0,0.0));   
+		}
+		if(var == 0.0){
+			T = normalize(normalMatrix2 * vec3(tangent.x * 1.0f, tangent.y * 1.0f, tangent.z * 1.0f));	
+		}
+		vec3 N = normalize(normalMatrix2 * normal);
+		T = normalize(T - dot(T, N) * N);
+		vec3 B = cross(N, T);
+		B = normalize(normalMatrix2 * B);
+		mat3 TBN = transpose(mat3(T, B, N));*/
+
+		vec3 T = normalize(mat3(modelViewMatrix2) * tangent);
+		vec3 B = normalize(mat3(modelViewMatrix2) * bitangent);
+		vec3 N = normalize(mat3(modelViewMatrix2) * normal);
+		mat3 TBN = transpose(mat3(T, B, N));
+
+		TangentLightPos = TBN * LightPos[0];
+		TangentViewPos  = TBN * viewPos;
+		TangentFragPos  = TBN * FragPos;
 	}
-	if(var == 0.0){
-		T = normalize(normalMatrix2 * vec3(tangent.x * 1.0f, tangent.y * 1.0f, tangent.z * 1.0f));	
-	}
-    vec3 N = normalize(normalMatrix2 * normal);
-    T = normalize(T - dot(T, N) * N);
-    vec3 B = cross(N, T);
-    B = normalize(normalMatrix2 * B);
-    mat3 TBN = transpose(mat3(T, B, N));
-    
-    TangentLightPos = TBN * LightPos[0];
-    TangentViewPos  = TBN * viewPos;
-    TangentFragPos  = TBN * FragPos;
-    
 }
 

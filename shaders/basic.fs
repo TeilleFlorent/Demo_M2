@@ -23,6 +23,7 @@ in vec4 position_for_tex;
 in vec3 TangentLightPos;
 in vec3 TangentViewPos;
 in vec3 TangentFragPos;
+in vec3 Tangent;
 
 uniform vec3 LightPos[NB_LIGHTS];
 uniform vec3 LightColor[NB_LIGHTS];
@@ -51,6 +52,7 @@ uniform vec3 clip_info;
 uniform mat4 projectionMatrix2;
 
 uniform float height_scale;
+uniform bool parallax;
 
 
 uniform sampler2D texture_diffuse1; 
@@ -94,8 +96,12 @@ LightRes LightCalculation(int num_light, vec3 norm, vec3 viewDir, vec3 color, ve
 
   //diffuse
   vec3 diffuse = vec3(0.0,0.0,0.0); 
-  //vec3 lightDir = normalize(LightPos[num_light] - FragPos);          
-  vec3 lightDir = normalize(TangentLightPos - TangentFragPos);
+  vec3 lightDir;
+  if(var == 1.0){ 
+    lightDir = normalize(TangentLightPos - TangentFragPos);
+  }else{
+    lightDir = normalize(LightPos[num_light] - FragPos);          
+  }
   if(diffuseSTR > 0.0){
     float diff = max(dot(norm, lightDir),0.0);
     diffuse = diff * (diffuseSTR) * color * light_color;
@@ -194,9 +200,18 @@ vec2 parallax_mapping_calculation(vec2 texCoords, vec3 final_view_dir){
 
 
 vec3 normal_mapping_calculation(vec2 final_tex_coord)                                                                     
-{                                                               
-   /* float fact = 1.0;
-    
+{      
+
+  vec3 res_normal;
+      
+  if(var == 1.0){
+    res_normal = texture(texture_normal1, final_tex_coord).rgb;
+    res_normal = normalize(res_normal * 2.0 - 1.0);   
+
+  }else{
+
+    float fact = 1.0;
+
     vec3 Normal = normalize(vsoNormal);                                                       
     vec3 temp_tangent;
 
@@ -205,7 +220,7 @@ vec3 normal_mapping_calculation(vec2 final_tex_coord)
     }else{
       temp_tangent = normalize(Tangent);                                                     
     }
-    
+
     temp_tangent = normalize(temp_tangent - dot(temp_tangent, Normal) * Normal);                           
     vec3 Bitemp_tangent = cross(temp_tangent, Normal);                                                
     vec3 BumpMapNormal = texture(texture_normal1, final_tex_coord*fact).xyz;                                
@@ -214,14 +229,9 @@ vec3 normal_mapping_calculation(vec2 final_tex_coord)
     mat3 TBN = mat3(temp_tangent, Bitemp_tangent, Normal);                                            
     NewNormal = TBN * BumpMapNormal;                                                        
     NewNormal = normalize(NewNormal);                                                       
-    return NewNormal;      */
+    res_normal = NewNormal;
+  }
 
-
-    vec3 res_normal = vsoNormal;
-   
-    res_normal = texture(texture_normal1, final_tex_coord).rgb;
-  
-    res_normal = normalize(res_normal * 2.0 - 1.0);   
 
     return res_normal;
 
@@ -469,25 +479,33 @@ void main() {
     vec3 final_view_dir;
 
     final_tex_coord = TexCoord;
-    //final_view_dir = normalize(viewPos - FragPos);
-    final_view_dir = normalize(TangentViewPos - TangentFragPos);
+    final_view_dir = normalize(viewPos - FragPos);
+    
 
     // get parallax mapping tex coord
-    if(var == 0.0 || var == 1.0){
+    if(var == 1.0){
 
-      final_tex_coord = parallax_mapping_calculation(TexCoord, final_view_dir);
+      final_view_dir = normalize(TangentViewPos - TangentFragPos);
 
-     /* if(final_tex_coord.x > 1.0 || final_tex_coord.y > 1.0 || final_tex_coord.x < 0.0 || final_tex_coord.y < 0.0)
-        discard;*/
+      if(parallax)
+        final_tex_coord = parallax_mapping_calculation(TexCoord, final_view_dir);
+
+      if(var == 1.0){
+        if(final_tex_coord.x > 1.0 * 3.0 || final_tex_coord.y > 1.0 * 3.0 || final_tex_coord.x < 0.0 || final_tex_coord.y < 0.0)
+          discard;
+      }else{
+        if(final_tex_coord.x > 1.0 || final_tex_coord.y > 1.0  || final_tex_coord.x < 0.0 || final_tex_coord.y < 0.0)
+          discard;
+      }
     }
 
     color = texture(texture_diffuse1, final_tex_coord).rgb;  
 
-    if(var == 1.0 || var == 0.0 && !SSR_pre_rendu){
-      //color = texture(texture_depth_SSR, final_tex_coord).rgb;
+    /*if(var == 1.0 || var == 0.0 && !SSR_pre_rendu){
+      //color = texture(texture_diffuse1, final_tex_coord).rgb;
       
-      color = vec3(1.0,1.0,1.0);
-    }  
+      //color = vec3(1.0,1.0,1.0);
+    }*/  
 
 
     final_alpha = alpha;
