@@ -92,8 +92,8 @@ static objet * ground1;
 static objet ground2;
 
 //sphere para
-static int longi = 10;
-static int lati = 10;
+static int longi = 20;
+static int lati = 20;
 static int nbVerticesSphere;
 
 // camera 
@@ -114,7 +114,7 @@ static bool bloom = false;
 static float bloom_downsample = 0.2;
 
 // PARALLAX PARA
-static bool parallax = true;
+static bool parallax = false;
 static float height_scale = 0.02;
 
 
@@ -183,6 +183,9 @@ int main() {
     
     table_model.Load_Model("../Models/cube/Rounded Cube.fbx", 0);
     table_model.Print_info_model();
+    /*table_model.Load_Model("../Models/cube2/Crate_Fragile.3DS", 0);
+    table_model.Print_info_model();*/
+
 
    
 
@@ -532,6 +535,8 @@ if (groundVAO == 0)
   bitangent2.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
   bitangent2 = glm::normalize(bitangent2);
 
+  //std::cout << "TEST = " << bitangent1.x << ", " << bitangent1.y << ", " << bitangent1.z << std::endl;
+
 
   GLfloat groundVertices[] = {
             // Positions            // normal         // TexCoords  // Tangent                          // Bitangent
@@ -564,7 +569,8 @@ if (groundVAO == 0)
 
   //////////////////////////////
   
-  // TEX DEPTH BUFFER
+  // TEX SSR PROCESS
+  //depth
   glGenTextures(1, &tex_depth_ssr);
   glBindTexture(GL_TEXTURE_2D, tex_depth_ssr);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
@@ -580,6 +586,7 @@ if (groundVAO == 0)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);*/
   
+  // color
   glGenTextures(1, &tex_color_ssr);
   glBindTexture(GL_TEXTURE_2D, tex_color_ssr);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_FLOAT, NULL);
@@ -662,7 +669,7 @@ if (groundVAO == 0)
   glGenTextures(1, &tex_albedo_ground2);
   glBindTexture(GL_TEXTURE_2D, tex_albedo_ground2);
 
-  if( (t = IMG_Load("../Textures/ground1/albedo.png")) != NULL ) {
+  if( (t = IMG_Load("../Textures/ground2/albedo.png")) != NULL ) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
     SDL_FreeSurface(t);
   } else {
@@ -683,7 +690,7 @@ if (groundVAO == 0)
   glGenTextures(1, &tex_normal_ground2);
   glBindTexture(GL_TEXTURE_2D, tex_normal_ground2);
 
-  if( (t = IMG_Load("../Textures/ground1/normal.png")) != NULL ) {
+  if( (t = IMG_Load("../Textures/ground2/normal.png")) != NULL ) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
     SDL_FreeSurface(t);
   } else {
@@ -705,7 +712,7 @@ if (groundVAO == 0)
   glGenTextures(1, &tex_height_ground2);
   glBindTexture(GL_TEXTURE_2D, tex_height_ground2);
 
-  if( (t = IMG_Load("../Textures/ground1/height.png")) != NULL ) {
+  if( (t = IMG_Load("../Textures/ground2/height.png")) != NULL ) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
     SDL_FreeSurface(t);
   } else {
@@ -752,37 +759,12 @@ table = new objet[nb_table];
 
 
 //////////////////////////
- /*
- house.AmbientStr = 0.5;
- house.DiffuseStr = 0.8;
- house.SpecularStr = 2.0;
- house.ShiniStr = 256; // 4 8 16 ... 256 
- house.angle=2.47;
- house.acca=0.105;
- house.var=2.0;
- house.scale = 0.02;
-
- house.alpha = 1.0;
-
- house.x = -0.8;
- house.y = 4.881;
- house.z = -0.3;
- 
- house.start=0.0;
- house.dt=0.0;
- house.bouge=0;
- house.t=0.0;
- house.t0=0.0;
-
- house.shadow_darkness = 0.75;*/
-
-//////////////////////////
 
  for(int i = 0; i < nb_table; i++){
-   table[i].AmbientStr = 0.3;
-   table[i].DiffuseStr = 0.4;
-   table[i].SpecularStr = 0.4;
-   table[i].ShiniStr = /*256*/ 32; // 4 8 16 ... 256 
+   table[i].AmbientStr = 0.15;
+   table[i].DiffuseStr = 0.6;
+   table[i].SpecularStr = 0.25;
+   table[i].ShiniStr = 8; // 4 8 16 ... 256 
    table[i].constant = 1.0;
    table[i].linear = 0.014;
    table[i].quadratic = 0.0007;
@@ -790,23 +772,23 @@ table = new objet[nb_table];
    table[i].angle=2.47;
    table[i].acca=0.105;
    table[i].var=0.0;
-   table[i].scale = 0.0075;
+   table[i].scale = 0.0075 /*1.0*/;
 
    table[i].alpha = 1.0;
 
    if(i == 0){
      table[i].x = - 0.8;
-     table[i].y = 0.2;
+     table[i].y = 0.188;
      table[i].z = 0.0;
    }
    if(i == 1){
      table[i].x = 0.0;
-     table[i].y = 0.2;
+     table[i].y = 0.188;
      table[i].z = 0.0;
    }
    if(i == 2){
      table[i].x = 0.8;
-     table[i].y = 0.2;
+     table[i].y = 0.188;
      table[i].z = 0.0;
    }
    table[i].start=0.0;
@@ -820,10 +802,10 @@ table = new objet[nb_table];
 
  //////////////////////////
 
- ground2.AmbientStr = 0.05*4;
- ground2.DiffuseStr = 0.1*4;
- ground2.SpecularStr = 0.07*4;
- ground2.ShiniStr = 256; // 4 8 16 ... 256 
+ ground2.AmbientStr = 0.15;
+ ground2.DiffuseStr = 0.6;
+ ground2.SpecularStr = 0.25;
+ ground2.ShiniStr = 8; // 4 8 16 ... 256 
  ground2.constant = 1.0;
  ground2.linear = 0.014;
  ground2.quadratic = 0.0007;
@@ -976,23 +958,25 @@ while(SDL_PollEvent(&event))
      break;
 
      case 'a' :
-     height_scale += 0.001;
-     std::cout << "test = " << height_scale << std::endl;
+    /* height_scale += 0.001;
+     std::cout << "test = " << height_scale << std::endl;*/
      
      
-     /*ground2.angle += 0.01;
-     std::cout << "test = " << height_scale << std::endl;
-     */
+     table[0].y += 0.01;
+     std::cout << "test = " << table[0].y << std::endl;
+     
      break;
 
      case 'e' :
-     height_scale -= 0.001;
-     std::cout << "test = " << height_scale << std::endl;
+     /*height_scale -= 0.001;
+     std::cout << "test = " << height_scale << std::endl;*/
      
     
-    /* ground2.angle -= 0.01;
-     std::cout << "test = " << height_scale << std::endl;
-    */ 
+    
+     table[0].y -= 0.01;
+     std::cout << "test = " << table[0].y << std::endl;
+     
+
      break;
 
      case 'r' :
@@ -1165,10 +1149,10 @@ static void draw() {
 ////////////////////////////
 
 //pre rendu pour SSR
- glViewport(0, 0, w, h);
- RenderShadowedObjects(false,true);
+ //glViewport(0, 0, w, h);
+ //RenderShadowedObjects(false,true);
 
- // rendu scene normal        
+ // rendu scene initial        
  glViewport(0, 0, w, h);
  RenderShadowedObjects(true,false);
 
@@ -1192,12 +1176,11 @@ static void draw() {
 void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
 
 
- glm::mat4 projectionM,Msend,viewMatrix,Msend2, projectionM2;
+ glm::mat4 projectionM,Msend,viewMatrix,Msend2, projectionM2, projectionM3;
 
  projectionM = glm::perspective(45.0f, /* 4.0f/3.0f */(float)w/(float)h, camera_near, camera_far);
+ projectionM3 = glm::perspective(45.0f, /* 4.0f/3.0f */(float)w/(float)h, -camera_near, -camera_far);
  viewMatrix=glm::lookAt(cameraPos, (cameraPos) + cameraFront, cameraUp); 
- projectionM2 = glm::ortho(/*-5.0f*/ /*-(w/2.0f)*/ 0.0f, /*5.0f*/ /*(w/2.0f)*/ (float)w, /*-5.0f*/ /*-(h/2.0f)*/ 0.0f, /*5.0f*/ /*(h/2.0f)*/ (float)h, -camera_near, -camera_far);
- 
 
 
  glm::mat4 lightProjection, lightView, light_space_matrix, skybox_light_space_matrix;
@@ -1289,7 +1272,7 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  Msend = glm::scale(Msend, glm::vec3(house.scale)); 
 
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
- glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "modelViewMatrix"), 1, GL_FALSE, glm::value_ptr(Msend));
+ glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(Msend));
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "projectionMatrix"), 1, GL_FALSE, glm::value_ptr(projectionM));
  //glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "lightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(light_space_matrix));
  glUniform1f(glGetUniformLocation(basic_shader.Program, "send_bias"), 0.01);
@@ -1333,7 +1316,21 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
 
  Msend = glm::translate(Msend, glm::vec3(ground2.x,ground2.y,ground2.z));
  Msend = glm::rotate(Msend, ground2.angle, glm::vec3(-1.0, 0.0 , 0.0));
- Msend = glm::scale(Msend, glm::vec3(ground2.scale * 1.0f,ground2.scale * 1.0f, ground2.scale * 1.0f)); 
+ Msend = glm::scale(Msend, glm::vec3(ground2.scale * 2.0f,ground2.scale * 2.0f, ground2.scale * 1.0f)); 
+
+ projectionM2[0] = glm::vec4((float)(w/2.0), 0.0, 0.0, (float)(w/2.0));
+ projectionM2[1] = glm::vec4(0.0, (float)(h/2.0), 0.0, (float)(h/2.0));
+ projectionM2[2] = glm::vec4(0.0, 0.0, 1.0, 0.0);
+ projectionM2[3] = glm::vec4(0.0, 0.0, 0.0, 1.0);
+
+ 
+ projectionM2 = glm::transpose(projectionM2);
+
+ //projectionM2 = projectionM2 * projectionM;
+ //projectionM2 = projectionM * projectionM2;
+ //projectionM2 = projectionM2 * projectionM3;
+ //projectionM2 = projectionM3 * projectionM2;
+
 
  glActiveTexture(GL_TEXTURE0);
  glBindTexture(GL_TEXTURE_2D, tex_albedo_ground2);  
@@ -1347,10 +1344,12 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glBindTexture(GL_TEXTURE_2D, tex_depth_ssr); 
 
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
- glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "modelViewMatrix"), 1, GL_FALSE, glm::value_ptr(Msend));
+ glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(Msend));
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "projectionMatrix"), 1, GL_FALSE, glm::value_ptr(projectionM));
- glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "projectionMatrix2"), 1, GL_FALSE, glm::value_ptr(projectionM));
+ glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "projectionMatrix2"), 1, GL_FALSE /*GL_TRUE*/, glm::value_ptr(projectionM2));
+ glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "projectionMatrix3"), 1, GL_FALSE , glm::value_ptr(projectionM3));
  
+
  //glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "lightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(light_space_matrix));
  glUniform1f(glGetUniformLocation(basic_shader.Program, "camera_near"), camera_near);
  glUniform1f(glGetUniformLocation(basic_shader.Program, "camera_far"), camera_far);
@@ -1396,16 +1395,16 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
 //// DRAW TABLE
  basic_shader.Use();
 
- for(int i = 0; i < /*nb_table*/1; i++){
+ for(int i = 0; i < nb_table /*1.0*/; i++){
  Msend = glm::mat4();
 
  Msend = glm::translate(Msend, glm::vec3(table[i].x,table[i].y,table[i].z));
  //Msend = glm::rotate(Msend, table[i].angle, glm::vec3(0.0, 1.0 , 0.0));
- Msend = glm::scale(Msend, glm::vec3(table[i].scale) * 10.0f); 
+ Msend = glm::scale(Msend, glm::vec3(table[i].scale) * 1.0f); 
 
 
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
- glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "modelViewMatrix"), 1, GL_FALSE, glm::value_ptr(Msend));
+ glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(Msend));
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "projectionMatrix"), 1, GL_FALSE, glm::value_ptr(projectionM));
  //glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "lightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(light_space_matrix));
  glUniform1f(glGetUniformLocation(basic_shader.Program, "camera_near"), camera_near);
@@ -1518,10 +1517,10 @@ void blur_process(){
 
 }
 
-void RenderQuad()
-{
-  if (quadVAO == 0)
-  {
+void RenderQuad(){
+
+  if (quadVAO == 0){
+  
     GLfloat quadVertices[] = {
       // Positions        // Texture Coords
       -1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
@@ -1529,6 +1528,7 @@ void RenderQuad()
       1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
       1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
     };
+
     // Setup plane VAO
     glGenVertexArrays(1, &quadVAO);
     glGenBuffers(1, &quadVBO);
@@ -1592,13 +1592,16 @@ GLuint loadCubemap(vector<const GLchar*> faces){
 
 // fonction qui genere la sphere
 static GLfloat * buildSphere(int longitudes, int latitudes) {
+ 
   int i, j, k;
+ 
   GLfloat theta, phi, r[2], x[2], y[2], z[2], * data;
   GLfloat c2MPI_Long = 2.0 * myPI / longitudes;
   GLfloat cMPI_Lat = myPI / latitudes;
   //data = malloc(((6 * 6 * longitudes * latitudes )) * sizeof *data);
   data = new float[(6 * 6 * longitudes * latitudes )];
   /* assert(data); */
+ 
   for(i = 0, k = 0; i < latitudes; i++) {
     phi  = -myPI_2 + i * cMPI_Lat;
     y[0] = sin(phi);
@@ -1633,7 +1636,7 @@ static GLfloat * buildSphere(int longitudes, int latitudes) {
 
 // fonction qui gere colision fenetre + colision entre objet, + gere la gravité des objet + gere tout les deplacement x/y
 static void mobile_move(objet * tabl,int nb) {
-  /* static int t0 = 0; */
+
   static int ft = 0;
   static int start;
 

@@ -3,12 +3,16 @@
 
 
 
-    Mesh::Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures, float shini_mesh)
+    Mesh::Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures, float shini_mesh, glm::vec2 max_tex_coord, glm::vec2 min_tex_coord)
     {
         this->vertices = vertices;
         this->indices = indices;
         this->textures = textures;
         this->shininess = shini_mesh;
+
+        this->_max_tex_coord = max_tex_coord;
+
+        this->_min_tex_coord = min_tex_coord;
 
         this->setupMesh();
     }
@@ -48,6 +52,10 @@
             
 
             number = ss.str(); 
+
+            /*if(id == 0){
+                std::cout << "TEST 2 = " << this->_max_tex_coord.x << " , " << this->_max_tex_coord.y << " || " << this->_min_tex_coord.x << ", " << this->_min_tex_coord.y << std::endl;
+            }*/
 
             // du coup envoi le string correct correspondant a la texture traité
             //std::cout << "uniform sampler name = " << (name + number) << std::endl;
@@ -110,6 +118,10 @@
         // Vertex Tangent
         glEnableVertexAttribArray(3);   
         glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, Tangent));
+
+        // Vertex Bi Tangent
+        glEnableVertexAttribArray(4);   
+        glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, BiTangent));
 
 
         glBindVertexArray(0);
@@ -233,6 +245,10 @@
         vector<Vertex> vertices;
         vector<GLuint> indices;
         vector<Texture> textures;
+        glm::vec2 max_tex_coord;
+        max_tex_coord = glm::vec2(0.0,0.0);
+        glm::vec2 min_tex_coord;
+        min_tex_coord = glm::vec2(999.0,999.0);
 
 
 
@@ -243,22 +259,9 @@
             glm::vec3 vector; 
             // Position
             
-            /*if(num_mesh == 26 || num_mesh == 6){
-                vector.x = mesh->mVertices[i].x;
-            }else{*/
-                vector.x = mesh->mVertices[i].x;
-            //}
-            /*if(num_mesh == 26 || num_mesh == 6){
-                vector.y = mesh->mVertices[i].y+31.0;
-            }else{*/
-                vector.y = mesh->mVertices[i].y;
-            //}
-        
-            /*if(num_mesh == 26 || num_mesh == 6){
-                vector.z = mesh->mVertices[i].z;
-            }else{*/
-                vector.z = mesh->mVertices[i].z;
-            //}
+            vector.x = mesh->mVertices[i].x;
+            vector.y = mesh->mVertices[i].y;
+            vector.z = mesh->mVertices[i].z;
         
             //std::cout << "x = " << vector.x << ", y = " << vector.y << std::endl;
                 
@@ -270,6 +273,9 @@
             //std::cout << "x = " << vector.x << ", y = " << vector.y << ", z = " << vector.z << std::endl;
                 
             vertex.Normal = vector;
+
+
+
             // Texture Coord
             if(mesh->mTextureCoords[0]) // verifie si il y a des tex coord
             {
@@ -280,21 +286,103 @@
                 vec.y = mesh->mTextureCoords[0][i].y;
                 //std::cout << "x = " << vec.x << ", y = " << vec.y << std::endl;
                 vertex.TexCoords = vec;
+
+                // get max tex coord
+                if(vec.x > max_tex_coord.x){
+                    max_tex_coord.x = vec.x;
+                }
+                if(vec.y > max_tex_coord.y){
+                    max_tex_coord.y = vec.y;
+                }
+
+                // get min tex coord
+                if(vec.x < min_tex_coord.x){
+                    min_tex_coord.x = vec.x;
+                }
+                if(vec.y < min_tex_coord.y){
+                    min_tex_coord.y = vec.y;
+                }
+
+
             }
             else{
                 vertex.TexCoords = glm::vec2(0.0f, 0.0f);
                 printf("PAS DE TEX COORD\n");
             }
 
+
+
             // ADD TANGENT
-            vector.x = mesh->mTangents[i].x;
+        /*    vector.x = mesh->mTangents[i].x;
             vector.y = mesh->mTangents[i].y;
             vector.z = mesh->mTangents[i].z;
+
             vertex.Tangent = vector; 
+
+            // ADD BI TANGENT
+            vector.x = mesh->mBitangents[i].x;
+            vector.y = mesh->mBitangents[i].y;
+            vector.z = mesh->mBitangents[i].z;
+
+            vertex.BiTangent = vector; */
+
+
+
 
             //std::cout << "test = " << vertex.Tangent.x << vertex.Tangent.y << vertex.Tangent.z << std::endl; 
 
             vertices.push_back(vertex);
+        }
+
+        //std::cout << "TEST 1 = " << max_tex_coord.x << " , " << max_tex_coord.y << " || " << min_tex_coord.x << ", " << min_tex_coord.y << std::endl;
+
+        // ADD Bi Tangente
+        for(GLuint i = 0; i < vertices.size(); i+=3){
+
+            //std::cout << "test = " << i << std::endl;
+
+           // Raccourcis pour les sommets
+           glm::vec3 v0,v1,v2;
+     
+           v0 = vertices[i].Position;
+           v1 = vertices[i+1].Position;
+           v2 = vertices[i+2].Position; 
+       
+
+     
+
+            // Raccourcis pour les UV
+           glm::vec2 uv0,uv1,uv2;
+
+            uv0 = vertices[i].TexCoords;
+            uv1 = vertices[i+1].TexCoords;
+            uv2 = vertices[i+2].TexCoords;
+
+
+            // Côtés du triangle : delta des positions
+            glm::vec3 deltaPos1 = v1-v0; 
+            glm::vec3 deltaPos2 = v2-v0; 
+
+            // delta UV
+            glm::vec2 deltaUV1 = uv1-uv0; 
+            glm::vec2 deltaUV2 = uv2-uv0;
+
+            /////////////
+            
+            float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x); 
+            glm::vec3 tangent = (deltaPos1 * deltaUV2.y   - deltaPos2 * deltaUV1.y)*r; 
+            glm::vec3 bitangent = (deltaPos2 * deltaUV1.x   - deltaPos1 * deltaUV2.x)*r;
+
+            vertices[i].Tangent = tangent; 
+            vertices[i+1].Tangent = tangent;
+            vertices[i+2].Tangent = tangent;
+
+            vertices[i].BiTangent = bitangent; 
+            vertices[i+1].BiTangent = bitangent;
+            vertices[i+2].BiTangent = bitangent;
+
+
+
         }
 
         for(GLuint i = 0; i < mesh->mNumFaces; i++)
@@ -318,28 +406,19 @@
             // Diffuse maps
             vector<Texture> diffuseMaps = this->loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse", num_mesh);
             textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-            if(model_id != 0){
+            /*if(model_id != 0){
             // Specular maps
                 vector<Texture> specularMaps = this->loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular", num_mesh);
                 textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
            // Specular maps
-                vector<Texture> normalMaps = this->loadMaterialTextures(material, aiTextureType_NORMALS , "texture_normal", num_mesh);
+                vector<Texture> normalMaps = this->loadMaterialTextures(material, aiTextureType_HEIGHT , "texture_normal", num_mesh);
                 textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-            }
+            }*/
         }
-        
-        float shini_mesh = 2.0;
-        if(num_mesh == 87 || num_mesh == 89 || num_mesh == 90 || num_mesh == 112 || num_mesh == 129 || num_mesh == 130 || num_mesh == 131 || (num_mesh >=132 && num_mesh <= 144) 
-            || num_mesh == 154 || num_mesh == 160 || num_mesh == 162 || num_mesh == 163 || num_mesh == 164 || num_mesh == 167 || (num_mesh >= 168 && num_mesh <= 184)){
-            shini_mesh = 1.0;
-        }
-        if(num_mesh == 207){
-            shini_mesh = 8.0;
-        }
-        
+          
 
         //std::cout << "test = " << num_mesh << std::endl;
-        return Mesh(vertices, indices, textures, shini_mesh);
+        return Mesh(vertices, indices, textures, 1.0, max_tex_coord, min_tex_coord);
     }
 
     
@@ -360,7 +439,7 @@
             
 
             if(!skip){
-             // base
+               // albedo
                temp1 = "albedo.png";            
                str.Set(temp1);
 
@@ -372,8 +451,7 @@
                textures.push_back(texture);
                this->textures_loaded.push_back(texture);  
             
-
-             // normal
+                // normal
                  temp1 = "normal.png";            
                  str.Set(temp1);
             
@@ -394,9 +472,7 @@
                  texture.type = temp1;
                  textures.push_back(texture);
                  this->textures_loaded.push_back(texture);  
-
-
-               
+   
            }
 
            return textures;

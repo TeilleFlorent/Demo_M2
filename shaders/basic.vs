@@ -3,15 +3,20 @@
 #define NB_LIGHTS 10
 
 
-uniform mat4 modelViewMatrix;
+uniform mat4 modelMatrix;
 uniform mat4 projectionMatrix;
 uniform mat4 projectionMatrix2;
+uniform mat4 projectionMatrix3;
 uniform mat4 viewMatrix;
 uniform mat4 lightSpaceMatrix;
 uniform mat4 cubeMap_viewMatrices[6];
 uniform float ShiniSTR;
 uniform float var;
 uniform float face_cube;
+
+uniform float camera_near;
+uniform float camera_far;
+
 
 uniform vec3 viewPos;
 uniform vec3 LightPos[NB_LIGHTS];
@@ -34,9 +39,9 @@ layout (location = 4) in vec3 bitangent;
 
  void main(void) {
 
- 	mat4 modelViewMatrix2, viewMatrix2;
+ 	mat4 modelMatrix2, viewMatrix2;
 
- 	modelViewMatrix2 = modelViewMatrix; 
+ 	modelMatrix2 = modelMatrix; 
 
  	if(face_cube != -1.0){
  		viewMatrix2 = cubeMap_viewMatrices[int(face_cube)];
@@ -44,28 +49,29 @@ layout (location = 4) in vec3 bitangent;
  		viewMatrix2 = viewMatrix;
  	}
 
- 	vec4 out_position = projectionMatrix * viewMatrix2 * modelViewMatrix2 * vec4(vsiPosition, 1.0);
+ 	vec4 out_position = projectionMatrix * viewMatrix2 * modelMatrix2 * vec4(vsiPosition, 1.0);
  
  	gl_Position = out_position;
 
  	position_for_tex = out_position; 
 
- 	FragPos = vec3(modelViewMatrix2 * vec4(vsiPosition,1.0f));
- 	cs_FragPos = vec3(viewMatrix2 * modelViewMatrix2 * vec4(vsiPosition,1.0f));
-
+ 	FragPos = vec3(modelMatrix2 * vec4(vsiPosition,1.0f));
+ 	cs_FragPos = vec3(viewMatrix2 * modelMatrix2 * vec4(vsiPosition,1.0f));
  	
+
 	TexCoord = texCoord; //vec2(texCoord.x, 1.0 - texCoord.y);
 	if(var == 1.0)
 		TexCoord = texCoord * 3.0; 
 
 	// normal calculation
-	mat3 normalMatrix = mat3(transpose(inverse(modelViewMatrix2)));
+	mat3 normalMatrix = mat3(transpose(inverse(modelMatrix2)));
     vsoNormal = normalize(normalMatrix * normal);
     
-    Tangent = vec3(modelViewMatrix2 * vec4(tangent, 0.0));
+    Tangent = vec3(modelMatrix2 * vec4(tangent, 0.0));
 
 	// TBN calculation
-	if(var == 1.0){
+	if(var == 1.0 || var == 0.0){
+
 		/*vec3 T;
 		T = normalize(normalMatrix2 * tangent);
 
@@ -81,10 +87,36 @@ layout (location = 4) in vec3 bitangent;
 		B = normalize(normalMatrix2 * B);
 		mat3 TBN = transpose(mat3(T, B, N));*/
 
-		vec3 T = normalize(mat3(modelViewMatrix2) * tangent);
-		vec3 B = normalize(mat3(modelViewMatrix2) * bitangent);
-		vec3 N = normalize(mat3(modelViewMatrix2) * normal);
-		mat3 TBN = transpose(mat3(T, B, N));
+		vec3 N = normalize(mat3(modelMatrix2) * normal);
+		//vec3 T = normalize(mat3(modelMatrix2) * (tangent * 2.0 - 1.0));
+		vec3 T = normalize(mat3(modelMatrix2) * (tangent));
+		vec3 B;
+		mat3 TBN;
+		if(var == 1.0){
+			B = normalize(mat3(modelMatrix2) * bitangent);
+			TBN = transpose(mat3(T, B, N));
+
+			/*T = normalize(T - dot(T, N) * N);
+			vec3 B = cross(N, T);
+
+			//TBN = mat3(T, B, N);  
+			TBN = transpose(mat3(T, B, N));*/
+
+
+		}else{
+
+			B = normalize(mat3(modelMatrix2) * bitangent);
+			TBN = transpose(mat3(T, B, N));
+
+			/*T = normalize(T - dot(T, N) * N);
+			vec3 B = cross(N, T);
+
+			//TBN = mat3(T, B, N);  
+			TBN = transpose(mat3(T, B, N));*/
+
+
+		}
+
 
 		TangentLightPos = TBN * LightPos[0];
 		TangentViewPos  = TBN * viewPos;

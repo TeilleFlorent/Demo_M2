@@ -1,6 +1,10 @@
 #version 330 
-#define point2 vec2
-#define point3 vec3
+#define Point2 vec2
+#define Point3 vec3
+#define Vector2 vec2
+#define Vector3 vec3
+#define Vector4 vec4
+
 
 layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 FragColor2;
@@ -49,10 +53,14 @@ uniform bool SSR_pre_rendu;
 uniform float camera_near;
 uniform float camera_far;
 uniform vec3 clip_info;
+uniform mat4 projectionMatrix;
 uniform mat4 projectionMatrix2;
+uniform mat4 projectionMatrix3;
 
 uniform float height_scale;
 uniform bool parallax;
+uniform vec2 max_tex_coord;
+uniform vec2 min_tex_coord;
 
 
 uniform sampler2D texture_diffuse1; 
@@ -97,7 +105,7 @@ LightRes LightCalculation(int num_light, vec3 norm, vec3 viewDir, vec3 color, ve
   //diffuse
   vec3 diffuse = vec3(0.0,0.0,0.0); 
   vec3 lightDir;
-  if(var == 1.0){ 
+  if(var == 1.0 || var == 0.0){ 
     lightDir = normalize(TangentLightPos - TangentFragPos);
   }else{
     lightDir = normalize(LightPos[num_light] - FragPos);          
@@ -204,7 +212,7 @@ vec3 normal_mapping_calculation(vec2 final_tex_coord)
 
   vec3 res_normal;
       
-  if(var == 1.0){
+  if(var == 1.0 || var == 0.0){
     res_normal = texture(texture_normal1, final_tex_coord).rgb;
     res_normal = normalize(res_normal * 2.0 - 1.0);   
 
@@ -215,11 +223,11 @@ vec3 normal_mapping_calculation(vec2 final_tex_coord)
     vec3 Normal = normalize(vsoNormal);                                                       
     vec3 temp_tangent;
 
-    if(var == 1.0){
+    /*if(var == 1.0){
       temp_tangent = normalize(vec3(-1.0,0.0,0.0));                                                     
-    }else{
+    }else{*/
       temp_tangent = normalize(Tangent);                                                     
-    }
+    //}
 
     temp_tangent = normalize(temp_tangent - dot(temp_tangent, Normal) * Normal);                           
     vec3 Bitemp_tangent = cross(temp_tangent, Normal);                                                
@@ -326,7 +334,7 @@ vec4 SSR(vec3 _normal){
 */
 
 
-float distanceSquared(point2 A, point2 B) {
+float distanceSquared(Point2 A, Point2 B) {
     A -= B;
     return dot(A, A);
 }
@@ -336,137 +344,247 @@ float reconstructCSZ(float depthBufferValue, vec3 c) {
 }
 
 
-// Returns true if the ray hit something
-bool traceScreenSpaceRay1(
- // Camera-space ray origin, which must be within the view volume
- point3 csOrig, 
- 
- // Unit length camera-space ray direction
- vec3 csDir,
- 
- // A projection matrix that maps to pixel coordinates (not [-1, +1]
- // normalized device coordinates)
- mat4x4 proj, 
- 
- // The camera-space Z buffer (all negative values)
- sampler2D csZBuffer,
- 
- // Dimensions of csZBuffer
- vec2 csZBufferSize,
- 
- // Camera space thickness to ascribe to each pixel in the depth buffer
- float zThickness, 
- 
- // (Negative number)
- float nearPlaneZ, 
- 
- // Step in horizontal or vertical pixels between samples. This is a float
- // because integer math is slow on GPUs, but should be set to an integer >= 1
- float stride,
- 
- // Number between 0 and 1 for how far to bump the ray in stride units
- // to conceal banding artifacts
- float jitter,
- 
- // Maximum number of iterations. Higher gives better images but may be slow
- const float maxSteps, 
- 
- // Maximum camera-space distance to trace before returning a miss
- float maxDistance, 
- 
- // Pixel coordinates of the first intersection with the scene
- out point2 hitPixel, 
- 
- // Camera space location of the ray hit
- out point3 hitPoint) {
+void swap(in out float a, in out float b) {
+     float temp = a;
+     a = b;
+     b = temp;
+}
 
 
-    // Clip to the near plane    
-    float rayLength = ((csOrig.z + csDir.z * maxDistance) > nearPlaneZ) ?
-        (nearPlaneZ - csOrig.z) / csDir.z : maxDistance;
-    point3 csEndPoint = csOrig + csDir * rayLength;
- 
-    // Project into homogeneous clip space
-    vec4 H0 = proj * vec4(csOrig, 1.0);
-    vec4 H1 = proj * vec4(csEndPoint, 1.0);
-    float k0 = 1.0 / H0.w, k1 = 1.0 / H1.w;
- 
-    // The interpolated homogeneous version of the camera-space points  
-    point3 Q0 = csOrig * k0, Q1 = csEndPoint * k1;
- 
-    // Screen-space endpoints
-    point2 P0 = H0.xy * k0, P1 = H1.xy * k1;
- 
+bool traceScreenSpaceRay1
+   (Point3          csOrigin, 
+    Vector3         csDirection,
+    mat4x4          projectToPixelMatrix,
+    sampler2D       csZBuffer,
+    vec2          csZBufferSize,
+    float           csZThickness,
+    const in bool   csZBufferIsHyperbolic,
+    vec3          clipInfo,
+    float           nearPlaneZ,
+    float     stride,
+    float           jitterFraction,
+    float           maxSteps,
+    in float        maxRayTraceDistance,
+    out Point2      hitPixel,
+    out int         hitLayer,
+  out Point3    csHitPoint
+//    ,out Color3      debugColor
+    ) {
+    vec3 debugColor = vec3(0.0);
+    // Clip ray to a near plane in 3D (doesn't have to be *the* near plane, although that would be a good idea)
+    float rayLength = ((csOrigin.z + csDirection.z * maxRayTraceDistance) > nearPlaneZ) ?
+                        (nearPlaneZ - csOrigin.z) / csDirection.z :
+                        maxRayTraceDistance;
+  Point3 csEndPoint = csDirection * rayLength + csOrigin;
+
+    // Project into screen space
+    Vector4 H0 = projectToPixelMatrix * Vector4(csOrigin, 1.0);
+    Vector4 H1 = projectToPixelMatrix * Vector4(csEndPoint, 1.0);
+
+    // There are a lot of divisions by w that can be turned into multiplications
+    // at some minor precision loss...and we need to interpolate these 1/w values
+    // anyway.
+    //
+    // Because the caller was required to clip to the near plane,
+    // this homogeneous division (projecting from 4D to 2D) is guaranteed 
+    // to succeed. 
+    float k0 = 1.0 / H0.w;
+    float k1 = 1.0 / H1.w;
+
+    // Switch the original points to values that interpolate linearly in 2D
+    Point3 Q0 = csOrigin * k0; 
+    Point3 Q1 = csEndPoint * k1;
+
+  // Screen-space endpoints
+    Point2 P0 = H0.xy * k0;
+    Point2 P1 = H1.xy * k1;
+
+    // [Optional clipping to frustum sides here]
+
+    // Initialize to off screen
+    hitPixel = Point2(-1.0, -1.0);
+    hitLayer = 0; // Only one layer
+
     // If the line is degenerate, make it cover at least one pixel
     // to avoid handling zero-pixel extent as a special case later
-    P1 += vec2((distanceSquared(P0, P1) < 0.0001) ? 0.01 : 0.0);
-    vec2 delta = P1 - P0;
- 
-    // Permute so that the primary iteration is in x to collapse
-    // all quadrant-specific DDA cases later
-    bool permute = false;
-    if (abs(delta.x) < abs(delta.y)) { 
-        // This is a more-vertical line
-        permute = true; delta = delta.yx; P0 = P0.yx; P1 = P1.yx; 
-    }
- 
-    float stepDir = sign(delta.x);
-    float invdx = stepDir / delta.x;
- 
-    // Track the derivatives of Q and k
-    vec3  dQ = (Q1 - Q0) * invdx;
-    float dk = (k1 - k0) * invdx;
-    vec2  dP = vec2(stepDir, delta.y * invdx);
- 
-    // Scale derivatives by the desired pixel stride and then
-    // offset the starting values by the jitter fraction
-    dP *= stride; dQ *= stride; dk *= stride;
-    P0 += dP * jitter; Q0 += dQ * jitter; k0 += dk * jitter;
- 
-    // Slide P from P0 to P1, (now-homogeneous) Q from Q0 to Q1, k from k0 to k1
-    point3 Q = Q0; 
- 
-    // Adjust end condition for iteration direction
-    float  end = P1.x * stepDir;
- 
-    float k = k0, stepCount = 0.0, prevZMaxEstimate = csOrig.z;
-    float rayZMin = prevZMaxEstimate, rayZMax = prevZMaxEstimate;
-    float sceneZMax = rayZMax + 100;
-    for (point2 P = P0; 
-         ((P.x * stepDir) <= end) && (stepCount < maxSteps) &&
-         ((rayZMax < sceneZMax - zThickness) || (rayZMin > sceneZMax)) &&
-          (sceneZMax != 0); 
-         P += dP, Q.z += dQ.z, k += dk, ++stepCount) {
-         
-        rayZMin = prevZMaxEstimate;
-        rayZMax = (dQ.z * 0.5 + Q.z) / (dk * 0.5 + k);
-        prevZMaxEstimate = rayZMax;
-        if (rayZMin > rayZMax) { 
-           float t = rayZMin; rayZMin = rayZMax; rayZMax = t;
-        }
- 
-        hitPixel = permute ? P.yx : P;
-        
-        hitPixel.y = csZBufferSize.y - hitPixel.y;
-        
-        // You may need hitPixel.y = csZBufferSize.y - hitPixel.y; here if your vertical axis
-        // is different than ours in screen space
-        
-        //sceneZMax = linearDepth(texelFetch(csZBuffer, ivec2(hitPixel), 0)); // A TEST
-        sceneZMax = texelFetch(csZBuffer, ivec2(hitPixel), 0).r; 
-        sceneZMax = reconstructCSZ(sceneZMax, clip_info); // A TEST
-    
-    }
-     
-    // Advance Q based on the number of steps
-    Q.xy += dQ.xy * stepCount;
-    hitPoint = Q * (1.0 / k);
-    return (rayZMax >= sceneZMax - zThickness) && (rayZMin < sceneZMax);
+    P1 += Vector2((distanceSquared(P0, P1) < 0.0001) ? 0.01 : 0.0);
 
+    Vector2 delta = P1 - P0;
 
-  //hitPoint = vec3(0.0,1.0,0.0);
-  //return true;
+    // Permute so that the primary iteration is in x to reduce
+    // large branches later
+    bool permute = (abs(delta.x) < abs(delta.y));
+  if (permute) {
+    // More-vertical line. Create a permutation that swaps x and y in the output
+        // by directly swizzling the inputs.
+    delta = delta.yx;
+    P1 = P1.yx;
+    P0 = P0.yx;        
   }
+    
+  // From now on, "x" is the primary iteration direction and "y" is the secondary one
+    float stepDirection = sign(delta.x);
+    float invdx = stepDirection / delta.x;
+    Vector2 dP = Vector2(stepDirection, invdx * delta.y);
+
+    // Track the derivatives of Q and k
+    Vector3 dQ = (Q1 - Q0) * invdx;
+    float   dk = (k1 - k0) * invdx;
+    
+    // Because we test 1/2 a texel forward along the ray, on the very last iteration
+    // the interpolation can go past the end of the ray. Use these bounds to clamp it.
+    float zMin = min(csEndPoint.z, csOrigin.z);
+    float zMax = max(csEndPoint.z, csOrigin.z);
+
+    // Scale derivatives by the desired pixel stride
+  dP *= stride; dQ *= stride; dk *= stride;
+
+    // Offset the starting values by the jitter fraction
+  P0 += dP * jitterFraction; Q0 += dQ * jitterFraction; k0 += dk * jitterFraction;
+
+  // Slide P from P0 to P1, (now-homogeneous) Q from Q0 to Q1, and k from k0 to k1
+    Point3 Q = Q0;
+    float  k = k0;
+
+  // We track the ray depth at +/- 1/2 pixel to treat pixels as clip-space solid 
+  // voxels. Because the depth at -1/2 for a given pixel will be the same as at 
+  // +1/2 for the previous iteration, we actually only have to compute one value 
+  // per iteration.
+  float prevZMaxEstimate = csOrigin.z;
+    float stepCount = 0.0;
+    float rayZMax = prevZMaxEstimate, rayZMin = prevZMaxEstimate;
+    float sceneZMax = rayZMax + 1e4;
+
+    // P1.x is never modified after this point, so pre-scale it by 
+    // the step direction for a signed comparison
+    float end = P1.x * stepDirection;
+
+    // We only advance the z field of Q in the inner loop, since
+    // Q.xy is never used until after the loop terminates.
+
+    Point2 P;
+  for (P = P0;
+        ((P.x * stepDirection) <= end) && 
+        (stepCount < maxSteps) &&
+        ((rayZMax < sceneZMax - csZThickness) ||
+            (rayZMin > sceneZMax)) &&
+        (sceneZMax != 0.0);
+        P += dP, Q.z += dQ.z, k += dk, stepCount += 1.0) {
+
+        // The depth range that the ray covers within this loop
+        // iteration.  Assume that the ray is moving in increasing z
+        // and swap if backwards.  Because one end of the interval is
+        // shared between adjacent iterations, we track the previous
+        // value and then swap as needed to ensure correct ordering
+        rayZMin = prevZMaxEstimate;
+
+        // Compute the value at 1/2 step into the future
+        rayZMax = (dQ.z * 0.5 + Q.z) / (dk * 0.5 + k);
+        rayZMax = clamp(rayZMax, zMin, zMax);
+    prevZMaxEstimate = rayZMax;
+
+        // Since we don't know if the ray is stepping forward or backward in depth,
+        // maybe swap. Note that we preserve our original z "max" estimate first.
+        if (rayZMin > rayZMax) { swap(rayZMin, rayZMax); }
+
+        // Camera-space z of the background
+        hitPixel = permute ? P.yx : P;
+        sceneZMax = texelFetch(csZBuffer, ivec2(hitPixel), 0).r;
+
+        // This compiles away when csZBufferIsHyperbolic = false
+        if (csZBufferIsHyperbolic) {
+            sceneZMax = reconstructCSZ(sceneZMax, clipInfo);
+        }
+    } // pixel on ray
+
+    // Undo the last increment, which ran after the test variables
+    // were set up.
+    P -= dP; Q.z -= dQ.z; k -= dk; stepCount -= 1.0;
+
+    bool hit = (rayZMax >= sceneZMax - csZThickness) && (rayZMin <= sceneZMax);
+
+    // If using non-unit stride and we hit a depth surface...
+    if ((stride > 1) && hit) {
+        // Refine the hit point within the last large-stride step
+        
+        // Retreat one whole stride step from the previous loop so that
+        // we can re-run that iteration at finer scale
+        P -= dP; Q.z -= dQ.z; k -= dk; stepCount -= 1.0;
+
+        // Take the derivatives back to single-pixel stride
+        float invStride = 1.0 / stride;
+        dP *= invStride; dQ.z *= invStride; dk *= invStride;
+
+        // For this test, we don't bother checking thickness or passing the end, since we KNOW there will
+        // be a hit point. As soon as
+        // the ray passes behind an object, call it a hit. Advance (stride + 1) steps to fully check this 
+        // interval (we could skip the very first iteration, but then we'd need identical code to prime the loop)
+        float refinementStepCount = 0;
+
+        // This is the current sample point's z-value, taken back to camera space
+        prevZMaxEstimate = Q.z / k;
+        rayZMin = prevZMaxEstimate;
+
+        // Ensure that the FOR-loop test passes on the first iteration since we
+        // won't have a valid value of sceneZMax to test.
+        sceneZMax = rayZMin - 1e7;
+
+        for (;
+            (refinementStepCount <= stride*1.4) &&
+            (rayZMin > sceneZMax) && (sceneZMax != 0.0);
+            P += dP, Q.z += dQ.z, k += dk, refinementStepCount += 1.0) {
+
+            rayZMin = prevZMaxEstimate;
+
+            // Compute the ray camera-space Z value at 1/2 fine step (pixel) into the future
+            rayZMax = (dQ.z * 0.5 + Q.z) / (dk * 0.5 + k);
+            rayZMax = clamp(rayZMax, zMin, zMax);
+
+            prevZMaxEstimate = rayZMax;
+            rayZMin = min(rayZMax, rayZMin);
+
+            hitPixel = permute ? P.yx : P;
+            //hitPixel.y = csZBufferSize.y - hitPixel.y; 
+
+            sceneZMax = texelFetch(csZBuffer, ivec2(hitPixel), 0).r;
+
+            if (csZBufferIsHyperbolic) {
+                sceneZMax = reconstructCSZ(sceneZMax, clipInfo);
+            }
+        }
+
+        // Undo the last increment, which happened after the test variables were set up
+        Q.z -= dQ.z; refinementStepCount -= 1;
+
+        // Count the refinement steps as fractions of the original stride. Save a register
+        // by not retaining invStride until here
+        stepCount += refinementStepCount / stride;
+      //  debugColor = vec3(refinementStepCount / stride);
+    } // refinement
+
+    Q.xy += dQ.xy * stepCount;
+    csHitPoint = Q * (1.0 / k);
+
+    // Support debugging. This will compile away if debugColor is unused
+    if ((P.x * stepDirection) > end) {
+        // Hit the max ray distance -> blue
+        debugColor = vec3(0,0,1);
+    } else if (stepCount >= maxSteps) {
+        // Ran out of steps -> red
+        debugColor = vec3(1,0,0);
+    } else if (sceneZMax == 0.0) {
+        // Went off screen -> yellow
+        debugColor = vec3(1,1,0);
+    } else {
+        // Encountered a valid hit -> green
+        // ((rayZMax >= sceneZMax - csZThickness) && (rayZMin <= sceneZMax))
+        debugColor = vec3(0,1,0);
+    }
+        
+    // Does the last point discovered represent a valid hit?
+    return hit;
+}
+
 
 
 
@@ -483,35 +601,43 @@ void main() {
     
 
     // get parallax mapping tex coord
-    if(var == 1.0){
+    if((var == 1.0 || var == 0.0) && parallax == true){
 
       final_view_dir = normalize(TangentViewPos - TangentFragPos);
 
-      if(parallax)
-        final_tex_coord = parallax_mapping_calculation(TexCoord, final_view_dir);
+      final_tex_coord = parallax_mapping_calculation(TexCoord, final_view_dir);
 
       if(var == 1.0){
         if(final_tex_coord.x > 1.0 * 3.0 || final_tex_coord.y > 1.0 * 3.0 || final_tex_coord.x < 0.0 || final_tex_coord.y < 0.0)
           discard;
       }else{
-        if(final_tex_coord.x > 1.0 || final_tex_coord.y > 1.0  || final_tex_coord.x < 0.0 || final_tex_coord.y < 0.0)
-          discard;
+        /*vec2 max = vec2(3.0,2.0);
+        vec2 min = vec2(-1.0,-1.0);*/
+        vec2 max = vec2(3.0,2.0);
+        vec2 min = vec2(0.0,0.0);
+        
+        //max = normalize(max);
+        //min = normalize(min);
+       /* if(final_tex_coord.x >= max.x || final_tex_coord.y >= max.y  || final_tex_coord.x <= min.x || final_tex_coord.y <= min.y)
+          discard;*/
+        /*if(final_tex_coord.x > 3.0 || final_tex_coord.y > 2.0  || final_tex_coord.x < -1.0 || final_tex_coord.y < -1.0)
+          discard;*/
       }
+    
     }
 
     color = texture(texture_diffuse1, final_tex_coord).rgb;  
-
-    /*if(var == 1.0 || var == 0.0 && !SSR_pre_rendu){
-      //color = texture(texture_diffuse1, final_tex_coord).rgb;
-      
-      //color = vec3(1.0,1.0,1.0);
-    }*/  
-
-
     final_alpha = alpha;
 
+    if(var == 0.0 || var == 1.0 /*|| var == 0.0 && !SSR_pre_rendu*/){
+      //color = texture(texture_height1, final_tex_coord).rgb;
+      
+      //color = vec3(0.3);
+    }  
 
-    // LIGHT CALCULATION
+
+
+    // NORMAL CALCULATION
     vec3 norm = normalize(vsoNormal);
     // normal mapping
     if(var == 1.0 || var == 0.0){
@@ -520,45 +646,54 @@ void main() {
   
     }
 
+
     // ADD SSR 
     if(var == 1.0 && !SSR_pre_rendu){
-      //color = mix(color,vec3(SSR(norm)),0.5f);
-      //color = vec3(SSR(norm));
-
-      //point3 cs_orig = normalize(vec3(0.0, 0.0, camera_near)); // A TEST normalize or not
-      //point3 cs_orig = (vec3(0.0, 0.0, camera_near)); // A TEST normalize or not
-      //point3 cs_orig = normalize(cs_FragPos);
-      point3 cs_orig = cs_FragPos;
-      //point3 cs_orig = vec3(cs_FragPos.x,cs_FragPos.y,cs_FragPos.z + camera_near);
+      
+      //Point3 cs_orig = normalize(vec3(0.0, 0.0, camera_near)); // A TEST normalize or not
+        Point3 cs_orig = normalize(vec3(viewPos.x, viewPos.y, viewPos.z + camera_near)); // A TEST normalize or not
+      //Point3 cs_orig = (vec3(0.0, 0.0, 0.0)); // A TEST normalize or not
+      //Point3 cs_orig = normalize(cs_FragPos);
+      //Point3 cs_orig = cs_FragPos;
+      //Point3 cs_orig = vec3(cs_FragPos.x,cs_FragPos.y,cs_FragPos.z + camera_near);
+      //Point3 cs_orig = normalize(vec3(cs_FragPos.x,cs_FragPos.y,cs_FragPos.z + camera_near));
       
       
-      vec3 cs_dir =(vec3(reflect( vec4(-cs_orig, 0), vec4(norm, 0) ))); // A TEST normalize or not
+      //vec3 cs_dir =(vec3(reflect( vec4(-cs_orig, 0), vec4(norm, 0) ))); // A TEST normalize or not
       //vec3 cs_dir = normalize(vec3(reflect( vec4(-cs_orig, 0), vec4(norm, 0) ))); // A TEST * matrix or not
-      //vec3 cs_dir = vec3(projectionMatrix2 * reflect( vec4(-cs_orig, 0), vec4(norm, 0) )); // A TEST * matrix or not
+      //vec3 cs_dir = vec3( reflect( vec4(-cs_orig, 0), vec4(norm, 0) )); // A TEST * matrix or not
       //vec3 cs_dir = normalize(vec3(projectionMatrix2 * reflect( vec4(-cs_orig, 0), vec4(norm, 0) ))); // A TEST * matrix or not
+      vec3 cs_dir = normalize(vec3(vec4((viewPos - cs_FragPos),0)));  
+
+
+      //mat4x4 proj = projectionMatrix2 * projectionMatrix3; // A TEST => la matrix doit map les coordonnées de tex (0.0 à 1.0 ??)
+      //mat4x4 proj = projectionMatrix3 * projectionMatrix2; // A TEST => la matrix doit map les coordonnées de tex (0.0 à 1.0 ??)
+      mat4x4 proj = projectionMatrix; // A TEST => la matrix doit map les coordonnées de tex (0.0 à 1.0 ??)
       
 
-      //mat4x4 proj = projection_Matrix2; // A TEST => la matrix doit map les coordonnées de tex (0.0 à 1.0 ??)
-      mat4x4 proj = projectionMatrix2; // A TEST => la matrix doit map les coordonnées de tex (0.0 à 1.0 ??)
-      
       vec2 buffer_size = vec2(tex_x_size,tex_y_size);
       float thickness = 1.0; // A TEST 1 2 5 1000
       float nearPlaneZ = camera_near * -1.0; // A TEST (negative value)
       float stride = 1.0;        //
       ivec2 c = ivec2(gl_FragCoord.xy);
-      float jitter = 0.0 /*((c.x+c.y)&1)*0.5*/;        //   A
-      float max_step = 1.0;     //  TEST
-      float max_distance = 1.0; //
-      point2 hit_pixel;
-      point3 hit_point;
+      float jitter = 0.001 /*((c.x+c.y)&1)*0.5*/;        //   A
+      //float max_step = 1.0;     //  TEST
+      float max_step = 15.0;     //  TEST
+      
+      //float max_distance = 1.0; //
+      float max_distance = 200.0; //
+      
+      Point2 hit_pixel;
+      Point3 hit_point;
+      int layer;
 
-      bool test = traceScreenSpaceRay1(cs_orig, cs_dir, proj, texture_depth_SSR, buffer_size, thickness,
-       nearPlaneZ, stride, jitter, max_step, max_distance, hit_pixel, hit_point);
+      //bool test = traceScreenSpaceRay1(cs_orig, cs_dir, proj, texture_depth_SSR, buffer_size, thickness, true /*false*/, clip_info,
+       //nearPlaneZ, stride, jitter, max_step, max_distance, hit_pixel, layer , hit_point);
 
       //color = hit_point;       
       //vec2 sampledPosition = (hit_point.xy);
       vec2 sampledPosition = (hit_pixel);
-      sampledPosition = sampledPosition * 0.5 + 0.5;
+      //sampledPosition = sampledPosition * 0.5 + 0.5; 
       //sampledPosition = hit_pixel;
 
       //if(test)
@@ -566,7 +701,7 @@ void main() {
     
     }
 
-
+    // LIGHT CALCULATION
     LightRes LightRes1 = LightCalculation(0, norm, final_view_dir, color, LightColor[0], LightSpecularColor[0] /*vec3(0.0,0.0,1.0)*/);
 
 
@@ -591,7 +726,7 @@ void main() {
     // second out => draw only brighest fragments
     if(!SSR_pre_rendu){
       float brightness = dot(result, vec3(0.2126, 0.7152, 0.0722));
-      if(brightness > 0.7)
+      if(brightness > 0.99)
         FragColor2 = vec4(result, 1.0);
     }/*else{
       //float depth = depthSample(gl_FragCoord.z);

@@ -46,7 +46,8 @@ void main(void) {
 */
 
   float temp = texture(depth_map_feu, TexCoord).r;
-  result = vec3(linearDepth(temp));
+  result = vec3((temp));
+  //result = vec3(linearDepth(temp));
   
 
   fragColor = vec4(result, final_alpha);

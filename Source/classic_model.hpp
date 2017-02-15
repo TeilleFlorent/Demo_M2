@@ -46,6 +46,7 @@ struct Vertex {
     glm::vec3 Normal;
     glm::vec2 TexCoords;
     glm::vec3 Tangent;
+    glm::vec3 BiTangent;
 };
 
 
@@ -65,8 +66,10 @@ public:
     vector<GLuint> indices;
     vector<Texture> textures;
     float shininess;
+    glm::vec2 _max_tex_coord;
+    glm::vec2 _min_tex_coord;
 
-    Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures, float shini_mesh);
+    Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures, float shini_mesh, glm::vec2 max_tex_coord, glm::vec2 min_tex_coord);
 
     void Draw(Shader shader, int id); 
     
