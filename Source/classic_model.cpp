@@ -312,14 +312,14 @@
 
 
 
-            // ADD TANGENT
-        /*    vector.x = mesh->mTangents[i].x;
+            // ADD TANGENT BY ASSIMP
+           /* vector.x = mesh->mTangents[i].x;
             vector.y = mesh->mTangents[i].y;
             vector.z = mesh->mTangents[i].z;
 
             vertex.Tangent = vector; 
 
-            // ADD BI TANGENT
+            // ADD BI TANGENT BY ASSIMP
             vector.x = mesh->mBitangents[i].x;
             vector.y = mesh->mBitangents[i].y;
             vector.z = mesh->mBitangents[i].z;
@@ -336,7 +336,7 @@
 
         //std::cout << "TEST 1 = " << max_tex_coord.x << " , " << max_tex_coord.y << " || " << min_tex_coord.x << ", " << min_tex_coord.y << std::endl;
 
-        // ADD Bi Tangente
+        // ADD MANUAL TANGENT and BI TANGENT
         for(GLuint i = 0; i < vertices.size(); i+=3){
 
             //std::cout << "test = " << i << std::endl;
@@ -381,9 +381,8 @@
             vertices[i+1].BiTangent = bitangent;
             vertices[i+2].BiTangent = bitangent;
 
-
-
         }
+
 
         for(GLuint i = 0; i < mesh->mNumFaces; i++)
         {

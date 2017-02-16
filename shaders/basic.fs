@@ -9,7 +9,7 @@
 layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 FragColor2;
 
-#define NB_LIGHTS 10
+#define MAX_NB_LIGHTS 10
 #define PI 3.14159265358979323846264338
 
 struct LightRes {    
@@ -24,17 +24,17 @@ in vec3 vsoNormal;
 in vec3 FragPos;
 in vec3 cs_FragPos;
 in vec4 position_for_tex;
-in vec3 TangentLightPos;
+in vec3 TangentLightPos[MAX_NB_LIGHTS];
 in vec3 TangentViewPos;
 in vec3 TangentFragPos;
-in vec3 Tangent;
 
-uniform vec3 LightPos[NB_LIGHTS];
-uniform vec3 LightColor[NB_LIGHTS];
-uniform vec3 LightSpecularColor[NB_LIGHTS];
-uniform float constant[NB_LIGHTS];
-uniform float linear[NB_LIGHTS];
-uniform float quadratic[NB_LIGHTS];
+uniform float nb_lights;
+uniform vec3 LightPos[MAX_NB_LIGHTS];
+uniform vec3 LightColor[MAX_NB_LIGHTS];
+uniform vec3 LightSpecularColor[MAX_NB_LIGHTS];
+uniform float constant[MAX_NB_LIGHTS];
+uniform float linear[MAX_NB_LIGHTS];
+uniform float quadratic[MAX_NB_LIGHTS];
 
 uniform vec3 viewPos;
 
@@ -106,7 +106,9 @@ LightRes LightCalculation(int num_light, vec3 norm, vec3 viewDir, vec3 color, ve
   vec3 diffuse = vec3(0.0,0.0,0.0); 
   vec3 lightDir;
   if(var == 1.0 || var == 0.0){ 
-    lightDir = normalize(TangentLightPos - TangentFragPos);
+    
+      lightDir = normalize(TangentLightPos[num_light] - TangentFragPos);
+
   }else{
     lightDir = normalize(LightPos[num_light] - FragPos);          
   }
@@ -138,7 +140,7 @@ LightRes LightCalculation(int num_light, vec3 norm, vec3 viewDir, vec3 color, ve
 
   // Attenuation
   float distance = length(LightPos[num_light] - FragPos);
-  float attenuation = 1.0f / (constant[num_light] + linear[num_light] * distance + quadratic[num_light] * (distance * distance)); 
+  float attenuation = 1.0f / (constant[0] + linear[0] * distance + quadratic[0] * (distance * distance)); 
 
 
   res.ambient = ambient;
@@ -160,8 +162,8 @@ vec2 parallax_mapping_calculation(vec2 texCoords, vec3 final_view_dir){
   vec2 res_tex_coord;  
 
  // number of depth layers
-    const float minLayers = 10;
-    const float maxLayers = 20;
+    const float minLayers = 5;
+    const float maxLayers = 15;
     float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), final_view_dir)));  
     // calculate the size of each layer
     float layerDepth = 1.0 / numLayers;
@@ -212,36 +214,10 @@ vec3 normal_mapping_calculation(vec2 final_tex_coord)
 
   vec3 res_normal;
       
-  if(var == 1.0 || var == 0.0){
-    res_normal = texture(texture_normal1, final_tex_coord).rgb;
-    res_normal = normalize(res_normal * 2.0 - 1.0);   
+  res_normal = texture(texture_normal1, final_tex_coord).rgb;
+  res_normal = normalize(res_normal * 2.0 - 1.0);   
 
-  }else{
-
-    float fact = 1.0;
-
-    vec3 Normal = normalize(vsoNormal);                                                       
-    vec3 temp_tangent;
-
-    /*if(var == 1.0){
-      temp_tangent = normalize(vec3(-1.0,0.0,0.0));                                                     
-    }else{*/
-      temp_tangent = normalize(Tangent);                                                     
-    //}
-
-    temp_tangent = normalize(temp_tangent - dot(temp_tangent, Normal) * Normal);                           
-    vec3 Bitemp_tangent = cross(temp_tangent, Normal);                                                
-    vec3 BumpMapNormal = texture(texture_normal1, final_tex_coord*fact).xyz;                                
-    BumpMapNormal = 2.0 * BumpMapNormal - vec3(1.0, 1.0, 1.0);                              
-    vec3 NewNormal;                                                                         
-    mat3 TBN = mat3(temp_tangent, Bitemp_tangent, Normal);                                            
-    NewNormal = TBN * BumpMapNormal;                                                        
-    NewNormal = normalize(NewNormal);                                                       
-    res_normal = NewNormal;
-  }
-
-
-    return res_normal;
+  return res_normal;
 
 }
 
@@ -601,27 +577,26 @@ void main() {
     
 
     // get parallax mapping tex coord
-    if((var == 1.0 || var == 0.0) && parallax == true){
+    if((var == 1.0 || var == 0.0)){
 
       final_view_dir = normalize(TangentViewPos - TangentFragPos);
 
-      final_tex_coord = parallax_mapping_calculation(TexCoord, final_view_dir);
+      if(parallax == true)
+        final_tex_coord = parallax_mapping_calculation(TexCoord, final_view_dir);
 
       if(var == 1.0){
-        if(final_tex_coord.x > 1.0 * 3.0 || final_tex_coord.y > 1.0 * 3.0 || final_tex_coord.x < 0.0 || final_tex_coord.y < 0.0)
+        if(final_tex_coord.x > 1.0 * 5.0 || final_tex_coord.y > 1.0 * 5.0 || final_tex_coord.x < 0.0 || final_tex_coord.y < 0.0)
           discard;
       }else{
-        /*vec2 max = vec2(3.0,2.0);
-        vec2 min = vec2(-1.0,-1.0);*/
+      /*  //vec2 max = vec2(3.0,2.0);
+        //vec2 min = vec2(-1.0,-1.0);
         vec2 max = vec2(3.0,2.0);
         vec2 min = vec2(0.0,0.0);
         
         //max = normalize(max);
         //min = normalize(min);
-       /* if(final_tex_coord.x >= max.x || final_tex_coord.y >= max.y  || final_tex_coord.x <= min.x || final_tex_coord.y <= min.y)
-          discard;*/
-        /*if(final_tex_coord.x > 3.0 || final_tex_coord.y > 2.0  || final_tex_coord.x < -1.0 || final_tex_coord.y < -1.0)
-          discard;*/
+        //if(final_tex_coord.x >= max.x || final_tex_coord.y >= max.y  || final_tex_coord.x <= min.x || final_tex_coord.y <= min.y)
+          //discard;*/
       }
     
     }
@@ -629,7 +604,7 @@ void main() {
     color = texture(texture_diffuse1, final_tex_coord).rgb;  
     final_alpha = alpha;
 
-    if(var == 0.0 || var == 1.0 /*|| var == 0.0 && !SSR_pre_rendu*/){
+    if(/*var == 0.0 ||*/ var == 1.0 /*|| var == 0.0 && !SSR_pre_rendu*/){
       //color = texture(texture_height1, final_tex_coord).rgb;
       
       //color = vec3(0.3);
@@ -702,12 +677,14 @@ void main() {
     }
 
     // LIGHT CALCULATION
-    LightRes LightRes1 = LightCalculation(0, norm, final_view_dir, color, LightColor[0], LightSpecularColor[0] /*vec3(0.0,0.0,1.0)*/);
+    LightRes LightRes1 = LightCalculation(0, norm, final_view_dir, color, LightColor[0], LightSpecularColor[0]);
+    LightRes LightRes2 = LightCalculation(1, norm, final_view_dir, color, LightColor[1], LightSpecularColor[1]);
 
 
     // FINAL LIGHT
     vec3 result = (LightRes1.ambient + LightRes1.diffuse + LightRes1.specular);
-   
+    result += (/*LightRes2.ambient*/ + LightRes2.diffuse + LightRes2.specular); 
+
 
     // ADD AO mapping
     /*if(){

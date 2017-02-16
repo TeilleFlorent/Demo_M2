@@ -1,7 +1,8 @@
 #version 330
 
-#define NB_LIGHTS 10
+#define MAX_NB_LIGHTS 10
 
+uniform float nb_lights;
 
 uniform mat4 modelMatrix;
 uniform mat4 projectionMatrix;
@@ -19,7 +20,7 @@ uniform float camera_far;
 
 
 uniform vec3 viewPos;
-uniform vec3 LightPos[NB_LIGHTS];
+uniform vec3 LightPos[MAX_NB_LIGHTS];
 
 layout (location = 0) in vec3 vsiPosition;
 layout (location = 1) in vec3 normal;
@@ -32,11 +33,10 @@ layout (location = 4) in vec3 bitangent;
  out vec3 FragPos;
  out vec3 cs_FragPos;
  out vec4 position_for_tex;
- out vec3 TangentLightPos;
+ out vec3 TangentLightPos[MAX_NB_LIGHTS];
  out vec3 TangentViewPos;
  out vec3 TangentFragPos;
- out vec3 Tangent;
-
+ 
  void main(void) {
 
  	mat4 modelMatrix2, viewMatrix2;
@@ -61,66 +61,29 @@ layout (location = 4) in vec3 bitangent;
 
 	TexCoord = texCoord; //vec2(texCoord.x, 1.0 - texCoord.y);
 	if(var == 1.0)
-		TexCoord = texCoord * 3.0; 
+		TexCoord = texCoord * 5.0; 
 
 	// normal calculation
 	mat3 normalMatrix = mat3(transpose(inverse(modelMatrix2)));
     vsoNormal = normalize(normalMatrix * normal);
     
-    Tangent = vec3(modelMatrix2 * vec4(tangent, 0.0));
-
+ 
 	// TBN calculation
 	if(var == 1.0 || var == 0.0){
 
-		/*vec3 T;
-		T = normalize(normalMatrix2 * tangent);
-
-		if(var == 1.0){
-			T = normalize(normalMatrix2 * vec3(1.0,1.0,0.0));   
-		}
-		if(var == 0.0){
-			T = normalize(normalMatrix2 * vec3(tangent.x * 1.0f, tangent.y * 1.0f, tangent.z * 1.0f));	
-		}
-		vec3 N = normalize(normalMatrix2 * normal);
-		T = normalize(T - dot(T, N) * N);
-		vec3 B = cross(N, T);
-		B = normalize(normalMatrix2 * B);
-		mat3 TBN = transpose(mat3(T, B, N));*/
-
 		vec3 N = normalize(mat3(modelMatrix2) * normal);
-		//vec3 T = normalize(mat3(modelMatrix2) * (tangent * 2.0 - 1.0));
 		vec3 T = normalize(mat3(modelMatrix2) * (tangent));
 		vec3 B;
 		mat3 TBN;
-		if(var == 1.0){
-			B = normalize(mat3(modelMatrix2) * bitangent);
-			TBN = transpose(mat3(T, B, N));
+		B = normalize(mat3(modelMatrix2) * bitangent);
+		TBN = transpose(mat3(T, B, N));
 
-			/*T = normalize(T - dot(T, N) * N);
-			vec3 B = cross(N, T);
-
-			//TBN = mat3(T, B, N);  
-			TBN = transpose(mat3(T, B, N));*/
-
-
-		}else{
-
-			B = normalize(mat3(modelMatrix2) * bitangent);
-			TBN = transpose(mat3(T, B, N));
-
-			/*T = normalize(T - dot(T, N) * N);
-			vec3 B = cross(N, T);
-
-			//TBN = mat3(T, B, N);  
-			TBN = transpose(mat3(T, B, N));*/
-
-
+		for(int i = 0; i < nb_lights; i++){
+			TangentLightPos[i] = TBN * LightPos[i];
 		}
-
-
-		TangentLightPos = TBN * LightPos[0];
 		TangentViewPos  = TBN * viewPos;
 		TangentFragPos  = TBN * FragPos;
 	}
+
 }
 

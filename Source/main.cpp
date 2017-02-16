@@ -83,6 +83,7 @@ static float pitch = -1.6;
 
 // LIGHTS
 static light * lights;
+static int nb_lights = 2;
 
 // All objets
 static objet house;
@@ -115,7 +116,6 @@ static float bloom_downsample = 0.2;
 
 // PARALLAX PARA
 static bool parallax = false;
-static float height_scale = 0.02;
 
 
 /////////////////////////////////////////////////////////
@@ -669,7 +669,7 @@ if (groundVAO == 0)
   glGenTextures(1, &tex_albedo_ground2);
   glBindTexture(GL_TEXTURE_2D, tex_albedo_ground2);
 
-  if( (t = IMG_Load("../Textures/ground2/albedo.png")) != NULL ) {
+  if( (t = IMG_Load("../Textures/ground1/albedo.png")) != NULL ) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
     SDL_FreeSurface(t);
   } else {
@@ -686,11 +686,11 @@ if (groundVAO == 0)
   glGenerateMipmap(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, 0);
 
-   // TEX NORMAL GROUND2  
+   // TEX NORMAL GROUND2 
   glGenTextures(1, &tex_normal_ground2);
   glBindTexture(GL_TEXTURE_2D, tex_normal_ground2);
 
-  if( (t = IMG_Load("../Textures/ground2/normal.png")) != NULL ) {
+  if( (t = IMG_Load("../Textures/ground1/normal.png")) != NULL ) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
     SDL_FreeSurface(t);
   } else {
@@ -712,7 +712,7 @@ if (groundVAO == 0)
   glGenTextures(1, &tex_height_ground2);
   glBindTexture(GL_TEXTURE_2D, tex_height_ground2);
 
-  if( (t = IMG_Load("../Textures/ground2/height.png")) != NULL ) {
+  if( (t = IMG_Load("../Textures/ground1/height.png")) != NULL ) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
     SDL_FreeSurface(t);
   } else {
@@ -733,14 +733,21 @@ if (groundVAO == 0)
 
 //////////////////////////////
 // LIGHT INIT
-lights = new light[3];
+lights = new light[nb_lights];
 
 // sun
 lights[0].lightColor = glm::vec3(1.0,1.0,1.0);
 lights[0].lightSpecularColor = glm::vec3(1.0,1.0,1.0);
-lights[0].lightPos = glm::vec3(10, 7, 10);
+lights[0].lightPos = glm::vec3(8, 7, 10);
 lights[0].lightColor*= 3.0;
 lights[0].lightSpecularColor*= 3.0;
+
+lights[1].lightColor = glm::vec3(1.0,1.0,1.0);
+lights[1].lightSpecularColor = glm::vec3(1.0,1.0,1.0);
+lights[1].lightPos = glm::vec3(-8, 7, 10);
+lights[1].lightColor*= 3.0;
+lights[1].lightSpecularColor*= 3.0;
+
  
  
 
@@ -763,7 +770,7 @@ table = new objet[nb_table];
  for(int i = 0; i < nb_table; i++){
    table[i].AmbientStr = 0.15;
    table[i].DiffuseStr = 0.6;
-   table[i].SpecularStr = 0.25;
+   table[i].SpecularStr = 0.2;
    table[i].ShiniStr = 8; // 4 8 16 ... 256 
    table[i].constant = 1.0;
    table[i].linear = 0.014;
@@ -798,14 +805,15 @@ table = new objet[nb_table];
    table[i].t0=0.0;
 
    table[i].shadow_darkness = 0.75;
+   table[i].parallax_height_scale = 0.02;
  }
 
  //////////////////////////
 
- ground2.AmbientStr = 0.15;
- ground2.DiffuseStr = 0.6;
- ground2.SpecularStr = 0.25;
- ground2.ShiniStr = 8; // 4 8 16 ... 256 
+ ground2.AmbientStr = 0.1 * 0.3;
+ ground2.DiffuseStr = 0.6 * 0.3;
+ ground2.SpecularStr = 0.1 * 0.3;
+ ground2.ShiniStr = 128; // 4 8 16 ... 256 
  ground2.constant = 1.0;
  ground2.linear = 0.014;
  ground2.quadratic = 0.0007;
@@ -828,6 +836,7 @@ table = new objet[nb_table];
  ground2.t0=0.0;
 
  ground2.shadow_darkness = 0.75;
+ ground2.parallax_height_scale = 0.03;
 
 
 }
@@ -958,12 +967,12 @@ while(SDL_PollEvent(&event))
      break;
 
      case 'a' :
-    /* height_scale += 0.001;
+     /*height_scale += 0.001;
      std::cout << "test = " << height_scale << std::endl;*/
      
      
-     table[0].y += 0.01;
-     std::cout << "test = " << table[0].y << std::endl;
+     lights[0].lightPos.y += 0.5;
+     std::cout << "test = " << lights[1].lightPos.y << std::endl;
      
      break;
 
@@ -972,9 +981,12 @@ while(SDL_PollEvent(&event))
      std::cout << "test = " << height_scale << std::endl;*/
      
     
-    
-     table[0].y -= 0.01;
-     std::cout << "test = " << table[0].y << std::endl;
+     lights[0].lightPos.y -= 0.5;
+     std::cout << "test = " << lights[1].lightPos.y << std::endl;
+
+
+     /*table[0].y -= 0.01;
+     std::cout << "test = " << table[0].y << std::endl;*/
      
 
      break;
@@ -1240,26 +1252,31 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
 
   // DRAW LAMP
  lamp_shader.Use();
- 
  glBindVertexArray(lampVAO);
+   
+ for(int i = 0; i < nb_lights; i++){
 
- Msend= glm::mat4();
- Msend = glm::translate(Msend, lights[0].lightPos);
- Msend = glm::scale(Msend, glm::vec3(1.0f)); 
+   Msend= glm::mat4();
+   Msend = glm::translate(Msend, lights[i].lightPos);
+   Msend = glm::scale(Msend, glm::vec3(1.0f)); 
 
- glm::vec3 lampColor(1.0,1.0,1.0);
+   //std::cout << "TEST lamp = " << i << std::endl;
 
- glUniformMatrix4fv(glGetUniformLocation(lamp_shader.Program, "view"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
- glUniformMatrix4fv(glGetUniformLocation(lamp_shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(Msend));
- glUniformMatrix4fv(glGetUniformLocation(lamp_shader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projectionM));
- glUniform3f(glGetUniformLocation(lamp_shader.Program, "lampColor"), lampColor.x,lampColor.z,lampColor.z);
+   glm::vec3 lampColor = lights[i].lightColor;
 
- glDrawArrays(GL_TRIANGLES, 0, nbVerticesSphere);
+   glUniformMatrix4fv(glGetUniformLocation(lamp_shader.Program, "view"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
+   glUniformMatrix4fv(glGetUniformLocation(lamp_shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(Msend));
+   glUniformMatrix4fv(glGetUniformLocation(lamp_shader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projectionM));
+   glUniform3f(glGetUniformLocation(lamp_shader.Program, "lampColor"), lampColor.x,lampColor.z,lampColor.z);
 
- glBindVertexArray(0);
- glUseProgram(0);
+   glDrawArrays(GL_TRIANGLES, 0, nbVerticesSphere);
 
-  }
+ }
+    glBindVertexArray(0);
+    glUseProgram(0);
+
+
+}
 
 
 /////////////////////////////////// DRAW HOUSE
@@ -1356,18 +1373,22 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "clip_info"),1, &clip_info[0]);
  
 
- glUniform1f(glGetUniformLocation(basic_shader.Program, "height_scale"), height_scale);
- glUniform1i(glGetUniformLocation(basic_shader.Program, "parallax"), parallax);     
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "height_scale"), ground2.parallax_height_scale);
+ glUniform1i(glGetUniformLocation(basic_shader.Program, "parallax"), /*parallax*/ false);     
 
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "nb_lights"), nb_lights);
 
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightPos[0]"),1, &lights[0].lightPos[0]);
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightColor[0]"),1, &lights[0].lightColor[0]);
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightSpecularColor[0]"),1, &lights[0].lightSpecularColor[0]);
+ glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightPos[1]"),1, &lights[1].lightPos[0]);
+ glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightColor[1]"),1, &lights[1].lightColor[0]);
+ glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightSpecularColor[1]"),1, &lights[1].lightSpecularColor[0]);
+
+
  glUniform1f(glGetUniformLocation(basic_shader.Program, "constant[0]"), ground2.constant);
  glUniform1f(glGetUniformLocation(basic_shader.Program, "linear[0]"),  ground2.linear);
  glUniform1f(glGetUniformLocation(basic_shader.Program, "quadratic[0]"), ground2.quadratic);
-
-
  glUniform1f(glGetUniformLocation(basic_shader.Program, "ambientSTR"), ground2.AmbientStr);
  glUniform1f(glGetUniformLocation(basic_shader.Program, "diffuseSTR"), ground2.DiffuseStr);
  glUniform1f(glGetUniformLocation(basic_shader.Program, "specularSTR"), ground2.SpecularStr);
@@ -1410,18 +1431,22 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glUniform1f(glGetUniformLocation(basic_shader.Program, "camera_near"), camera_near);
  glUniform1f(glGetUniformLocation(basic_shader.Program, "camera_far"), camera_far);
 
- glUniform1f(glGetUniformLocation(basic_shader.Program, "height_scale"), height_scale);
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "height_scale"), table[i].parallax_height_scale);
  glUniform1i(glGetUniformLocation(basic_shader.Program, "parallax"), parallax);
 
+ glUniform1f(glGetUniformLocation(basic_shader.Program, "nb_lights"), nb_lights);
 
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightPos[0]"),1, &lights[0].lightPos[0]);
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightColor[0]"),1, &lights[0].lightColor[0]);
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightSpecularColor[0]"),1, &lights[0].lightSpecularColor[0]);
+ glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightPos[1]"),1, &lights[1].lightPos[0]);
+ glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightColor[1]"),1, &lights[1].lightColor[0]);
+ glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightSpecularColor[1]"),1, &lights[1].lightSpecularColor[0]);
+ 
+
  glUniform1f(glGetUniformLocation(basic_shader.Program, "constant[0]"), table[i].constant);
  glUniform1f(glGetUniformLocation(basic_shader.Program, "linear[0]"),  table[i].linear);
  glUniform1f(glGetUniformLocation(basic_shader.Program, "quadratic[0]"), table[i].quadratic);
-
-
  glUniform1f(glGetUniformLocation(basic_shader.Program, "ambientSTR"), table[i].AmbientStr);
  glUniform1f(glGetUniformLocation(basic_shader.Program, "diffuseSTR"), table[i].DiffuseStr);
  glUniform1f(glGetUniformLocation(basic_shader.Program, "specularSTR"), table[i].SpecularStr);
