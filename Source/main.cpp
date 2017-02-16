@@ -298,7 +298,7 @@ void load_audio(){
 static void initGL(SDL_Window * win) {
 
 
-  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+  glClearColor(0.01f, 0.01f, 0.01f, 1.0f);
   //glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glEnable(GL_DEPTH_TEST);
   //glClearDepth(1.0);
@@ -440,12 +440,12 @@ glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
  //skybox texture
-faces.push_back("../skybox/s2/front.png");
+/*faces.push_back("../skybox/s2/front.png");
 faces.push_back("../skybox/s2/back.png");
 faces.push_back("../skybox/s2/top.png");
 faces.push_back("../skybox/s2/bottom.png");
 faces.push_back("../skybox/s2/right.png");
-faces.push_back("../skybox/s2/left.png");
+faces.push_back("../skybox/s2/left.png");*/
 
 
 tex_cube_map = loadCubemap(faces);
@@ -769,7 +769,7 @@ table = new objet[nb_table];
 
  for(int i = 0; i < nb_table; i++){
    table[i].AmbientStr = 0.15;
-   table[i].DiffuseStr = 0.6;
+   table[i].DiffuseStr = 0.4;
    table[i].SpecularStr = 0.2;
    table[i].ShiniStr = 8; // 4 8 16 ... 256 
    table[i].constant = 1.0;
@@ -811,7 +811,7 @@ table = new objet[nb_table];
  //////////////////////////
 
  ground2.AmbientStr = 0.1 * 0.3;
- ground2.DiffuseStr = 0.6 * 0.3;
+ ground2.DiffuseStr = 0.15 * 0.3;
  ground2.SpecularStr = 0.1 * 0.3;
  ground2.ShiniStr = 128; // 4 8 16 ... 256 
  ground2.constant = 1.0;
