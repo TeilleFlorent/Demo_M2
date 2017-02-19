@@ -133,3 +133,37 @@ glm::vec3 computeClipInfo(float zn, float zf) {
 }
 
 
+  bool is_RGBA(SDL_Surface * t){
+
+   if(t->format->format == SDL_PIXELFORMAT_RGB332
+    || t->format->format == SDL_PIXELFORMAT_RGB444
+    || t->format->format == SDL_PIXELFORMAT_RGB555
+    || t->format->format == SDL_PIXELFORMAT_RGB565
+    || t->format->format == SDL_PIXELFORMAT_RGB24
+    || t->format->format == SDL_PIXELFORMAT_RGB888
+  //|| t->format->format == SDL_PIXELFORMAT_RGBX8888
+    || t->format->format == SDL_PIXELFORMAT_RGB565
+    || t->format->format == SDL_PIXELFORMAT_BGR555
+    || t->format->format == SDL_PIXELFORMAT_BGR565
+    || t->format->format == SDL_PIXELFORMAT_BGR24
+    || t->format->format == SDL_PIXELFORMAT_BGR888){
+    return false;
+   }else{
+
+    if(t->format->format == SDL_PIXELFORMAT_RGBA4444
+      || t->format->format == SDL_PIXELFORMAT_RGBA5551
+      || t->format->format == SDL_PIXELFORMAT_ARGB4444
+      || t->format->format == SDL_PIXELFORMAT_ABGR4444
+      || t->format->format == SDL_PIXELFORMAT_BGRA4444
+      || t->format->format == SDL_PIXELFORMAT_ABGR1555
+      || t->format->format == SDL_PIXELFORMAT_BGRA5551
+      || t->format->format == SDL_PIXELFORMAT_ARGB8888
+      || t->format->format == SDL_PIXELFORMAT_ABGR8888
+      || t->format->format == SDL_PIXELFORMAT_BGRA8888
+      //|| t->format->format == SDL_PIXELFORMAT_RGBX8888
+      || t->format->format == SDL_PIXELFORMAT_RGBA8888){
+      return true;
+  }else{ return false; }
+  }
+
+}

@@ -26,6 +26,9 @@
         GLuint specularNr = 1;
         GLuint normalNr = 1;
         GLuint heightNr = 1;
+        GLuint AONr = 1;
+        GLuint roughnessNr = 1;
+        GLuint metalnessNr = 1;
 
 
         for(GLuint i = 0; i < this->textures.size(); i++)
@@ -43,13 +46,19 @@
 
             if(name == "texture_diffuse")
                 ss << diffuseNr++; // bricolage pour generer le string pour l'uniform avec le bon numero de texture
-            if(name == "texture_specular")
-                ss << specularNr++; // bricolage pour generer le string pour l'uniform avec le bon numero de texture
             if(name == "texture_normal")
                 ss << normalNr++; // bricolage pour generer le string pour l'uniform avec le bon numero de texture
             if(name == "texture_height")
                 ss << heightNr++; // bricolage pour generer le string pour l'uniform avec le bon numero de texture
-            
+            if(name == "texture_AO")
+                ss << AONr++; // bricolage pour generer le string pour l'uniform avec le bon numero de texture
+            if(name == "texture_roughness")
+                ss << roughnessNr++; // bricolage pour generer le string pour l'uniform avec le bon numero de texture
+            if(name == "texture_metalness")
+                ss << metalnessNr++; // bricolage pour generer le string pour l'uniform avec le bon numero de texture
+            if(name == "texture_specular")
+                ss << specularNr++; // bricolage pour generer le string pour l'uniform avec le bon numero de texture
+                       
 
             number = ss.str(); 
 
@@ -470,8 +479,42 @@
                  temp1 = "texture_height";
                  texture.type = temp1;
                  textures.push_back(texture);
+                 this->textures_loaded.push_back(texture);
+
+                 // AO
+                 temp1 = "AO.png";            
+                 str.Set(temp1);
+
+                 texture.id = TextureFromFile(str.C_Str() , this->directory);
+                 texture.path = str;
+                 temp1 = "texture_AO";
+                 texture.type = temp1;
+                 textures.push_back(texture);
+                 this->textures_loaded.push_back(texture);
+
+                 // roughness
+                 temp1 = "roughness.png";            
+                 str.Set(temp1);
+
+                 texture.id = TextureFromFile(str.C_Str() , this->directory);
+                 texture.path = str;
+                 temp1 = "texture_roughness";
+                 texture.type = temp1;
+                 textures.push_back(texture);
                  this->textures_loaded.push_back(texture);  
    
+                 // metalness
+                 temp1 = "metalness.png";            
+                 str.Set(temp1);
+
+                 texture.id = TextureFromFile(str.C_Str() , this->directory);
+                 texture.path = str;
+                 temp1 = "texture_metalness";
+                 texture.type = temp1;
+                 textures.push_back(texture);
+                 this->textures_loaded.push_back(texture);  
+   
+
            }
 
            return textures;

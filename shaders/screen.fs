@@ -41,12 +41,12 @@ void main(void) {
   float final_alpha = 1.0;
 
   
-/*  result = texture(depth_map_feu, TexCoord).rgb;
+  result = texture(depth_map_feu, TexCoord).rgb;
   final_alpha = texture(depth_map_feu, TexCoord).a;
-*/
 
-  float temp = texture(depth_map_feu, TexCoord).r;
-  result = vec3((temp));
+
+  /*float temp = texture(depth_map_feu, TexCoord).r;
+  result = vec3((temp));*/
   //result = vec3(linearDepth(temp));
   
 

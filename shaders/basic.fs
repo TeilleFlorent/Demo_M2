@@ -28,7 +28,7 @@ in vec3 TangentLightPos[MAX_NB_LIGHTS];
 in vec3 TangentViewPos;
 in vec3 TangentFragPos;
 
-uniform float nb_lights;
+uniform int nb_lights;
 uniform vec3 LightPos[MAX_NB_LIGHTS];
 uniform vec3 LightColor[MAX_NB_LIGHTS];
 uniform vec3 LightSpecularColor[MAX_NB_LIGHTS];
@@ -37,6 +37,7 @@ uniform float linear[MAX_NB_LIGHTS];
 uniform float quadratic[MAX_NB_LIGHTS];
 
 uniform vec3 viewPos;
+
 
 uniform float ShiniSTR;
 uniform float ambientSTR;
@@ -67,6 +68,10 @@ uniform sampler2D texture_diffuse1;
 uniform sampler2D texture_specular1;
 uniform sampler2D texture_normal1; 
 uniform sampler2D texture_height1; 
+uniform sampler2D texture_AO1; 
+uniform sampler2D texture_roughness1; 
+uniform sampler2D texture_metalness1; 
+
 uniform sampler2D texture_color_SSR;
 uniform sampler2D texture_depth_SSR;
 uniform float tex_x_size;
@@ -105,8 +110,9 @@ LightRes LightCalculation(int num_light, vec3 norm, vec3 viewDir, vec3 color, ve
   //diffuse
   vec3 diffuse = vec3(0.0,0.0,0.0); 
   vec3 lightDir;
-  if(var == 1.0 || var == 0.0){ 
-    
+  //if(var == 1.0 /*|| var == 0.0*/){ 
+  if(false){ 
+  
       lightDir = normalize(TangentLightPos[num_light] - TangentFragPos);
 
   }else{
@@ -116,6 +122,7 @@ LightRes LightCalculation(int num_light, vec3 norm, vec3 viewDir, vec3 color, ve
     float diff = max(dot(norm, lightDir),0.0);
     diffuse = diff * (diffuseSTR) * color * light_color;
   }
+
   //specular
   vec3 specular = vec3(0.0,0.0,0.0);
   if(specularSTR > 0.0){
@@ -561,13 +568,55 @@ bool traceScreenSpaceRay1
     return hit;
 }
 
+// PBR FUNCTIONS
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+    float a = roughness*roughness;
+    float a2 = a*a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH*NdotH;
+
+    float nom   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+
+    return nom / denom;
+}
+
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float nom   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+
+    return nom / denom;
+}
+
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+    return ggx1 * ggx2;
+}
+
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+
 
 
 
 void main() {
 
 
-    vec3 color;
+    vec3 albedo, result;
     float final_alpha;
     vec2 final_tex_coord;
     vec3 final_view_dir;
@@ -578,6 +627,7 @@ void main() {
 
     // get parallax mapping tex coord
     if((var == 1.0 || var == 0.0)){
+    //if(false){
 
       final_view_dir = normalize(TangentViewPos - TangentFragPos);
 
@@ -601,11 +651,12 @@ void main() {
     
     }
 
-    color = texture(texture_diffuse1, final_tex_coord).rgb;  
+    albedo = texture(texture_diffuse1, final_tex_coord).rgb;  
     final_alpha = alpha;
+    result = vec3(0.0);
 
-    if(/*var == 0.0 ||*/ var == 1.0 /*|| var == 0.0 && !SSR_pre_rendu*/){
-      //color = texture(texture_height1, final_tex_coord).rgb;
+    if(var == 1.0){
+      //albedo = texture(texture_metalness1, final_tex_coord).rgb;
       
       //color = vec3(0.3);
     }  
@@ -676,26 +727,91 @@ void main() {
     
     }
 
-    // LIGHT CALCULATION
-    LightRes LightRes1 = LightCalculation(0, norm, final_view_dir, color, LightColor[0], LightSpecularColor[0]);
-    LightRes LightRes2 = LightCalculation(1, norm, final_view_dir, color, LightColor[1], LightSpecularColor[1]);
+    // BLIN PHONG LIGHT CALCULATION
+    /*LightRes LightRes1 = LightCalculation(0, norm, final_view_dir, albedo, LightColor[0], LightSpecularColor[0]);
+    LightRes LightRes2 = LightCalculation(1, norm, final_view_dir, albedo, LightColor[1], LightSpecularColor[1]);
+  
+    result = (LightRes1.ambient + LightRes1.diffuse + LightRes1.specular);
+    result += (LightRes2.diffuse + LightRes2.specular);*/
+    
+
+    // PBR LIGHT CALCULATION
+    vec3 R = reflect(-final_view_dir, norm);
+    albedo =  pow(texture(texture_diffuse1, final_tex_coord).rgb, vec3(2.2));
+    float metalness = texture(texture_metalness1, final_tex_coord).r;
+    float roughness = texture(texture_roughness1, final_tex_coord).r;
+    float ao        = texture(texture_AO1, final_tex_coord).r; 
+    if(var == 1.0){
+      //ao = 1.0;
+    }
+
+     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
+    // of 0.04 and if it's a metal, use their albedo color as F0 (metallic workflow)    
+    vec3 F0 = vec3(0.04); 
+    F0 = mix(F0, albedo, metalness);  
+
+     vec3 Lo = vec3(0.0);
+    for(int i = 0; i < nb_lights; ++i) 
+    {
+        // calculate per-light radiance
+        vec3 L;
+        if(var == 0 || var == 1){
+          L = normalize(TangentLightPos[i] - TangentFragPos);
+        }else{
+          L = normalize(LightPos[i] - FragPos);
+        }
+
+        vec3 H = normalize(final_view_dir + L);
+        
+        float distance;
+        if(var == 0 || var == 1){
+          distance = length(TangentLightPos[i] - TangentFragPos);
+        }else{
+          distance = length(LightPos[i] - FragPos);
+        }
+
+        
+        float attenuation = 1.0 / (distance * distance);
+        vec3 radiance = (LightColor[i] * 100.0) * attenuation; // * 100 pour avoir le meme ordre de grandeur que dans l'exemple
+
+        // Cook-Torrance BRDF
+        float NDF = DistributionGGX(norm, H, roughness);   
+        float G   = GeometrySmith(norm, final_view_dir, L, roughness);      
+        vec3 F    = fresnelSchlick(max(dot(H, final_view_dir), 0.0), F0);
+           
+        vec3 nominator    = NDF * G * F; 
+        float denominator = 4 * max(dot(final_view_dir, norm), 0.0) * max(dot(L, norm), 0.0) + 0.001; // 0.001 to prevent divide by zero.
+        vec3 brdf = nominator / denominator;
+        
+        // kS is equal to Fresnel
+        vec3 kS = F;
+        // for energy conservation, the diffuse and specular light can't
+        // be above 1.0 (unless the surface emits light); to preserve this
+        // relationship the diffuse component (kD) should equal 1.0 - kS.
+        vec3 kD = vec3(1.0) - kS;
+        // multiply kD by the inverse metalness such that only non-metals 
+        // have diffuse lighting, or a linear blend if partly metal (pure metals
+        // have no diffuse light).
+        kD *= 1.0 - metalness;   
+
+        // scale light by NdotL
+        float NdotL = max(dot(norm, L), 0.0);        
+
+        // add to outgoing radiance Lo
+        Lo += (kD * albedo / PI + brdf) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+    }   
+    vec3 ambient = ambientSTR * albedo * ao;
+    result = ambient + Lo;
+   
+    // HDR tonemapping
+    //result = result / (result + vec3(1.0));
+    // gamma correct
+    //result = pow(result, vec3(1.0/2.2)); 
 
 
-    // FINAL LIGHT
-    vec3 result = (LightRes1.ambient + LightRes1.diffuse + LightRes1.specular);
-    result += (/*LightRes2.ambient*/ + LightRes2.diffuse + LightRes2.specular); 
 
-
-    // ADD AO mapping
-    /*if(){
-      vec3 temp_AO = texture(texture_specular1, final_tex_coord).rgb;
-      float temp = (temp_AO.r + temp_AO.g + temp_AO.b) / 3.0;
-      result *= temp;
-      if(var == 2.0)
-        result *= temp;
-    }*/
-
-
+    //if(var == 1.0)
+      //result = texture(texture_roughness1, final_tex_coord).rgb;
     // main out
     FragColor = vec4(result, final_alpha);
 
@@ -705,7 +821,8 @@ void main() {
       float brightness = dot(result, vec3(0.2126, 0.7152, 0.0722));
       if(brightness > 0.99)
         FragColor2 = vec4(result, 1.0);
-    }/*else{
+    }
+    /*else{
       //float depth = depthSample(gl_FragCoord.z);
       float depth = gl_FragCoord.z;
       //float depth = vec3(linearDepth(gl_FragCoord.z));

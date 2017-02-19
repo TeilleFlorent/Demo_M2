@@ -53,6 +53,9 @@ static GLuint tex_depth_ssr;
 static GLuint tex_albedo_ground2 = 0;
 static GLuint tex_normal_ground2 = 0;
 static GLuint tex_height_ground2 = 0;
+static GLuint tex_AO_ground2 = 0;
+static GLuint tex_roughness_ground2 = 0;
+static GLuint tex_metalness_ground2 = 0;
 
 
 float depth_map_res_seed = /*2048.0*/ 1024.0;
@@ -83,7 +86,7 @@ static float pitch = -1.6;
 
 // LIGHTS
 static light * lights;
-static int nb_lights = 2;
+static int nb_lights = 4;
 
 // All objets
 static objet house;
@@ -112,10 +115,13 @@ std::vector<const GLchar*> faces;
 // BLOOM PARA
 static float exposure = 0.65;
 static bool bloom = false;
-static float bloom_downsample = 0.2;
+static float bloom_downsample = 0.5;
 
 // PARALLAX PARA
 static bool parallax = false;
+
+static float metalness = 1.0;
+static float roughness = 0.05;
 
 
 /////////////////////////////////////////////////////////
@@ -159,8 +165,14 @@ int main() {
     glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_diffuse1"), 0);
     glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_normal1"), 1);
     glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_height1"), 2);
-    glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_color_SSR"), 6);
-    glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_depth_SSR"), 7); 
+    glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_AO1"), 3);
+    glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_roughness1"), 4);
+    glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_metalness1"), 5);
+    glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_specular1"), 6);
+
+
+    glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_color_SSR"), 7);
+    glUniform1i(glGetUniformLocation(basic_shader.Program, "texture_depth_SSR"), 8); 
     glUseProgram(0);
 
    
@@ -670,7 +682,11 @@ if (groundVAO == 0)
   glBindTexture(GL_TEXTURE_2D, tex_albedo_ground2);
 
   if( (t = IMG_Load("../Textures/ground1/albedo.png")) != NULL ) {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
+    if(is_RGBA(t)){
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->pixels);
+    }else{
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
+    }
     SDL_FreeSurface(t);
   } else {
     fprintf(stderr, "Erreur lors du chargement de la texture\n");
@@ -691,7 +707,11 @@ if (groundVAO == 0)
   glBindTexture(GL_TEXTURE_2D, tex_normal_ground2);
 
   if( (t = IMG_Load("../Textures/ground1/normal.png")) != NULL ) {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
+    if(is_RGBA(t)){
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->pixels);
+    }else{
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
+    }
     SDL_FreeSurface(t);
   } else {
     fprintf(stderr, "Erreur lors du chargement de la texture\n");
@@ -713,7 +733,11 @@ if (groundVAO == 0)
   glBindTexture(GL_TEXTURE_2D, tex_height_ground2);
 
   if( (t = IMG_Load("../Textures/ground1/height.png")) != NULL ) {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
+    if(is_RGBA(t)){
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->pixels);
+    }else{
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
+    }
     SDL_FreeSurface(t);
   } else {
     fprintf(stderr, "Erreur lors du chargement de la texture\n");
@@ -729,7 +753,80 @@ if (groundVAO == 0)
   glGenerateMipmap(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, 0);
 
+   // TEX AO GROUND2  
+  glGenTextures(1, &tex_AO_ground2);
+  glBindTexture(GL_TEXTURE_2D, tex_AO_ground2);
 
+  if( (t = IMG_Load("../Textures/ground1/AO.png")) != NULL ) {
+    if(is_RGBA(t)){
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->pixels);
+    }else{
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
+    }
+    SDL_FreeSurface(t);
+  } else {
+    fprintf(stderr, "Erreur lors du chargement de la texture\n");
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  }
+
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso); // anisotropie
+
+  glGenerateMipmap(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+ // TEX ROUGHNESS GROUND2  
+  glGenTextures(1, &tex_roughness_ground2);
+  glBindTexture(GL_TEXTURE_2D, tex_roughness_ground2);
+
+  if( (t = IMG_Load("../Textures/ground1/roughness.png")) != NULL ) {
+    if(is_RGBA(t)){
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->pixels);
+    }else{
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
+    }
+    SDL_FreeSurface(t);
+  } else {
+    fprintf(stderr, "Erreur lors du chargement de la texture\n");
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  }
+
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso); // anisotropie
+
+  glGenerateMipmap(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+   // TEX METALNESS GROUND2  
+  glGenTextures(1, &tex_metalness_ground2);
+  glBindTexture(GL_TEXTURE_2D, tex_metalness_ground2);
+
+  if( (t = IMG_Load("../Textures/ground1/metalness.png")) != NULL ) {
+   if(is_RGBA(t)){
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->pixels);
+    }else{
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
+    }
+    SDL_FreeSurface(t);
+  } else {
+    fprintf(stderr, "Erreur lors du chargement de la texture\n");
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  }
+
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso); // anisotropie
+
+  glGenerateMipmap(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, 0);
 
 //////////////////////////////
 // LIGHT INIT
@@ -738,16 +835,27 @@ lights = new light[nb_lights];
 // sun
 lights[0].lightColor = glm::vec3(1.0,1.0,1.0);
 lights[0].lightSpecularColor = glm::vec3(1.0,1.0,1.0);
-lights[0].lightPos = glm::vec3(8, 7, 10);
+lights[0].lightPos = glm::vec3(7, 7, 10);
 lights[0].lightColor*= 3.0;
 lights[0].lightSpecularColor*= 3.0;
 
 lights[1].lightColor = glm::vec3(1.0,1.0,1.0);
 lights[1].lightSpecularColor = glm::vec3(1.0,1.0,1.0);
-lights[1].lightPos = glm::vec3(-8, 7, 10);
+lights[1].lightPos = glm::vec3(-7, 7, 10);
 lights[1].lightColor*= 3.0;
 lights[1].lightSpecularColor*= 3.0;
 
+lights[2].lightColor = glm::vec3(1.0,1.0,1.0);
+lights[2].lightSpecularColor = glm::vec3(1.0,1.0,1.0);
+lights[2].lightPos = glm::vec3(7, 7, -10);
+lights[2].lightColor*= 3.0;
+lights[2].lightSpecularColor*= 3.0;
+
+lights[3].lightColor = glm::vec3(1.0,1.0,1.0);
+lights[3].lightSpecularColor = glm::vec3(1.0,1.0,1.0);
+lights[3].lightPos = glm::vec3(-7, 7, -10);
+lights[3].lightColor*= 3.0;
+lights[3].lightSpecularColor*= 3.0;
  
  
 
@@ -768,7 +876,7 @@ table = new objet[nb_table];
 //////////////////////////
 
  for(int i = 0; i < nb_table; i++){
-   table[i].AmbientStr = 0.15;
+   table[i].AmbientStr = 0.3;
    table[i].DiffuseStr = 0.4;
    table[i].SpecularStr = 0.2;
    table[i].ShiniStr = 8; // 4 8 16 ... 256 
@@ -810,7 +918,7 @@ table = new objet[nb_table];
 
  //////////////////////////
 
- ground2.AmbientStr = 0.1 * 0.3;
+ ground2.AmbientStr = 0.3;
  ground2.DiffuseStr = 0.15 * 0.3;
  ground2.SpecularStr = 0.1 * 0.3;
  ground2.ShiniStr = 128; // 4 8 16 ... 256 
@@ -836,7 +944,7 @@ table = new objet[nb_table];
  ground2.t0=0.0;
 
  ground2.shadow_darkness = 0.75;
- ground2.parallax_height_scale = 0.03;
+ ground2.parallax_height_scale = 0.02;
 
 
 }
@@ -971,8 +1079,8 @@ while(SDL_PollEvent(&event))
      std::cout << "test = " << height_scale << std::endl;*/
      
      
-     lights[0].lightPos.y += 0.5;
-     std::cout << "test = " << lights[1].lightPos.y << std::endl;
+     metalness += 0.01;
+     std::cout << "metalness = " << metalness << std::endl;
      
      break;
 
@@ -980,11 +1088,10 @@ while(SDL_PollEvent(&event))
      /*height_scale -= 0.001;
      std::cout << "test = " << height_scale << std::endl;*/
      
-    
-     lights[0].lightPos.y -= 0.5;
-     std::cout << "test = " << lights[1].lightPos.y << std::endl;
-
-
+     metalness -= 0.01;
+     std::cout << "metalness = " << metalness << std::endl;
+     
+     
      /*table[0].y -= 0.01;
      std::cout << "test = " << table[0].y << std::endl;*/
      
@@ -992,13 +1099,18 @@ while(SDL_PollEvent(&event))
      break;
 
      case 'r' :
-     camera_far += 0.5;
-     std::cout << "far = " << camera_far << std::endl;
+     
+     roughness += 0.01;
+     std::cout << "roughness = " << roughness << std::endl;
+     
      break;
 
      case 't' :
-     camera_far -= 0.5;
-     std::cout << "far = " << camera_far << std::endl;        
+     
+
+     roughness -= 0.01;
+     std::cout << "roughness = " << roughness << std::endl;
+     
      break;
 
      case 'y' :
@@ -1146,7 +1258,7 @@ static void draw() {
  glViewport(0, 0, w, h);
  screen_shader.Use();
  glActiveTexture(GL_TEXTURE0);
- glBindTexture(GL_TEXTURE_2D, /*tex_color_buffer[0]*/ /*pingpongColorbuffers[0]*/ tex_depth_ssr);
+ glBindTexture(GL_TEXTURE_2D, tex_color_buffer[0] /*pingpongColorbuffers[0]*/ /*tex_depth_ssr*/);
 
  glUniform1f(glGetUniformLocation(screen_shader.Program, "camera_near"), camera_near);
  glUniform1f(glGetUniformLocation(screen_shader.Program, "camera_far"), camera_far);
@@ -1355,9 +1467,16 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glBindTexture(GL_TEXTURE_2D, tex_normal_ground2); 
  glActiveTexture(GL_TEXTURE2);
  glBindTexture(GL_TEXTURE_2D, tex_height_ground2); 
- glActiveTexture(GL_TEXTURE6);
- glBindTexture(GL_TEXTURE_2D, tex_color_ssr);  
+ glActiveTexture(GL_TEXTURE3);
+ glBindTexture(GL_TEXTURE_2D, tex_AO_ground2); 
+ glActiveTexture(GL_TEXTURE4);
+ glBindTexture(GL_TEXTURE_2D, tex_roughness_ground2); 
+ glActiveTexture(GL_TEXTURE5);
+ glBindTexture(GL_TEXTURE_2D, tex_metalness_ground2); 
+ 
  glActiveTexture(GL_TEXTURE7);
+ glBindTexture(GL_TEXTURE_2D, tex_color_ssr);  
+ glActiveTexture(GL_TEXTURE8);
  glBindTexture(GL_TEXTURE_2D, tex_depth_ssr); 
 
  glUniformMatrix4fv(glGetUniformLocation(basic_shader.Program, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
@@ -1376,15 +1495,16 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glUniform1f(glGetUniformLocation(basic_shader.Program, "height_scale"), ground2.parallax_height_scale);
  glUniform1i(glGetUniformLocation(basic_shader.Program, "parallax"), /*parallax*/ false);     
 
- glUniform1f(glGetUniformLocation(basic_shader.Program, "nb_lights"), nb_lights);
+ glUniform1i(glGetUniformLocation(basic_shader.Program, "nb_lights"), nb_lights);
 
- glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightPos[0]"),1, &lights[0].lightPos[0]);
- glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightColor[0]"),1, &lights[0].lightColor[0]);
- glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightSpecularColor[0]"),1, &lights[0].lightSpecularColor[0]);
- glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightPos[1]"),1, &lights[1].lightPos[0]);
- glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightColor[1]"),1, &lights[1].lightColor[0]);
- glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightSpecularColor[1]"),1, &lights[1].lightSpecularColor[0]);
+ for(int i = 0; i < nb_lights; i++){
+  string temp = to_string(i);
 
+   //std::cout << "test = " << i << std::endl;
+   glUniform3fv(glGetUniformLocation(basic_shader.Program, ("LightPos["+ temp +"]").c_str()),1, &lights[i].lightPos[0]);
+   glUniform3fv(glGetUniformLocation(basic_shader.Program, ("LightColor["+temp+"]").c_str()),1, &lights[i].lightColor[0]);
+   glUniform3fv(glGetUniformLocation(basic_shader.Program, ("LightSpecularColor["+temp+"]").c_str()),1, &lights[i].lightSpecularColor[0]);
+ }
 
  glUniform1f(glGetUniformLocation(basic_shader.Program, "constant[0]"), ground2.constant);
  glUniform1f(glGetUniformLocation(basic_shader.Program, "linear[0]"),  ground2.linear);
@@ -1393,6 +1513,7 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glUniform1f(glGetUniformLocation(basic_shader.Program, "diffuseSTR"), ground2.DiffuseStr);
  glUniform1f(glGetUniformLocation(basic_shader.Program, "specularSTR"), ground2.SpecularStr);
  glUniform1f(glGetUniformLocation(basic_shader.Program, "ShiniSTR"), ground2.ShiniStr);
+
 
  
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "viewPos"), 1, &cameraPos[0]);
@@ -1432,16 +1553,25 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glUniform1f(glGetUniformLocation(basic_shader.Program, "camera_far"), camera_far);
 
  glUniform1f(glGetUniformLocation(basic_shader.Program, "height_scale"), table[i].parallax_height_scale);
- glUniform1i(glGetUniformLocation(basic_shader.Program, "parallax"), parallax);
+ glUniform1i(glGetUniformLocation(basic_shader.Program, "parallax"), parallax /*false*/);
 
- glUniform1f(glGetUniformLocation(basic_shader.Program, "nb_lights"), nb_lights);
+ glUniform1i(glGetUniformLocation(basic_shader.Program, "nb_lights"), nb_lights);
 
- glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightPos[0]"),1, &lights[0].lightPos[0]);
+ /*glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightPos[0]"),1, &lights[0].lightPos[0]);
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightColor[0]"),1, &lights[0].lightColor[0]);
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightSpecularColor[0]"),1, &lights[0].lightSpecularColor[0]);
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightPos[1]"),1, &lights[1].lightPos[0]);
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightColor[1]"),1, &lights[1].lightColor[0]);
- glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightSpecularColor[1]"),1, &lights[1].lightSpecularColor[0]);
+ glUniform3fv(glGetUniformLocation(basic_shader.Program, "LightSpecularColor[1]"),1, &lights[1].lightSpecularColor[0]);*/
+
+ for(int i = 0; i < nb_lights; i++){
+  string temp = to_string(i);
+
+  //std::cout << "test = " << temp << std::endl;
+   glUniform3fv(glGetUniformLocation(basic_shader.Program, ("LightPos["+ temp +"]").c_str()),1, &lights[i].lightPos[0]);
+   glUniform3fv(glGetUniformLocation(basic_shader.Program, ("LightColor["+temp+"]").c_str()),1, &lights[i].lightColor[0]);
+   glUniform3fv(glGetUniformLocation(basic_shader.Program, ("LightSpecularColor["+temp+"]").c_str()),1, &lights[i].lightSpecularColor[0]);
+ }
  
 
  glUniform1f(glGetUniformLocation(basic_shader.Program, "constant[0]"), table[i].constant);
@@ -1451,7 +1581,6 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glUniform1f(glGetUniformLocation(basic_shader.Program, "diffuseSTR"), table[i].DiffuseStr);
  glUniform1f(glGetUniformLocation(basic_shader.Program, "specularSTR"), table[i].SpecularStr);
  glUniform1f(glGetUniformLocation(basic_shader.Program, "ShiniSTR"), table[i].ShiniStr);
-
  
  glUniform3fv(glGetUniformLocation(basic_shader.Program, "viewPos"), 1, &cameraPos[0]);
 
@@ -1531,7 +1660,7 @@ void blur_process(){
    }
 
    glUniform1f(glGetUniformLocation(blur_shader.Program, "horizontal"), horizontal);
-   glUniform1f(glGetUniformLocation(blur_shader.Program, "offset_factor"), 1.0);
+   glUniform1f(glGetUniformLocation(blur_shader.Program, "offset_factor"), 1.2);
   
    RenderQuad();
    glBindFramebuffer(GL_FRAMEBUFFER, 0);     

@@ -2,7 +2,7 @@
 
 #define MAX_NB_LIGHTS 10
 
-uniform float nb_lights;
+uniform int nb_lights;
 
 uniform mat4 modelMatrix;
 uniform mat4 projectionMatrix;
@@ -78,9 +78,14 @@ layout (location = 4) in vec3 bitangent;
 		B = normalize(mat3(modelMatrix2) * bitangent);
 		TBN = transpose(mat3(T, B, N));
 
-		for(int i = 0; i < nb_lights; i++){
-			TangentLightPos[i] = TBN * LightPos[i];
+		for(int i = 0; i < nb_lights; ++i){
+			//TangentLightPos[i] = TBN * LightPos[i];
 		}
+		TangentLightPos[0] = TBN * LightPos[0];   // BUG
+		TangentLightPos[1] = TBN * LightPos[1];
+		TangentLightPos[2] = TBN * LightPos[2];   // BUG
+		TangentLightPos[3] = TBN * LightPos[3];
+		
 		TangentViewPos  = TBN * viewPos;
 		TangentFragPos  = TBN * FragPos;
 	}
