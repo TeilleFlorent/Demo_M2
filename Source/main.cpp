@@ -10,6 +10,7 @@ Shader lamp_shader;
 Shader screen_shader;
 Shader blur_shader;
 Shader bloom_shader;
+Shader blit_shader;
 
 
 // MODELS
@@ -33,8 +34,12 @@ static GLuint groundVBO = 0;
 
 // FBO
 GLuint pingpongFBO[2];
+
 GLuint hdrFBO;
 GLuint dephtRBO;
+
+GLuint final_hdr_FBO;
+GLuint final_depht_RBO;
 
 GLuint ssrFBO;
 GLuint ssrRBO; 
@@ -44,7 +49,9 @@ GLuint ssrRBO;
 // all no models textures
 static GLuint tex_cube_map = 0;
 static GLuint pingpongColorbuffers[2];
-static GLuint tex_color_buffer[2];
+static GLuint temp_tex_color_buffer[2];
+static GLuint final_tex_color_buffer[2];
+
 
 static GLuint tex_color_ssr;
 static GLuint tex_depth_ssr;
@@ -73,16 +80,16 @@ static int final_w = w;
 static int final_h = h;
 
 // camera para
-static glm::vec3 cameraPos   = glm::vec3(0.0, 3.0 ,0.0);
-static glm::vec3 cameraFront = glm::vec3(0.95, 0.0, -0.3);
+static glm::vec3 cameraPos   = glm::vec3(0.45, 0.45 ,-0.14);
+static glm::vec3 cameraFront = glm::vec3(0.53, -0.19, 0.82);
 static glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
 static float camera_near = 0.1f;
 static float camera_far = 100.0f;
 static float walk_speed = 0.1;
 
 
-static float yaw = -18;
-static float pitch = -1.6;
+static float yaw = 56.99;
+static float pitch = -11.0;
 
 // LIGHTS
 static light * lights;
@@ -120,9 +127,9 @@ static float bloom_downsample = 0.5;
 // PARALLAX PARA
 static bool parallax = false;
 
-static float metalness = 1.0;
-static float roughness = 0.05;
-
+// MULTI SAMPLE PARA
+static bool multi_sample = true;
+static int nb_multi_sample = 4;
 
 /////////////////////////////////////////////////////////
 
@@ -158,6 +165,7 @@ int main() {
     screen_shader.set_shader("../shaders/screen.vs", "../shaders/screen.fs");
     blur_shader.set_shader("../shaders/blur.vs", "../shaders/blur.fs");
     bloom_shader.set_shader("../shaders/bloom_blending.vs", "../shaders/bloom_blending.fs");
+    blit_shader.set_shader("../shaders/blit.vs", "../shaders/blit.fs");
 
 
     // Set texture samples
@@ -177,8 +185,12 @@ int main() {
 
    
     screen_shader.Use();
-    glUniform1i(glGetUniformLocation(screen_shader.Program, "depth_map_feu"), 0);
-    glUniform1i(glGetUniformLocation(screen_shader.Program, "tex_particle"), 1);
+    glUniform1i(glGetUniformLocation(screen_shader.Program, "texture1"), 0);
+    glUseProgram(0);
+
+
+    blit_shader.Use();
+    glUniform1i(glGetUniformLocation(screen_shader.Program, "texture1"), 0);
     glUseProgram(0);
 
 
@@ -245,8 +257,8 @@ static SDL_Window * initWindow(int w, int h, SDL_GLContext * poglContext) {
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-  SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-  SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+  //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+  //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
 
   if( (win = SDL_CreateWindow("Train", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
@@ -323,7 +335,7 @@ static void initGL(SDL_Window * win) {
   //glBlendEquation(GL_FUNC_ADD);
   //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
  
-  glEnable(GL_MULTISAMPLE); // active anti aliasing 
+  //glEnable(GL_MULTISAMPLE); // active anti aliasing 
   
   //glFrontFace(GL_CCW);
   //glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
@@ -428,6 +440,9 @@ glGenVertexArrays(1, &screenVAO);
 // GEN FBO & RBO
 glGenFramebuffers(1, &hdrFBO);
 glGenRenderbuffers(1, &dephtRBO);
+glGenFramebuffers(1, &final_hdr_FBO);
+glGenRenderbuffers(1, &final_depht_RBO);
+
 glGenFramebuffers(2, pingpongFBO);
 glGenFramebuffers(1, &ssrFBO);
 glGenRenderbuffers(1, &ssrRBO);
@@ -626,25 +641,32 @@ if (groundVAO == 0)
   glBindTexture(GL_TEXTURE_2D, 0); 
 
 
-  // TEX BLOOM PROCESS
+  // TEMP COLOR BUFFERS
   glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
   
-  glGenTextures(2, tex_color_buffer);
+  glGenTextures(2, temp_tex_color_buffer);
 
   for (GLuint i = 0; i < 2; i++) 
   {
-    glBindTexture(GL_TEXTURE_2D, tex_color_buffer[i]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_FLOAT, NULL);
+    //glBindTexture(GL_TEXTURE_2D, temp_tex_color_buffer[i]);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[i]);
+    
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, nb_multi_sample , /*GL_RGBA*/ GL_RGB16F, w, h, GL_TRUE);
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, tex_color_buffer[i], 0);
+    //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, temp_tex_color_buffer[i], 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[i], 0);
+
   }
 
   glBindRenderbuffer(GL_RENDERBUFFER, dephtRBO);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
+  //glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
+  glRenderbufferStorageMultisample(GL_RENDERBUFFER, nb_multi_sample, GL_DEPTH24_STENCIL8, w, h); 
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, dephtRBO);
 
   GLuint attachments2[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
@@ -655,6 +677,40 @@ if (groundVAO == 0)
     std::cout << "Framebuffer not complete!" << std::endl;
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   
+
+  // FINAL COLOR BUFFERS
+  glBindFramebuffer(GL_FRAMEBUFFER, final_hdr_FBO);
+  
+  glGenTextures(2, final_tex_color_buffer);
+
+  for (GLuint i = 0; i < 2; i++) 
+  {
+    glBindTexture(GL_TEXTURE_2D, final_tex_color_buffer[i]);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_FLOAT, NULL);
+  
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, final_tex_color_buffer[i], 0);
+  
+  }
+
+  glBindRenderbuffer(GL_RENDERBUFFER, final_depht_RBO);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, final_depht_RBO);
+
+  
+  glBindRenderbuffer(GL_RENDERBUFFER, 0);
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    std::cout << "Framebuffer not complete!" << std::endl;
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  
+
+
+
   ///////////////////////////////
 
   // TEX BLUR PROCESS
@@ -835,25 +891,25 @@ lights = new light[nb_lights];
 // sun
 lights[0].lightColor = glm::vec3(1.0,1.0,1.0);
 lights[0].lightSpecularColor = glm::vec3(1.0,1.0,1.0);
-lights[0].lightPos = glm::vec3(7, 7, 10);
+lights[0].lightPos = glm::vec3(7, 12, 10);
 lights[0].lightColor*= 3.0;
 lights[0].lightSpecularColor*= 3.0;
 
 lights[1].lightColor = glm::vec3(1.0,1.0,1.0);
 lights[1].lightSpecularColor = glm::vec3(1.0,1.0,1.0);
-lights[1].lightPos = glm::vec3(-7, 7, 10);
+lights[1].lightPos = glm::vec3(-7, 12, 10);
 lights[1].lightColor*= 3.0;
 lights[1].lightSpecularColor*= 3.0;
 
 lights[2].lightColor = glm::vec3(1.0,1.0,1.0);
 lights[2].lightSpecularColor = glm::vec3(1.0,1.0,1.0);
-lights[2].lightPos = glm::vec3(7, 7, -10);
+lights[2].lightPos = glm::vec3(7, 12, -10);
 lights[2].lightColor*= 3.0;
 lights[2].lightSpecularColor*= 3.0;
 
 lights[3].lightColor = glm::vec3(1.0,1.0,1.0);
 lights[3].lightSpecularColor = glm::vec3(1.0,1.0,1.0);
-lights[3].lightPos = glm::vec3(-7, 7, -10);
+lights[3].lightPos = glm::vec3(-7, 12, -10);
 lights[3].lightColor*= 3.0;
 lights[3].lightSpecularColor*= 3.0;
  
@@ -913,7 +969,8 @@ table = new objet[nb_table];
    table[i].t0=0.0;
 
    table[i].shadow_darkness = 0.75;
-   table[i].parallax_height_scale = 0.02;
+   table[i].parallax_height_scale = 0.017;
+   table[i].parallax = false;
  }
 
  //////////////////////////
@@ -945,7 +1002,7 @@ table = new objet[nb_table];
 
  ground2.shadow_darkness = 0.75;
  ground2.parallax_height_scale = 0.02;
-
+ ground2.parallax = true;
 
 }
 
@@ -982,11 +1039,10 @@ table = new objet[nb_table];
     SDL_GL_SwapWindow(win);
 
 
-   /* printf("1cameraX = %f, cameraY = %f, cameraZ = %f\n",cameraPos.x,cameraPos.y, cameraPos.z); 
+    /*printf("1cameraX = %f, cameraY = %f, cameraZ = %f\n",cameraPos.x,cameraPos.y, cameraPos.z); 
     printf("2cameraX = %f, cameraY = %f, cameraZ = %f\n",cameraFront.x,cameraFront.y, cameraFront.z);
-    printf("yaw = %f, pitch = %f\n", yaw, pitch); */
+    printf("yaw = %f, pitch = %f\n", yaw, pitch);*/ 
 
-    //printf("lightX = %f, Y = %f, Z = %f\n", lights[1].lightPos.x,  lights[1].lightPos.y,  lights[1].lightPos.z);
    
     }
 
@@ -1077,10 +1133,13 @@ while(SDL_PollEvent(&event))
      case 'a' :
      /*height_scale += 0.001;
      std::cout << "test = " << height_scale << std::endl;*/
-     
-     
-     metalness += 0.01;
-     std::cout << "metalness = " << metalness << std::endl;
+
+     for(int i = 0 ; i < nb_lights; i++){     
+      lights[i].lightPos.y += 0.5;
+     }
+
+     /*metalness += 0.01;
+     std::cout << "metalness = " << metalness << std::endl;*/
      
      break;
 
@@ -1088,9 +1147,12 @@ while(SDL_PollEvent(&event))
      /*height_scale -= 0.001;
      std::cout << "test = " << height_scale << std::endl;*/
      
-     metalness -= 0.01;
-     std::cout << "metalness = " << metalness << std::endl;
-     
+     /*metalness -= 0.01;
+     std::cout << "metalness = " << metalness << std::endl;*/
+
+     for(int i = 0 ; i < nb_lights ; i++){     
+      lights[i].lightPos.y -= 0.5;
+    }     
      
      /*table[0].y -= 0.01;
      std::cout << "test = " << table[0].y << std::endl;*/
@@ -1100,17 +1162,13 @@ while(SDL_PollEvent(&event))
 
      case 'r' :
      
-     roughness += 0.01;
-     std::cout << "roughness = " << roughness << std::endl;
      
      break;
 
      case 't' :
      
 
-     roughness -= 0.01;
-     std::cout << "roughness = " << roughness << std::endl;
-     
+   
      break;
 
      case 'y' :
@@ -1258,7 +1316,9 @@ static void draw() {
  glViewport(0, 0, w, h);
  screen_shader.Use();
  glActiveTexture(GL_TEXTURE0);
- glBindTexture(GL_TEXTURE_2D, tex_color_buffer[0] /*pingpongColorbuffers[0]*/ /*tex_depth_ssr*/);
+ glBindTexture(GL_TEXTURE_2D, /*temp_tex_color_buffer[0]*/ /*final_tex_color_buffer[0]*/ pingpongColorbuffers[0] /*tex_depth_ssr*/);
+ //glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[1] /*final_tex_color_buffer[0]*/ /*pingpongColorbuffers[0]*/ /*tex_depth_ssr*/);
+
 
  glUniform1f(glGetUniformLocation(screen_shader.Program, "camera_near"), camera_near);
  glUniform1f(glGetUniformLocation(screen_shader.Program, "camera_far"), camera_far);
@@ -1316,8 +1376,12 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
 
 
   if(render_into_finalFBO){
-    glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
-
+    if(multi_sample){
+       glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO /*final_hdr_FBO*/);
+    }else{
+       glBindFramebuffer(GL_FRAMEBUFFER, final_hdr_FBO);
+    }
+   
     //glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1493,7 +1557,7 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  
 
  glUniform1f(glGetUniformLocation(basic_shader.Program, "height_scale"), ground2.parallax_height_scale);
- glUniform1i(glGetUniformLocation(basic_shader.Program, "parallax"), /*parallax*/ false);     
+ glUniform1i(glGetUniformLocation(basic_shader.Program, "parallax"), (ground2.parallax & parallax));     
 
  glUniform1i(glGetUniformLocation(basic_shader.Program, "nb_lights"), nb_lights);
 
@@ -1553,7 +1617,7 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glUniform1f(glGetUniformLocation(basic_shader.Program, "camera_far"), camera_far);
 
  glUniform1f(glGetUniformLocation(basic_shader.Program, "height_scale"), table[i].parallax_height_scale);
- glUniform1i(glGetUniformLocation(basic_shader.Program, "parallax"), parallax /*false*/);
+ glUniform1i(glGetUniformLocation(basic_shader.Program, "parallax"), (table[i].parallax & parallax));
 
  glUniform1i(glGetUniformLocation(basic_shader.Program, "nb_lights"), nb_lights);
 
@@ -1597,16 +1661,48 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
  glUseProgram(0);
 
     
- ///////////////////////////////////////////////////////////////////////
+ //////////////////////////////////////////////////
 
- //if(render_into_FBO){
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-   //glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
-  
- //}
+ glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
  glBindVertexArray(0);
  glUseProgram(0);
+
+ // BLIT MULTI SAMPLE COLOR BUFFER INTO CLASSIC COLOR BUFFER
+ if(multi_sample){
+ 
+   blit_shader.Use();
+ 
+ // color buffer
+   glBindFramebuffer(GL_FRAMEBUFFER, final_hdr_FBO);
+   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, final_tex_color_buffer[0], 0);
+   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[0]);
+   glUniform1i(glGetUniformLocation(blit_shader.Program, "nb_sample"), nb_multi_sample);    
+
+
+   RenderQuad();
+
+ // brightness buffer
+   glBindFramebuffer(GL_FRAMEBUFFER, final_hdr_FBO);
+   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, final_tex_color_buffer[1], 0);
+   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[1]);
+   glUniform1i(glGetUniformLocation(blit_shader.Program, "nb_sample"), nb_multi_sample);
+
+   RenderQuad();
+ }
+ ////////////////////////////////////////////////
+
+ glBindFramebuffer(GL_FRAMEBUFFER, 0);
+ glBindVertexArray(0);
+ glUseProgram(0);
+
+
 
 }
 
@@ -1619,8 +1715,7 @@ void bloom_process(){
   bloom_shader.Use();
 
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, tex_color_buffer[0]);
-        //glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
+  glBindTexture(GL_TEXTURE_2D, final_tex_color_buffer[0]);
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[0]);
 
@@ -1651,17 +1746,18 @@ void blur_process(){
     horizontal = 1;
    }else{ horizontal = 0; }
 
-   glActiveTexture(GL_TEXTURE0);
    if(!first_ite){
+     glActiveTexture(GL_TEXTURE0);
      glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[horizontal]);
    }else{
-    first_ite = false;    
-    glBindTexture(GL_TEXTURE_2D, tex_color_buffer[1]);
+    first_ite = false;
+    glActiveTexture(GL_TEXTURE0);    
+    glBindTexture(GL_TEXTURE_2D, final_tex_color_buffer[1]);
    }
 
    glUniform1f(glGetUniformLocation(blur_shader.Program, "horizontal"), horizontal);
    glUniform1f(glGetUniformLocation(blur_shader.Program, "offset_factor"), 1.2);
-  
+   
    RenderQuad();
    glBindFramebuffer(GL_FRAMEBUFFER, 0);     
 

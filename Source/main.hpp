@@ -56,6 +56,7 @@ struct objet{
   float quadratic;
   float shadow_darkness;
   float parallax_height_scale;
+  bool parallax;
 };
 typedef struct objet objet;
 

@@ -100,7 +100,7 @@ float linearDepth(float depthSample)
 }
 
 
-LightRes LightCalculation(int num_light, vec3 norm, vec3 viewDir, vec3 color, vec3 light_color, vec3 light_specular_color){
+LightRes PhongCalculation(int num_light, vec3 norm, vec3 viewDir, vec3 color, vec3 light_color, vec3 light_specular_color){
 
   LightRes res;
 
@@ -728,8 +728,8 @@ void main() {
     }
 
     // BLIN PHONG LIGHT CALCULATION
-    /*LightRes LightRes1 = LightCalculation(0, norm, final_view_dir, albedo, LightColor[0], LightSpecularColor[0]);
-    LightRes LightRes2 = LightCalculation(1, norm, final_view_dir, albedo, LightColor[1], LightSpecularColor[1]);
+    /*LightRes LightRes1 = PhongCalculation(0, norm, final_view_dir, albedo, LightColor[0], LightSpecularColor[0]);
+    LightRes LightRes2 = PhongCalculation(1, norm, final_view_dir, albedo, LightColor[1], LightSpecularColor[1]);
   
     result = (LightRes1.ambient + LightRes1.diffuse + LightRes1.specular);
     result += (LightRes2.diffuse + LightRes2.specular);*/

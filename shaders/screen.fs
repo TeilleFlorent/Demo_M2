@@ -9,7 +9,7 @@ uniform float camera_far;
 
 
 out vec4 fragColor;
-uniform sampler2D depth_map_feu;
+uniform sampler2D texture1;
 
 
 
@@ -33,6 +33,20 @@ float linearDepth(float depthSample)
 */
 }
 
+vec4 textureMultisample(sampler2DMS sampler, ivec2 ipos)
+{
+  vec4 color = vec4(0.0);
+  
+  for (int i = 0; i < 4; i++)
+  {
+    color += texelFetch(sampler, ipos, i);
+  }
+  
+  color /= float(4);
+  
+  return color;
+}
+
 
 
 void main(void) {
@@ -40,12 +54,16 @@ void main(void) {
   vec3 result;
   float final_alpha = 1.0;
 
-  
-  result = texture(depth_map_feu, TexCoord).rgb;
-  final_alpha = texture(depth_map_feu, TexCoord).a;
 
 
-  /*float temp = texture(depth_map_feu, TexCoord).r;
+  result = texture(texture1, TexCoord).rgb;
+  final_alpha = texture(texture1, TexCoord).a;  
+
+  /*ivec2 TC = ivec2(floor(textureSize(texture1) * TexCoord)); 
+  result = textureMultisample(texture1, TC).rgb;*/
+
+
+  /*float temp = texture(texture1, TexCoord).r;
   result = vec3((temp));*/
   //result = vec3(linearDepth(temp));
   

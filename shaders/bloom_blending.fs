@@ -7,13 +7,17 @@ uniform sampler2D bloom_effect;
 uniform bool bloom;
 uniform float exposure;
 
+
+
 void main()
 {             
     const float gamma = 2.2;
+    
     vec3 hdrColor = texture(scene_color, TexCoords).rgb;      
     vec3 bloomColor = texture(bloom_effect, TexCoords).rgb;
+    
     if(bloom)
-        hdrColor += bloomColor; // additive blending
+        hdrColor += (bloomColor); // additive blending
     
     // tone mapping
     vec3 result = vec3(1.0) - exp(-hdrColor * exposure);
