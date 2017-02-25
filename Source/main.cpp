@@ -128,7 +128,7 @@ static float bloom_downsample = 0.5;
 static bool parallax = false;
 
 // MULTI SAMPLE PARA
-static bool multi_sample = true;
+static bool multi_sample = false;
 static int nb_multi_sample = 4;
 
 /////////////////////////////////////////////////////////
@@ -322,8 +322,8 @@ void load_audio(){
 static void initGL(SDL_Window * win) {
 
 
-  glClearColor(0.01f, 0.01f, 0.01f, 1.0f);
-  //glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+  //glClearColor(0.01f, 0.01f, 0.01f, 1.0f);
+  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
   glEnable(GL_DEPTH_TEST);
   //glClearDepth(1.0);
 
@@ -646,37 +646,69 @@ if (groundVAO == 0)
   
   glGenTextures(2, temp_tex_color_buffer);
 
-  for (GLuint i = 0; i < 2; i++) 
-  {
-    //glBindTexture(GL_TEXTURE_2D, temp_tex_color_buffer[i]);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[i]);
+  if(multi_sample){
+    for (GLuint i = 0; i < 2; i++) 
+    {
+      //glBindTexture(GL_TEXTURE_2D, temp_tex_color_buffer[i]);
+      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[i]);
+
+      //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_FLOAT, NULL);
+      glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, nb_multi_sample , /*GL_RGBA*/ GL_RGB16F, w, h, GL_TRUE);
+
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+      //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, temp_tex_color_buffer[i], 0);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[i], 0);
+
+    }
+
+    glBindRenderbuffer(GL_RENDERBUFFER, dephtRBO);
+    //glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, nb_multi_sample, GL_DEPTH24_STENCIL8, w, h); 
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, dephtRBO);
+
+    GLuint attachments2[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+    glDrawBuffers(2, attachments2);
+
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+      std::cout << "Framebuffer not complete!" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  }else{
+    for (GLuint i = 0; i < 2; i++) 
+    {
+      glBindTexture(GL_TEXTURE_2D, temp_tex_color_buffer[i]);
+      //glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[i]);
     
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_FLOAT, NULL);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, nb_multi_sample , /*GL_RGBA*/ GL_RGB16F, w, h, GL_TRUE);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_FLOAT, NULL);
+      //glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, nb_multi_sample , /*GL_RGBA*/ GL_RGB16F, w, h, GL_TRUE);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, temp_tex_color_buffer[i], 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[i], 0);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, temp_tex_color_buffer[i], 0);
+      //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[i], 0);
 
+    }
+
+    glBindRenderbuffer(GL_RENDERBUFFER, dephtRBO);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
+    //glRenderbufferStorageMultisample(GL_RENDERBUFFER, nb_multi_sample, GL_DEPTH24_STENCIL8, w, h); 
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, dephtRBO);
+
+    GLuint attachments2[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+    glDrawBuffers(2, attachments2);
+
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+      std::cout << "Framebuffer not complete!" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);    
   }
-
-  glBindRenderbuffer(GL_RENDERBUFFER, dephtRBO);
-  //glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
-  glRenderbufferStorageMultisample(GL_RENDERBUFFER, nb_multi_sample, GL_DEPTH24_STENCIL8, w, h); 
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, dephtRBO);
-
-  GLuint attachments2[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-  glDrawBuffers(2, attachments2);
-
-  glBindRenderbuffer(GL_RENDERBUFFER, 0);
-  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    std::cout << "Framebuffer not complete!" << std::endl;
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  
 
   // FINAL COLOR BUFFERS
   glBindFramebuffer(GL_FRAMEBUFFER, final_hdr_FBO);
@@ -932,7 +964,7 @@ table = new objet[nb_table];
 //////////////////////////
 
  for(int i = 0; i < nb_table; i++){
-   table[i].AmbientStr = 0.3;
+   table[i].AmbientStr = 0.4;
    table[i].DiffuseStr = 0.4;
    table[i].SpecularStr = 0.2;
    table[i].ShiniStr = 8; // 4 8 16 ... 256 
@@ -1002,7 +1034,7 @@ table = new objet[nb_table];
 
  ground2.shadow_darkness = 0.75;
  ground2.parallax_height_scale = 0.02;
- ground2.parallax = true;
+ ground2.parallax = false;
 
 }
 
@@ -1379,7 +1411,7 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
     if(multi_sample){
        glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO /*final_hdr_FBO*/);
     }else{
-       glBindFramebuffer(GL_FRAMEBUFFER, final_hdr_FBO);
+       glBindFramebuffer(GL_FRAMEBUFFER, /*final_hdr_FBO*/ hdrFBO);
     }
    
     //glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
@@ -1715,7 +1747,11 @@ void bloom_process(){
   bloom_shader.Use();
 
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, final_tex_color_buffer[0]);
+  if(multi_sample){
+    glBindTexture(GL_TEXTURE_2D, final_tex_color_buffer[0]);
+  }else{
+    glBindTexture(GL_TEXTURE_2D, temp_tex_color_buffer[0]);
+  }
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[0]);
 
@@ -1751,8 +1787,12 @@ void blur_process(){
      glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[horizontal]);
    }else{
     first_ite = false;
-    glActiveTexture(GL_TEXTURE0);    
-    glBindTexture(GL_TEXTURE_2D, final_tex_color_buffer[1]);
+    glActiveTexture(GL_TEXTURE0);
+    if(multi_sample){
+      glBindTexture(GL_TEXTURE_2D, final_tex_color_buffer[1]);    
+    }else{
+      glBindTexture(GL_TEXTURE_2D, temp_tex_color_buffer[1]); 
+    }
    }
 
    glUniform1f(glGetUniformLocation(blur_shader.Program, "horizontal"), horizontal);

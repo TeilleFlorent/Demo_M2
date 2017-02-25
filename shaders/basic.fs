@@ -742,7 +742,6 @@ void main() {
     float roughness = texture(texture_roughness1, final_tex_coord).r;
     float ao        = texture(texture_AO1, final_tex_coord).r; 
     if(var == 1.0){
-      //ao = 1.0;
     }
 
      // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
@@ -798,7 +797,7 @@ void main() {
         float NdotL = max(dot(norm, L), 0.0);        
 
         // add to outgoing radiance Lo
-        Lo += (kD * albedo / PI + brdf) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+        Lo += ((kD * albedo / PI /*vec3(0.0)*/) + (brdf /*vec3(0.0)*/)) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
     }   
     vec3 ambient = ambientSTR * albedo * ao;
     result = ambient + Lo;
