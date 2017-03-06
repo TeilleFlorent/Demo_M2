@@ -1,4 +1,6 @@
 #include "classic_model.hpp"
+#include "stb_image.hpp"
+
 
 #include <string>
 #include <fstream>
@@ -93,7 +95,8 @@ void fire_script();
 void Pre_rendu_cubeMap();
 void Pre_rendu_shadow_house(glm::mat4, glm::mat4);
 void Pre_rendu_shadow_cubeMap();
-void RenderQuad();
+void renderQuad();
+void renderCube();
 void blur_process();
 void bloom_process();
 void initAudio();

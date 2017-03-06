@@ -11,6 +11,7 @@ Shader screen_shader;
 Shader blur_shader;
 Shader bloom_shader;
 Shader blit_shader;
+Shader cubeMap_converter_shader;
 
 
 // MODELS
@@ -23,6 +24,8 @@ static GLuint lampVAO = 0;
 static GLuint screenVAO = 0;
 GLuint quadVAO = 0;
 static GLuint groundVAO = 0;
+static GLuint cubeVAO = 0;
+
 
 // VBOs
 static GLuint skyboxVBO = 0;
@@ -30,9 +33,10 @@ static GLuint lampVBO = 0;
 static GLuint screenVBO = 0;
 GLuint quadVBO;
 static GLuint groundVBO = 0;
+static GLuint cubeVBO = 0;
 
 
-// FBO
+// FBO & RBO
 GLuint pingpongFBO[2];
 
 GLuint hdrFBO;
@@ -44,18 +48,23 @@ GLuint final_depht_RBO;
 GLuint ssrFBO;
 GLuint ssrRBO; 
 
+unsigned int captureFBO;
+unsigned int captureRBO;
+
 
 
 // all no models textures
+static unsigned int hdrTexture;
+unsigned int envCubemap;   
+std::vector<const GLchar*> faces; // data skybox cube map texture
+
 static GLuint tex_cube_map = 0;
 static GLuint pingpongColorbuffers[2];
 static GLuint temp_tex_color_buffer[2];
 static GLuint final_tex_color_buffer[2];
 
-
 static GLuint tex_color_ssr;
 static GLuint tex_depth_ssr;
-
 
 static GLuint tex_albedo_ground2 = 0;
 static GLuint tex_normal_ground2 = 0;
@@ -63,7 +72,6 @@ static GLuint tex_height_ground2 = 0;
 static GLuint tex_AO_ground2 = 0;
 static GLuint tex_roughness_ground2 = 0;
 static GLuint tex_metalness_ground2 = 0;
-
 
 float depth_map_res_seed = /*2048.0*/ 1024.0;
 float depth_map_res_x, depth_map_res_y, depth_map_res_x_house, depth_map_res_y_house;
@@ -116,9 +124,6 @@ int cameraS = 0;
 //FLY
 GLboolean fly_state = true;
 
-// data cube map texture
-std::vector<const GLchar*> faces;
-
 // BLOOM PARA
 static float exposure = 0.65;
 static bool bloom = false;
@@ -166,7 +171,7 @@ int main() {
     blur_shader.set_shader("../shaders/blur.vs", "../shaders/blur.fs");
     bloom_shader.set_shader("../shaders/bloom_blending.vs", "../shaders/bloom_blending.fs");
     blit_shader.set_shader("../shaders/blit.vs", "../shaders/blit.fs");
-
+    cubeMap_converter_shader.set_shader("../shaders/cubeMap_converter.vs", "../shaders/cubeMap_converter.fs");
 
     // Set texture samples
     basic_shader.Use();
@@ -204,15 +209,12 @@ int main() {
     glUseProgram(0);
 
     
-    
     table_model.Load_Model("../Models/cube/Rounded Cube.fbx", 0);
     table_model.Print_info_model();
     /*table_model.Load_Model("../Models/cube2/Crate_Fragile.3DS", 0);
     table_model.Print_info_model();*/
 
-
-   
-
+  
     
     initData();
 
@@ -475,6 +477,88 @@ faces.push_back("../skybox/s2/right.png");
 faces.push_back("../skybox/s2/left.png");*/
 
 
+// Load hdr skybox texture
+stbi_set_flip_vertically_on_load(true);
+int width, height, nrComponents;
+//std::string temp_str("../skybox/hdr skybox 1./Arches_E_PineTree_Env.hdr");
+std::string temp_str("../skybox/hdr skybox 1/Arches_E_PineTree_3k.hdr");
+
+//float *data = stbi_loadf(FileSystem::getPath("skybox/Arches_E_PineTree_3k.hdr").c_str(), &width, &height, &nrComponents, 0);
+float *data = stbi_loadf(temp_str.c_str(), &width, &height, &nrComponents, 0);
+if (data)
+{
+  glGenTextures(1, &hdrTexture);
+  glBindTexture(GL_TEXTURE_2D, hdrTexture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data); // note how we specify the texture's data value to be float
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  stbi_image_free(data);
+}
+else
+{
+  std::cout << "Failed to load HDR image.\n" << std::endl;
+}
+
+// Gen FBO and RBO to render hdr tex into cube map tex
+  glGenFramebuffers(1, &captureFBO);
+  glGenRenderbuffers(1, &captureRBO);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+  glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
+
+  // Gen 6 tex to cube map
+  glGenTextures(1, &envCubemap);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+  for (unsigned int i = 0; i < 6; ++i)
+  {
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 512, 512, 0, GL_RGB, GL_FLOAT, nullptr);
+  }
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  // create 6 matrix to cube map
+  glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+  glm::mat4 captureViews[] =
+  {
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+  };
+
+  // convert hdr skybox into cube map texture
+  cubeMap_converter_shader.Use();
+  glUniform1i(glGetUniformLocation(cubeMap_converter_shader.Program, "equirectangularMap"), 0);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, hdrTexture);
+  glUniformMatrix4fv(glGetUniformLocation(cubeMap_converter_shader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(captureProjection));
+
+  glViewport(0, 0, 512, 512); // don't forget to configure the viewport to the capture dimensions.
+  glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+  for (unsigned int i = 0; i < 6; ++i)
+  {
+    glUniformMatrix4fv(glGetUniformLocation(cubeMap_converter_shader.Program, "view"), 1, GL_FALSE, glm::value_ptr(captureViews[i]));
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, envCubemap, 0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    renderCube();
+  }
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+
+// Load texture cube map (6 texs)
 tex_cube_map = loadCubemap(faces);
 
 
@@ -1715,7 +1799,7 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
    glUniform1i(glGetUniformLocation(blit_shader.Program, "nb_sample"), nb_multi_sample);    
 
 
-   RenderQuad();
+   renderQuad();
 
  // brightness buffer
    glBindFramebuffer(GL_FRAMEBUFFER, final_hdr_FBO);
@@ -1726,7 +1810,7 @@ void RenderShadowedObjects(bool render_into_finalFBO, bool render_into_ssrFBO){
    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[1]);
    glUniform1i(glGetUniformLocation(blit_shader.Program, "nb_sample"), nb_multi_sample);
 
-   RenderQuad();
+   renderQuad();
  }
  ////////////////////////////////////////////////
 
@@ -1757,7 +1841,7 @@ void bloom_process(){
 
   glUniform1i(glGetUniformLocation(bloom_shader.Program, "bloom"), bloom);
   glUniform1f(glGetUniformLocation(bloom_shader.Program, "exposure"), exposure);
-  RenderQuad();
+  renderQuad();
 
 }
 
@@ -1798,7 +1882,7 @@ void blur_process(){
    glUniform1f(glGetUniformLocation(blur_shader.Program, "horizontal"), horizontal);
    glUniform1f(glGetUniformLocation(blur_shader.Program, "offset_factor"), 1.2);
    
-   RenderQuad();
+   renderQuad();
    glBindFramebuffer(GL_FRAMEBUFFER, 0);     
 
  }
@@ -1807,7 +1891,7 @@ void blur_process(){
 
 }
 
-void RenderQuad(){
+void renderQuad(){
 
   if (quadVAO == 0){
   
@@ -1833,6 +1917,78 @@ void RenderQuad(){
   glBindVertexArray(quadVAO);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   glBindVertexArray(0);
+}
+
+
+void renderCube()
+{
+    // Initialize (if necessary)
+    if (cubeVAO == 0)
+    {
+        GLfloat vertices[] = {
+            // Back face
+            -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // Bottom-left
+            1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
+            1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f, // bottom-right         
+            1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f,  // top-right
+            -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,  // bottom-left
+            -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f,// top-left
+            // Front face
+            -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
+            1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f,  // bottom-right
+            1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f,  // top-right
+            1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
+            -1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f,  // top-left
+            -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,  // bottom-left
+            // Left face
+            -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
+            -1.0f,  1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-left
+            -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,  // bottom-left
+            -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
+            -1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f,  // bottom-right
+            -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
+            // Right face
+            1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
+            1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
+            1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-right         
+            1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,  // bottom-right
+            1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f,  // top-left
+            1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left     
+            // Bottom face
+            -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+            1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
+            1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,// bottom-left
+            1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+            -1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
+            -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+            // Top face
+            -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f,// top-left
+            1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+            1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right     
+            1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+            -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f,// top-left
+            -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f // bottom-left        
+        };
+        glGenVertexArrays(1, &cubeVAO);
+        glGenBuffers(1, &cubeVBO);
+        // Fill buffer
+        glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        // Link vertex attributes
+        glBindVertexArray(cubeVAO);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
+    // Render Cube
+    glBindVertexArray(cubeVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glBindVertexArray(0);
 }
 
 
@@ -1963,7 +2119,6 @@ static void mobile_move(objet * tabl,int nb) {
     }
     
   }
-
 
 }
 

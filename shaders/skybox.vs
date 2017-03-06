@@ -20,7 +20,7 @@ void main()
 
 	gl_Position = res;  
 
-    TexCoords = vec3(position.x/*/position.x*/,position.y/*/position.y*/, position.z);
+    TexCoords = vec3(position.x,position.y, position.z);
 
     FragPos = vec3(mat4(1.0) * vec4(position,1.0f));
         	
