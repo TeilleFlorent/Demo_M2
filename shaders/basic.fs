@@ -27,6 +27,7 @@ in vec4 position_for_tex;
 in vec3 TangentLightPos[MAX_NB_LIGHTS];
 in vec3 TangentViewPos;
 in vec3 TangentFragPos;
+flat in vec3 out_TBN[3];
 
 uniform int nb_lights;
 uniform vec3 LightPos[MAX_NB_LIGHTS];
@@ -71,6 +72,7 @@ uniform sampler2D texture_height1;
 uniform sampler2D texture_AO1; 
 uniform sampler2D texture_roughness1; 
 uniform sampler2D texture_metalness1; 
+uniform samplerCube irradianceMap;
 
 uniform sampler2D texture_color_SSR;
 uniform sampler2D texture_depth_SSR;
@@ -169,8 +171,8 @@ vec2 parallax_mapping_calculation(vec2 texCoords, vec3 final_view_dir){
   vec2 res_tex_coord;  
 
  // number of depth layers
-    const float minLayers = 5;
-    const float maxLayers = 15;
+    const float minLayers = 5 * 2;
+    const float maxLayers = 15 * 2;
     float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), final_view_dir)));  
     // calculate the size of each layer
     float layerDepth = 1.0 / numLayers;
@@ -619,37 +621,38 @@ void main() {
     vec3 albedo, result;
     float final_alpha;
     vec2 final_tex_coord;
-    vec3 final_view_dir;
+    vec3 final_view_dir, old_view_dir;
 
     final_tex_coord = TexCoord;
     final_view_dir = normalize(viewPos - FragPos);
+    old_view_dir = final_view_dir;
     
 
     // get parallax mapping tex coord
     if((var == 1.0 || var == 0.0)){
-    //if(false){
-
+    
       final_view_dir = normalize(TangentViewPos - TangentFragPos);
 
-      if(parallax == true)
+      if(parallax == true){
         final_tex_coord = parallax_mapping_calculation(TexCoord, final_view_dir);
 
-      if(var == 1.0){
-        if(final_tex_coord.x > 1.0 * 5.0 || final_tex_coord.y > 1.0 * 5.0 || final_tex_coord.x < 0.0 || final_tex_coord.y < 0.0)
-          discard;
-      }else{
-      /*  //vec2 max = vec2(3.0,2.0);
+        if(var == 1.0){
+          if(final_tex_coord.x > 1.0 * 5.0 || final_tex_coord.y > 1.0 * 5.0 || final_tex_coord.x < 0.0 || final_tex_coord.y < 0.0)
+            discard;
+        }else{
+        //vec2 max = vec2(3.0,2.0);
         //vec2 min = vec2(-1.0,-1.0);
-        vec2 max = vec2(3.0,2.0);
-        vec2 min = vec2(0.0,0.0);
+        //vec2 max = vec2(3.0,2.0);
+        //vec2 min = vec2(0.0,0.0);
         
         //max = normalize(max);
         //min = normalize(min);
         //if(final_tex_coord.x >= max.x || final_tex_coord.y >= max.y  || final_tex_coord.x <= min.x || final_tex_coord.y <= min.y)
-          //discard;*/
+          //discard;
+        }
       }
-    
     }
+
 
     albedo = texture(texture_diffuse1, final_tex_coord).rgb;  
     final_alpha = alpha;
@@ -738,9 +741,11 @@ void main() {
     // PBR LIGHT CALCULATION
     vec3 R = reflect(-final_view_dir, norm);
     albedo =  pow(texture(texture_diffuse1, final_tex_coord).rgb, vec3(2.2));
+    //albedo =  pow(vec3(1.0), vec3(2.2));
     float metalness = texture(texture_metalness1, final_tex_coord).r;
     float roughness = texture(texture_roughness1, final_tex_coord).r;
     float ao        = texture(texture_AO1, final_tex_coord).r; 
+   
     if(var == 1.0){
     }
 
@@ -749,7 +754,7 @@ void main() {
     vec3 F0 = vec3(0.04); 
     F0 = mix(F0, albedo, metalness);  
 
-     vec3 Lo = vec3(0.0);
+    vec3 Lo = vec3(0.0);
     for(int i = 0; i < nb_lights; ++i) 
     {
         // calculate per-light radiance
@@ -799,7 +804,21 @@ void main() {
         // add to outgoing radiance Lo
         Lo += ((kD * albedo / PI /*vec3(0.0)*/) + (brdf /*vec3(0.0)*/)) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
     }   
-    vec3 ambient = ambientSTR * albedo * ao;
+    
+    
+    // DIFFUSE IRRADIANCE CALCULATION
+    mat3 TBN;
+    TBN[0] = out_TBN[0];
+    TBN[1] = out_TBN[1];
+    TBN[2] = out_TBN[2];
+    vec3 kS = fresnelSchlick(max(dot(normalize(norm * TBN), old_view_dir), 0.0), F0);
+    vec3 kD = 1.0 - kS;
+    kD *= (1.0 - metalness);   
+    vec3 irradiance = texture(irradianceMap, normalize(norm * TBN)).rgb;
+    vec3 diffuse = irradiance * albedo;
+    vec3 ambient = (kD * diffuse) * ao; 
+    
+    //ambient = ambientSTR * albedo * ao;
     result = ambient + Lo;
    
     // HDR tonemapping
@@ -808,9 +827,6 @@ void main() {
     //result = pow(result, vec3(1.0/2.2)); 
 
 
-
-    //if(var == 1.0)
-      //result = texture(texture_roughness1, final_tex_coord).rgb;
     // main out
     FragColor = vec4(result, final_alpha);
 

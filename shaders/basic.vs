@@ -18,7 +18,6 @@ uniform float face_cube;
 uniform float camera_near;
 uniform float camera_far;
 
-
 uniform vec3 viewPos;
 uniform vec3 LightPos[MAX_NB_LIGHTS];
 
@@ -36,6 +35,7 @@ layout (location = 4) in vec3 bitangent;
  out vec3 TangentLightPos[MAX_NB_LIGHTS];
  out vec3 TangentViewPos;
  out vec3 TangentFragPos;
+ flat out vec3 out_TBN[3];
  
  void main(void) {
 
@@ -65,11 +65,11 @@ layout (location = 4) in vec3 bitangent;
 
 	// normal calculation
 	mat3 normalMatrix = mat3(transpose(inverse(modelMatrix2)));
-    vsoNormal = normalize(normalMatrix * normal);
-    
+    //vsoNormal = normalize(normalMatrix * normal);
+    vsoNormal = mat3(modelMatrix2) * normal;  
  
 	// TBN calculation
-	if(var == 1.0 || var == 0.0){
+	if(/*var == 1.0 || var == 0.0*/ true){
 
 		vec3 N = normalize(mat3(modelMatrix2) * normal);
 		vec3 T = normalize(mat3(modelMatrix2) * (tangent));
@@ -88,6 +88,11 @@ layout (location = 4) in vec3 bitangent;
 		
 		TangentViewPos  = TBN * viewPos;
 		TangentFragPos  = TBN * FragPos;
+
+		out_TBN[0] = TBN[0];
+		out_TBN[1] = TBN[1];
+		out_TBN[2] = TBN[2];
+
 	}
 
 }

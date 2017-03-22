@@ -25,7 +25,9 @@ void main(){
     FragColor = vec4(result , final_alpha);
     // second out => draw only brighest fragments
     float brightness = dot(result, vec3(0.2126, 0.7152, 0.0722));
-    if(brightness > 0.7)
-        BrightColor = vec4(result, 1.0);
+    if(brightness > 0.99){
+        //BrightColor = vec4(result, 1.0);
+        BrightColor = vec4(0.0,0.0,0.0,1.0);
+    }
 }
   
