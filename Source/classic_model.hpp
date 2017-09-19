@@ -1,14 +1,6 @@
-#ifndef SHADER_HPP
-#define SHADER_HPP
 #include "shader.hpp"
-#endif
 
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <vector>
-#include <map>
+using namespace std;
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -17,102 +9,121 @@
 #include "glm/gtx/string_cast.hpp"
 #include "glm/ext.hpp"
 
-#include <algorithm>
-using namespace std;
+#define GLEW_STATIC
+#include <GL/glew.h>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#define GLEW_STATIC
-#include <GL/glew.h>
 
-#include <SDL2/SDL_mixer.h>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
-#include <cmath>
+//******************************************************************************
+//**********  Class Vertex  ****************************************************
+//******************************************************************************
 
-
-#define myPI 3.141593
-#define myPI_2 1.570796
-
-
-
-
-
-
-struct Vertex {
-    glm::vec3 Position;
-    glm::vec3 Normal;
-    glm::vec2 TexCoords;
-    glm::vec3 Tangent;
-    glm::vec3 BiTangent;
-};
-
-
-struct Texture {
-    GLuint id;
-    string type;
-    aiString path;
-};
-
-
-// MESH CLASSE
-class Mesh {
-public:
-
-    //  Mesh Data  
-    vector<Vertex> vertices;
-    vector<GLuint> indices;
-    vector<Texture> textures;
-    float shininess;
-    glm::vec2 _max_tex_coord;
-    glm::vec2 _min_tex_coord;
-
-    Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures, float shini_mesh, glm::vec2 max_tex_coord, glm::vec2 min_tex_coord);
-
-    void Draw(Shader shader, int id); 
+class Vertex
+{
+  public:  
     
+    glm::vec3 _position;
+    glm::vec3 _normal;
+    glm::vec2 _uv;
+    glm::vec3 _tangent;
+    glm::vec3 _bi_tangent;
+};
 
-private:
+
+//******************************************************************************
+//**********  Class Texture  ***************************************************
+//******************************************************************************
+
+class Texture
+{
+  public:
   
-    GLuint VAO, VBO, EBO;
+    GLuint _id;
+    string _type;
+    aiString _path;
+};
 
-    void setupMesh();
+
+//******************************************************************************
+//**********  Class Mesh  ******************************************************
+//******************************************************************************
+
+class Mesh
+{
+  public:
+
+    // Class functions
+    // ---------------
+    Mesh( vector< Vertex > iVertices,
+          vector< GLuint > iIndices,
+          vector< Texture > iTextures );
+
+    void Draw( Shader iShader,
+               int iID ); 
+    
+    // Class data
+    // ---------  
+    vector< Vertex > _vertices;
+    vector< GLuint > _indices;
+    vector< Texture > _textures;
+
+  private:
+  
+    GLuint _VAO, _VBO, _EBO;
+
+    void SetupMesh();
     
 };
 
-//////////////////////////////////
 
-// MODEL CLASSE
+//******************************************************************************
+//**********  Class Model  *****************************************************
+//******************************************************************************
+
 class Model 
 {
-public:
+  public:
 
-    Assimp::Importer importer;
-    const aiScene* scene;
-    int NumVertices;
-
+    // Class functions
+    // ---------------
     Model();
 
-    void Draw(Shader shader, glm::mat4 modelview2,bool test);   
+    void Draw( Shader iShader );   
 
-    void Load_Model(string path, int id);
+    void Load_Model( string iPath,
+                     int iID );
 
     void Print_info_model();
 
-    vector<Mesh> meshes;
-    string directory;
-    vector<Texture> textures_loaded;    // variable bricolage optimisation (ne charge pas deux foix les meme texture)
-    int model_id;
+    void LoadModel( string iPath );
+
+    void ProcessNode( aiNode * iNode,
+                      const aiScene* iScene,
+                      int iMeshNum );
+
+    Mesh ProcessMesh( aiMesh* iMesh,
+                      const aiScene * iScene,
+                      int iMeshNum );
+
+    vector< Texture > LoadMaterialTextures( aiMaterial * iMaterial,
+                                            aiTextureType iTextureType,
+                                            string iTypeName, 
+                                            int iMeshNum );
     
-    void loadModel(string path);
+    GLint TextureFromFile( const char * iPath,
+                           string iDirectory );
 
-    void processNode(aiNode* node, const aiScene* scene, int num_mesh);
 
-    Mesh processMesh(aiMesh* mesh, const aiScene* scene, int num_mesh);
-
-    vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName, int num_mesh);
-    
-    GLint TextureFromFile(const char* path, string directory);
+    // Class data
+    // ----------
+    vector< Mesh > _meshes;
+    string _directory;
+    vector< Texture > _textures_loaded;    // optimisation (ne charge pas deux foix les meme texture)
+    int _model_id;
+    Assimp::Importer _importer;
+    const aiScene * _scene;
+    int _vertice_count;
 };    

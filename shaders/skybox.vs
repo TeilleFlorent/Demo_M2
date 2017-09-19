@@ -1,29 +1,37 @@
+#version 330
 
-#version 330 core
-layout (location = 0) in vec3 position;
 
-out vec3 TexCoords;
-out vec3 FragPos;
+//******************************************************************************
+//**********  Vertex shader inputs/ouputs  *************************************
+//******************************************************************************
 
-uniform mat4 projection;
-uniform mat4 view;
-uniform mat4 model;
 
-uniform float is_volum_light;
+// Vertex input attributes
+// -----------------------
+layout ( location = 0 ) in vec3 _position;
+
+
+// Vertex input uniforms
+// ---------------------
+uniform mat4 uProjectionMatrix;
+uniform mat4 uViewMatrix;
+uniform mat4 uModelMatrix;
+
+
+// Vertex outputs to fragment shader  
+// --------------------------------
+out vec3 oUV;
+
+
+//******************************************************************************
+//**********  Vertex shader functions  *****************************************
+//******************************************************************************
 
 void main()
 {
+  vec4 clip_space_position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4( _position, 1.0);
+  gl_Position = clip_space_position;  
 
-	vec4 res;
-
-	res = projection * view * model * vec4(position, 1.0);
-
-	gl_Position = res;  
-
-    TexCoords = vec3(position.x,position.y, position.z);
-
-    FragPos = vec3(mat4(1.0) * vec4(position,1.0f));
-        	
-
+  oUV = _position;
 }  
 

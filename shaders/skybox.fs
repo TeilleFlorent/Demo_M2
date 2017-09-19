@@ -1,33 +1,47 @@
-#version 330 core
-layout (location = 0) out vec4 FragColor;
-layout (location = 1) out vec4 BrightColor;
+#version 330
 
 
-in vec3 TexCoords;
-in vec3 FragPos;
-
-out vec4 fragColor;
-
-uniform samplerCube skybox;
-uniform float alpha;
+//******************************************************************************
+//**********  Fragment shader inputs/ouputs  ***********************************
+//******************************************************************************
 
 
-void main(){    
+// Fragment color output(s)
+// ------------------------
+layout ( location = 0 ) out vec4 FragColor;
+layout ( location = 1 ) out vec4 FragColorBrightness;
+
+
+// Fragment input uniforms
+// -----------------------
+uniform float uAlpha;
+uniform samplerCube uSkyboxTexture;
+
+
+// Fragment inputs from vertex shader 
+// ----------------------------------
+in vec3 oUV;
+
+
+//******************************************************************************
+//**********  Fragment shader functions  ***************************************
+//******************************************************************************
+
+void main()
+{    
 	
-    vec3 result,color;
-    float final_alpha = 1.0;
+  vec3 result_color;
+  result_color = texture( uSkyboxTexture, oUV ).rgb;
 
-    color = texture(skybox, TexCoords).rgb;
+  // Main out color
+  FragColor = vec4( result_color , uAlpha );
 
-    result = color;
-   
-    
-    FragColor = vec4(result , final_alpha);
-    // second out => draw only brighest fragments
-    float brightness = dot(result, vec3(0.2126, 0.7152, 0.0722));
-    if(brightness > 0.99){
-        //BrightColor = vec4(result, 1.0);
-        BrightColor = vec4(0.0,0.0,0.0,1.0);
-    }
+  // Second out color => draw only brighest fragments
+  float brightness = dot( result_color, vec3( 0.2126, 0.7152, 0.0722 ) );
+  if( brightness > 0.99 )
+  {
+    FragColorBrightness = vec4( result_color, 1.0 );
+    //BrightColor = vec4(0.0,0.0,0.0,1.0);
+  }
 }
   

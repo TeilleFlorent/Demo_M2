@@ -1,49 +1,49 @@
 #version 330
 
-in vec2 TexCoord;
-in vec3 Positon;
+
+//******************************************************************************
+//**********  Fragment shader inputs/ouputs  ***********************************
+//******************************************************************************
 
 
-out vec4 fragColor;
-uniform sampler2DMS texture1;
-uniform int nb_sample;
+// Fragment color output(s)
+// ------------------------
+layout ( location = 0 ) out vec4 FragColor;
 
 
-vec4 textureMultisample(sampler2DMS sampler, ivec2 ipos)
+// Fragment input uniforms
+// -----------------------
+uniform sampler2DMS uTexture1;
+uniform int uSampleCount;
+
+
+// Fragment inputs from vertex shader 
+// ----------------------------------
+in vec2 oUV;
+
+
+//******************************************************************************
+//**********  Fragment shader functions  ***************************************
+//******************************************************************************
+
+vec4 TextureMultisample( sampler2DMS iSampler,
+                         ivec2 iPosition )
 {
-  vec4 color = vec4(0.0);
-  
-  for (int i = 0; i < nb_sample; i++)
+  vec4 color = vec4( 0.0 );
+
+  for( int i = 0; i < uSampleCount; i++ )
   {
-    color += texelFetch(sampler, ipos, i);
+    color += texelFetch( iSampler, iPosition, i );
   }
-  
-  color /= float(nb_sample);
-  
+  color /= float( uSampleCount );
+
   return color;
 }
 
+void main()
+{
+  ivec2 uv = ivec2( floor( textureSize( uTexture1 ) * oUV ) ); 
+  vec3 color_result = TextureMultisample( uTexture1, uv ).rgb;
 
-
-void main(void) {
-
-  vec3 result;
-  float final_alpha = 1.0;
-
-
-  /*result = texture(texture1, TexCoord).rgb;
-  final_alpha = texture(texture1, TexCoord).a; */ 
-
-  ivec2 TC = ivec2(floor(textureSize(texture1) * TexCoord)); 
-  result = textureMultisample(texture1, TC).rgb;
-  //final_alpha = textureMultisample(texture1, TC).a;
-
-
-  /*float temp = texture(texture1, TexCoord).r;
-  result = vec3((temp));*/
-  //result = vec3(linearDepth(temp));
-  
-
-  fragColor = vec4(result, final_alpha);
-  
+  FragColor = vec4( color_result, 1.0 );
 }

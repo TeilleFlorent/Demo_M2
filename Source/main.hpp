@@ -1,14 +1,6 @@
 #include "classic_model.hpp"
 #include "stb_image.hpp"
 
-
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <vector>
-#include <map>
-
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -16,12 +8,7 @@
 #include "glm/gtx/string_cast.hpp"
 #include "glm/ext.hpp"
 
-#include <algorithm>
 using namespace std;
-
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
 
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -29,145 +16,109 @@ using namespace std;
 #include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
-#include <cmath>
-
 
 #define myPI 3.141593
 #define myPI_2 1.570796
 
 
+//******************************************************************************
+//**********  Class Object  ****************************************************
+//******************************************************************************
 
-struct objet{
-  float angle;
-  float acca;
-  float var;
-  float scale;
-  float x,y,z;
-  float start;
-  float dt;
-  float bouge;
-  float t;
-  float t0;
-  double alpha;
-  float AmbientStr;
-  float DiffuseStr;
-  float SpecularStr;
-  int ShiniStr;
-  float constant;
-  float linear;
-  float quadratic;
-  float shadow_darkness;
-  float parallax_height_scale;
-  bool parallax;
-};
-typedef struct objet objet;
-
-
-struct light{
-  glm::vec3 lightPos;  
-  glm::vec3 save_lightPos;
-  glm::vec3 lightColor;
-  glm::vec3 lightSpecularColor;
-};
-typedef struct light light;
-
-
-//////////////////////////////////
-
-static SDL_Window * initWindow(int w, int h, SDL_GLContext * poglContext);
-static void quit(void);
-static void initGL(SDL_Window * win);
-static void initData(void);
-static void resizeGL(SDL_Window * win);
-static void loop(SDL_Window * win);
-static void manageEvents(SDL_Window * win);
-static void draw(void);
-static void printFPS(void);
-static void mobile_move(objet*,int);
-GLuint loadCubemap(vector<const GLchar*>);
-static GLfloat * buildSphere(int, int);
-void Pre_rendu_feu(glm::mat4, glm::mat4,float);
-void RenderShadowedObjects(bool, bool);
-void SetBoneTransform(uint , const glm::mat4&, int);
-void camera_script();
-void audio_script(int, double);
-void fire_script();
-void Pre_rendu_cubeMap();
-void Pre_rendu_shadow_house(glm::mat4, glm::mat4);
-void Pre_rendu_shadow_cubeMap();
-void renderQuad();
-void renderCube();
-void blur_process();
-void bloom_process();
-void initAudio();
-void load_audio();
-double bezier(double,double,double,double,double); 
-
-  
-/////////////////////////////////
-  
-
-float rand_FloatRange(float a, float b)
+class Object
 {
-    return ((b-a)*((float)rand()/RAND_MAX))+a;
-}
+  public:
+
+    float _angle;
+    float _acca;
+    float _id;
+    float _scale;
+    float _x, _y, _z;
+    float _start;
+    float _dt;
+    float _bouge;
+    float _t;
+    float _t0;
+    double _alpha;
+    float _ambient_str;
+    float _diffuse_str;
+    float _specular_str;
+    int _shini_str;
+    float _constant;
+    float _linear;
+    float _quadratic;
+    float _shadow_darkness;
+    bool _normal_mapping;
+
+};
 
 
-void print_mat4(glm::mat4 matrix){
+//******************************************************************************
+//**********  Class Light  *****************************************************
+//******************************************************************************
 
-    const float *pSource = (const float*)glm::value_ptr(matrix);
-    
-    printf("\n");
+class Light
+{
+  public:
 
-    for (int i = 0; i < 4;i++){
-        for (int j = 0; j < 4; j++){
-            printf("%.3f ", pSource[(4 * j) + i]);
-        }
-        printf("\n");
-    }
+    glm::vec3 _light_pos;  
+    glm::vec3 _save_light_pos;
+    glm::vec3 _light_color;
+    glm::vec3 _light_specular_color;
 
-    printf("\n");
-}
-
-
-glm::vec3 computeClipInfo(float zn, float zf) { 
-
-  return glm::vec3(zn  * zf, zn - zf, zf);
-  //return glm::vec3(zn, -1.0f, +1.0f);
-}
+};
 
 
-  bool is_RGBA(SDL_Surface * t){
+//******************************************************************************
+//**********  Pipeline Functions  **********************************************
+//******************************************************************************
 
-   if(t->format->format == SDL_PIXELFORMAT_RGB332
-    || t->format->format == SDL_PIXELFORMAT_RGB444
-    || t->format->format == SDL_PIXELFORMAT_RGB555
-    || t->format->format == SDL_PIXELFORMAT_RGB565
-    || t->format->format == SDL_PIXELFORMAT_RGB24
-    || t->format->format == SDL_PIXELFORMAT_RGB888
-  //|| t->format->format == SDL_PIXELFORMAT_RGBX8888
-    || t->format->format == SDL_PIXELFORMAT_RGB565
-    || t->format->format == SDL_PIXELFORMAT_BGR555
-    || t->format->format == SDL_PIXELFORMAT_BGR565
-    || t->format->format == SDL_PIXELFORMAT_BGR24
-    || t->format->format == SDL_PIXELFORMAT_BGR888){
-    return false;
-   }else{
+static SDL_Window * InitWindow( int iWidth,
+                                int iHeight,
+                                SDL_GLContext * iOpenGLContext );
 
-    if(t->format->format == SDL_PIXELFORMAT_RGBA4444
-      || t->format->format == SDL_PIXELFORMAT_RGBA5551
-      || t->format->format == SDL_PIXELFORMAT_ARGB4444
-      || t->format->format == SDL_PIXELFORMAT_ABGR4444
-      || t->format->format == SDL_PIXELFORMAT_BGRA4444
-      || t->format->format == SDL_PIXELFORMAT_ABGR1555
-      || t->format->format == SDL_PIXELFORMAT_BGRA5551
-      || t->format->format == SDL_PIXELFORMAT_ARGB8888
-      || t->format->format == SDL_PIXELFORMAT_ABGR8888
-      || t->format->format == SDL_PIXELFORMAT_BGRA8888
-      //|| t->format->format == SDL_PIXELFORMAT_RGBX8888
-      || t->format->format == SDL_PIXELFORMAT_RGBA8888){
-      return true;
-  }else{ return false; }
-  }
+static void Quit();
 
-}
+static void InitGL( SDL_Window * iWindow );
+
+static void InitData();
+
+static void ResizeGL( SDL_Window * iWindow );
+
+static void Loop( SDL_Window * iWindow );
+
+static void ManageEvents( SDL_Window * iWindow );
+
+static void Draw();
+
+static void PrintFPS();
+
+static void TimeUpdate( Object * ,
+                        int );
+
+GLuint LoadCubeMap( vector< const GLchar * > iPaths );
+
+static GLfloat * BuildSphere( int iLongitudes,
+                              int iLatitudes );
+
+void RenderScene( bool iIsFinalFBO );
+
+void RenderQuad();
+
+void RenderCube();
+
+void BlurProcess();
+
+void BloomProcess();
+
+void InitAudio();
+
+void LoadAudio();
+
+float RandFloatRange( float iMin,
+                      float iMax );
+
+void PrintMatrix( glm::mat4 * iMatrix );
+
+bool IsTextureRGBA( SDL_Surface * t );
+
