@@ -1,4 +1,5 @@
 #include "classic_model.hpp"
+#include "clock.hpp"
 #include "stb_image.hpp"
 
 #define GLM_FORCE_RADIANS
@@ -27,6 +28,7 @@ using namespace std;
 
 class Object
 {
+
   public:
 
     float _angle;
@@ -34,11 +36,6 @@ class Object
     float _id;
     float _scale;
     float _x, _y, _z;
-    float _start;
-    float _dt;
-    float _bouge;
-    float _t;
-    float _t0;
     double _alpha;
     float _ambient_str;
     float _diffuse_str;
@@ -59,6 +56,7 @@ class Object
 
 class Light
 {
+
   public:
 
     glm::vec3 _light_pos;  
@@ -92,9 +90,6 @@ static void ManageEvents( SDL_Window * iWindow );
 static void Draw();
 
 static void PrintFPS();
-
-static void TimeUpdate( Object * ,
-                        int );
 
 GLuint LoadCubeMap( vector< const GLchar * > iPaths );
 

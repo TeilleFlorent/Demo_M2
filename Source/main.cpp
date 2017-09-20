@@ -104,11 +104,13 @@ int cameraS = 0;
 static Light * lights;
 static int nb_lights;
 
+// Clock
+Clock * _clock;
+
 // All scene's objects
-static Object * table;
 static int nb_table = 3;
+static Object * table;
 static Object * ground1;
-static Object * ground2;
 
 // Sphere param
 static int longi = 20;
@@ -135,8 +137,10 @@ static int res_irradiance_cubeMap = 32;
 
 int main()
 {
+  // Init srand seed
   srand( time( NULL ) );
 
+  // Init SDL
   if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
   {
     fprintf( stderr, "Erreur lors de l'initialisation de SDL :  %s", SDL_GetError() );
@@ -144,19 +148,29 @@ int main()
   }
   atexit( SDL_Quit );
 
-  //InitAudio();
-
-  //LoadAudio();
-
+  // Init window
   _win = InitWindow( w,
                      h,
                      &_openGL_context );
- 
+  
   if( _win )
-  {
+  { 
     SDL_SetRelativeMouseMode( SDL_TRUE );
 
-    InitGL(_win);
+    // Init OpenGL
+    InitGL( _win );
+
+    // Init glew
+    glewExperimental = GL_TRUE;
+    GLenum err = glewInit();
+    if( err != GLEW_OK )
+    {
+      exit( 1 );
+    }
+    if( !GLEW_VERSION_2_1 )
+    {
+      exit( 1 ); 
+    }
 
 
     // Compilation des shaders
@@ -215,9 +229,13 @@ int main()
     /*table_model.Load_Model("../Models/cube2/Crate_Fragile.3DS", 0);
     table_model.Print_info_model();*/
 
-  
+    // Init scene data
     InitData();
 
+    // Create and init scene clock
+    _clock = new Clock();
+
+    // Run the program loop
     Loop( _win );
 
   }
@@ -343,6 +361,7 @@ static SDL_Window * InitWindow( int iWidth,
   //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
   //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
+  // Create SDL window
   win = SDL_CreateWindow( "Train",
                           SDL_WINDOWPOS_CENTERED,
                           SDL_WINDOWPOS_CENTERED, 
@@ -355,25 +374,13 @@ static SDL_Window * InitWindow( int iWidth,
     return NULL;
   }
 
+  // Create OpenGL context into the SDL window
   *iOpenGLContext = SDL_GL_CreateContext( win );
 
   if( iOpenGLContext == NULL )
   {
     SDL_DestroyWindow( win );
     return NULL;
-  }
-
-  glewExperimental = GL_TRUE;
-  GLenum err = glewInit();
-
-  if( err != GLEW_OK )
-  {
-    exit( 1 );
-  }
-  
-  if( !GLEW_VERSION_2_1 )
-  {
-    exit( 1 ); 
   }
 
   fprintf( stderr, "Version d'OpenGL : %s\n", glGetString( GL_VERSION ) );
@@ -384,7 +391,6 @@ static SDL_Window * InitWindow( int iWidth,
 
 void InitAudio()
 {
-
   int mixFlags = MIX_INIT_MP3 | MIX_INIT_OGG;
   int res = Mix_Init(mixFlags);
   
@@ -526,7 +532,7 @@ static void InitData()
   glBindVertexArray( 0 );
   glBindBuffer( GL_ARRAY_BUFFER, 0 );
 
-   //skybox texture
+  // Skybox texture
   faces.push_back( "../skybox/s1/front.png" );
   faces.push_back( "../skybox/s1/back.png" );
   faces.push_back( "../skybox/s1/top.png" );
@@ -1078,15 +1084,7 @@ static void InitData()
   // Objects initialization
   // ----------------------
   ground1 = new Object;
-  ground2 = new Object;
-  table =   new Object[ nb_table ];
-
-  // Ground1 init
-  ground1->_start = 0.0;
-  ground1->_dt = 0.0;
-  ground1->_bouge = 0;
-  ground1->_t = 0.0;
-  ground1->_t0 = 0.0;
+  table   = new Object[ nb_table ];
 
   // Tables init
   for( int i = 0; i < nb_table; i++ )
@@ -1124,44 +1122,33 @@ static void InitData()
       table[ i ]._y = 0.188;
       table[ i ]._z = 0.0;
     }
-    table[ i ]._start = 0.0;
-    table[ i ]._dt = 0.0;
-    table[ i ]._bouge = 0;
-    table[ i ]._t = 0.0;
-    table[ i ]._t0 = 0.0;
 
     table[ i ]._shadow_darkness = 0.75;
     table[ i ]._normal_mapping = true;
   }
 
-  // Ground2 init
-  ground2->_ambient_str = 0.3;
-  ground2->_diffuse_str = 0.15 * 0.3;
-  ground2->_specular_str = 0.1 * 0.3;
-  ground2->_shini_str = 128; // 4 8 16 ... 256 
-  ground2->_constant = 1.0;
-  ground2->_linear = 0.014;
-  ground2->_quadratic = 0.0007;
+  // Ground1 init
+  ground1->_ambient_str = 0.3;
+  ground1->_diffuse_str = 0.15 * 0.3;
+  ground1->_specular_str = 0.1 * 0.3;
+  ground1->_shini_str = 128; // 4 8 16 ... 256 
+  ground1->_constant = 1.0;
+  ground1->_linear = 0.014;
+  ground1->_quadratic = 0.0007;
 
-  ground2->_angle = myPI_2;
-  ground2->_acca = 0.105;
-  ground2->_id = 1.0;
-  ground2->_scale = 1.0;
+  ground1->_angle = myPI_2;
+  ground1->_acca = 0.105;
+  ground1->_id = 1.0;
+  ground1->_scale = 1.0;
 
-  ground2->_alpha = 1.0;
+  ground1->_alpha = 1.0;
 
-  ground2->_x = 0.0;
-  ground2->_y = 0.0;
-  ground2->_z = 0.0;
+  ground1->_x = 0.0;
+  ground1->_y = 0.0;
+  ground1->_z = 0.0;
 
-  ground2->_start = 0.0;
-  ground2->_dt = 0.0;
-  ground2->_bouge = 0;
-  ground2->_t = 0.0;
-  ground2->_t0 = 0.0;
-
-  ground2->_shadow_darkness = 0.75;
-  ground2->_normal_mapping = true;
+  ground1->_shadow_darkness = 0.75;
+  ground1->_normal_mapping = true;
 
 }
 
@@ -1182,8 +1169,11 @@ static void Loop( SDL_Window * iWindow )
   {
     ManageEvents( iWindow );
 
-    TimeUpdate( ground1, 1 );
-
+    _clock->TimeUpdate();
+    //std::cout << "initial time = " << _clock->_initial_time << std::endl;
+    //std::cout << "current_time = " << _clock->_current_time << std::endl;
+    //std::cout << "delta_time = " << _clock->_delta_time << std::endl;
+    
     Draw();
 
     PrintFPS();
@@ -1208,22 +1198,22 @@ static void ManageEvents( SDL_Window * iWindow )
   // ----------------------
   if( cameraZ == 1 )
   {
-    cameraPos -= ( camera_speed * ground1->_dt ) * cameraFront;
+    cameraPos -= ( camera_speed * -_clock->_delta_time ) * cameraFront;
   }
 
   if( cameraS == 1 )
   {
-    cameraPos += ( camera_speed * ground1->_dt ) * cameraFront;
+    cameraPos += ( camera_speed * -_clock->_delta_time ) * cameraFront;
   }   
 
   if( cameraQ == 1 )
   {
-    cameraPos += glm::normalize( glm::cross( cameraFront, cameraUp ) ) * ( camera_speed * ground1->_dt );
+    cameraPos += glm::normalize( glm::cross( cameraFront, cameraUp ) ) * ( camera_speed * -_clock->_delta_time );
   }
 
   if( cameraD == 1 )
   {
-    cameraPos -= glm::normalize( glm::cross( cameraFront, cameraUp ) ) * ( camera_speed * ground1->_dt ); 
+    cameraPos -= glm::normalize( glm::cross( cameraFront, cameraUp ) ) * ( camera_speed * -_clock->_delta_time ); 
   }
 
 
@@ -1372,7 +1362,7 @@ static void Draw()
   // -------------------------------
   glm::mat4 projectionM, projectionM2, projectionM3;
 
-  projectionM = glm::perspective( 45.0f, ( float )w / ( float )h, camera_near, camera_far ); // rendu de base
+  projectionM  = glm::perspective( 45.0f, ( float )w / ( float )h, camera_near, camera_far ); // rendu de base
   projectionM2 = glm::perspective( 45.0f, ( float )depth_map_res_x / ( float )depth_map_res_y, camera_near, camera_far ); // pre rendu dans depth tex
   projectionM3 = glm::perspective( 45.0f, ( float )depth_map_res_x_house / ( float )depth_map_res_y_house, camera_near, camera_far ); // pre rendu dans depth tex HOUSE
   
@@ -1489,15 +1479,15 @@ void RenderScene( bool iIsFinalFBO )
   glUseProgram( 0 );
 
 
-  // Draw ground2
+  // Draw ground1
   // ------------
   pbr_shader.Use();
 
   Msend = glm::mat4();
 
-  Msend = glm::translate( Msend, glm::vec3( ground2->_x,ground2->_y,ground2->_z ) );
-  Msend = glm::rotate( Msend, ground2->_angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
-  Msend = glm::scale( Msend, glm::vec3( ground2->_scale * 2.0f,ground2->_scale * 2.0f, ground2->_scale * 1.0f ) ); 
+  Msend = glm::translate( Msend, glm::vec3( ground1->_x,ground1->_y,ground1->_z ) );
+  Msend = glm::rotate( Msend, ground1->_angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
+  Msend = glm::scale( Msend, glm::vec3( ground1->_scale * 2.0f,ground1->_scale * 2.0f, ground1->_scale * 1.0f ) ); 
 
   projectionM2[ 0 ] = glm::vec4( ( float )( w / 2.0 ), 0.0, 0.0, ( float )( w / 2.0 ) );
   projectionM2[ 1 ] = glm::vec4( 0.0, ( float )( h / 2.0 ), 0.0, ( float )( h / 2.0 ) );
@@ -1538,15 +1528,15 @@ void RenderScene( bool iIsFinalFBO )
     glUniform3fv( glGetUniformLocation( pbr_shader._program, ( "uLightSpecularColor["+temp+"]" ).c_str() ),1, &lights[ i ]._light_specular_color[ 0 ] );
   }
 
-  glUniform1f( glGetUniformLocation( pbr_shader._program, "uAmbientSTR" ), ground2->_ambient_str );
-  glUniform1f( glGetUniformLocation( pbr_shader._program, "uDiffuseSTR" ), ground2->_diffuse_str );
-  glUniform1f( glGetUniformLocation( pbr_shader._program, "uSpecularSTR" ), ground2->_specular_str );
-  glUniform1f( glGetUniformLocation( pbr_shader._program, "uShiniSTR" ), ground2->_shini_str );
+  glUniform1f( glGetUniformLocation( pbr_shader._program, "uAmbientSTR" ), ground1->_ambient_str );
+  glUniform1f( glGetUniformLocation( pbr_shader._program, "uDiffuseSTR" ), ground1->_diffuse_str );
+  glUniform1f( glGetUniformLocation( pbr_shader._program, "uSpecularSTR" ), ground1->_specular_str );
+  glUniform1f( glGetUniformLocation( pbr_shader._program, "uShiniSTR" ), ground1->_shini_str );
 
   glUniform3fv( glGetUniformLocation(pbr_shader._program, "uViewPos" ), 1, &cameraPos[ 0 ] );
 
-  glUniform1f( glGetUniformLocation( pbr_shader._program, "uAlpha" ), ground2->_alpha );
-  glUniform1f( glGetUniformLocation( pbr_shader._program, "uID" ), ground2->_id );    
+  glUniform1f( glGetUniformLocation( pbr_shader._program, "uAlpha" ), ground1->_alpha );
+  glUniform1f( glGetUniformLocation( pbr_shader._program, "uID" ), ground1->_id );    
   glUniform1f( glGetUniformLocation( pbr_shader._program, "uCubeMapFaceNum" ), -1.0 );     
   glUniform1i( glGetUniformLocation( pbr_shader._program, "_pre_rendu" ), false );     
 
@@ -1896,37 +1886,6 @@ static GLfloat * BuildSphere( int iLongitudes, int iLatitudes )
   }
 
   return data;
-}
-
-static void TimeUpdate( Object * tabl, int nb )
-{
-  static int ft = 0;
-  static int start;
-  int t, i, j;
-
-  if( ft == 0 )
-  {
-    ft = 1;
-    start = SDL_GetTicks();
-  }
-
-  t = ( SDL_GetTicks() ) - start;                          
-  for( i = 0; i < nb; i++ )
-  {
-    j = t - tabl[ i ]._bouge;
-
-    if( j > 0 )
-    {
-      if( tabl[ i ]._start == 0.0 )
-      {
-        tabl[ i ]._start = SDL_GetTicks();
-      }
-
-      tabl[ i ]._t  = ( double )( ( SDL_GetTicks() ) - tabl[ i ]._start );
-      tabl[ i ]._dt = ( tabl[ i ]._t0 - tabl[ i ]._t) / 1000.0;
-      tabl[ i ]._t0 = tabl[ i ]._t;
-    }
-  }
 }
 
 float RandFloatRange( float iMin, float iMax )
