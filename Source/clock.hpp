@@ -1,6 +1,6 @@
-#include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
+
+#include <iostream>
 
 using namespace std;
 
@@ -21,6 +21,8 @@ class Clock
     Clock();
 
     void TimeUpdate();
+
+    void PrintState();
 
 
     // Clock class members

@@ -77,32 +77,18 @@ float reflection_cubeMap_res = /*2048.0*/ 512;
 float tex_VL_res_seed = 2048.0;
 float tex_VL_res_x, tex_VL_res_y;
 
-
 // Dimension fenetre SDL
 static int w = 800 * 1.5;
 static int h = 600 * 1.5;
 static int final_w = w;
 static int final_h = h;
 
-// Camera param
-// ------------
-static glm::vec3 cameraPos   = glm::vec3( -1.225199, 0.221990, -0.007760 );
-static glm::vec3 cameraFront = glm::vec3( 0.759404, -0.076719, 0.646080 );
-static glm::vec3 cameraUp    = glm::vec3( 0.0f, 1.0f,  0.0f );
-static float camera_near = 0.1f;
-static float camera_far = 100.0f;
-static float move_speed = 1.0;
-static float yaw = 40.390213;
-static float pitch = -4.399978;
-
-int cameraZ = 0;
-int cameraD = 0;
-int cameraQ = 0;
-int cameraS = 0;
-
 // Lights
 static Light * lights;
 static int nb_lights;
+
+// Camera
+Camera * _camera;
 
 // Clock
 Clock * _clock;
@@ -232,6 +218,9 @@ int main()
     /*table_model.Load_Model("../Models/cube2/Crate_Fragile.3DS", 0);
     table_model.Print_info_model();*/
 
+    // Create and init scene camera
+    _camera = new Camera();
+    
     // Create and init scene clock
     _clock = new Clock();
 
@@ -1099,9 +1088,6 @@ static void InitData()
     table[ i ]._diffuse_str = 0.4;
     table[ i ]._specular_str = 0.2;
     table[ i ]._shini_str = 8; // 4 8 16 ... 256 
-    table[ i ]._constant = 1.0;
-    table[ i ]._linear = 0.014;
-    table[ i ]._quadratic = 0.0007;
 
     table[ i ]._angle = 0.0;
     table[ i ]._acca = 0.105;
@@ -1138,10 +1124,7 @@ static void InitData()
   ground1->_diffuse_str = 0.15 * 0.3;
   ground1->_specular_str = 0.1 * 0.3;
   ground1->_shini_str = 128; // 4 8 16 ... 256 
-  ground1->_constant = 1.0;
-  ground1->_linear = 0.014;
-  ground1->_quadratic = 0.0007;
-
+  
   ground1->_angle = myPI_2;
   ground1->_acca = 0.105;
   ground1->_id = 1.0;
@@ -1176,9 +1159,7 @@ static void Loop( SDL_Window * iWindow )
     ManageEvents( iWindow );
 
     _clock->TimeUpdate();
-    //std::cout << "initial time = " << _clock->_initial_time << std::endl;
-    //std::cout << "current_time = " << _clock->_current_time << std::endl;
-    //std::cout << "delta_time = " << _clock->_delta_time << std::endl;
+    //_clock->PrintState();
     
     Draw();
 
@@ -1186,41 +1167,19 @@ static void Loop( SDL_Window * iWindow )
 
     SDL_GL_SwapWindow( iWindow );
     
-    //printf("1cameraX = %f, cameraY = %f, cameraZ = %f\n",cameraPos.x,cameraPos.y, cameraPos.z); 
-    //printf("2cameraX = %f, cameraY = %f, cameraZ = %f\n",cameraFront.x,cameraFront.y, cameraFront.z);
-    //printf("yaw = %f, pitch = %f\n", yaw, pitch);
+    //_camera->PrintState();
+
   }
 }
 
 static void ManageEvents( SDL_Window * iWindow )
 {
   SDL_Event event;
-  glm::vec3 front;
-
-  GLfloat camera_speed = move_speed;
 
 
   // Camera position update
   // ----------------------
-  if( cameraZ == 1 )
-  {
-    cameraPos -= ( camera_speed * -_clock->_delta_time ) * cameraFront;
-  }
-
-  if( cameraS == 1 )
-  {
-    cameraPos += ( camera_speed * -_clock->_delta_time ) * cameraFront;
-  }   
-
-  if( cameraQ == 1 )
-  {
-    cameraPos += glm::normalize( glm::cross( cameraFront, cameraUp ) ) * ( camera_speed * -_clock->_delta_time );
-  }
-
-  if( cameraD == 1 )
-  {
-    cameraPos -= glm::normalize( glm::cross( cameraFront, cameraUp ) ) * ( camera_speed * -_clock->_delta_time ); 
-  }
+  _camera->KeyboardPositionUpdate( _clock->_delta_time );
 
 
   // Key & window Event 
@@ -1238,19 +1197,19 @@ static void ManageEvents( SDL_Window * iWindow )
             exit( 0 );
 
           case 'z' :
-            cameraZ = 1;
+            _camera->_Z_state = 1;
             break;
 
           case 'q' :
-            cameraQ = 1;
+            _camera->_Q_state = 1;
             break;
 
           case 's' :
-            cameraS = 1;
+            _camera->_S_state = 1;
             break;
 
           case 'd' :
-            cameraD=1;
+            _camera->_D_state = 1;
             break;
 
           case 'a' :
@@ -1288,19 +1247,19 @@ static void ManageEvents( SDL_Window * iWindow )
         switch( event.key.keysym.sym ) 
         {
           case 'z' :
-            cameraZ = 0;
+            _camera->_Z_state = 0;
             break;
 
           case 'q' :
-            cameraQ = 0;
+            _camera->_Q_state = 0;
             break;
 
           case 's' :
-            cameraS = 0;
+            _camera->_S_state = 0;
             break;
 
           case 'd' :
-            cameraD = 0;
+            _camera->_D_state = 0;
             break;
         }
         break;
@@ -1330,36 +1289,8 @@ static void ManageEvents( SDL_Window * iWindow )
 
   // Mouse event
   // -----------
-  int x,y;                      
-
-  if( true )
-  {
-    SDL_GetRelativeMouseState( &x, &y );
-
-    GLfloat xoffset = ( float )x;
-    GLfloat yoffset = ( float )y * -1.0; // Reversed since y-coordinates go from bottom to left
-    
-    GLfloat sensitivity = 0.05; // Change this value to your liking
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
-
-    yaw   += xoffset;
-    pitch += yoffset;
-
-    if( pitch > 89.0f )
-    {
-      pitch = 89.0f;
-    }
-    if( pitch < -89.0f )
-    {
-      pitch = -89.0f;
-    }
-
-    front.x = cos( glm::radians( yaw ) ) * cos( glm::radians( pitch ) );
-    front.y = sin( glm::radians( pitch ) );
-    front.z = sin( glm::radians( yaw ) ) * cos( glm::radians( pitch ) );
-    cameraFront = glm::normalize( front );
-  }
+  _camera->MouseFrontUpdate();
+  
 }
 
 static void Draw() 
@@ -1368,9 +1299,9 @@ static void Draw()
   // -------------------------------
   glm::mat4 projectionM, projectionM2, projectionM3;
 
-  projectionM  = glm::perspective( 45.0f, ( float )w / ( float )h, camera_near, camera_far ); // rendu de base
-  projectionM2 = glm::perspective( 45.0f, ( float )depth_map_res_x / ( float )depth_map_res_y, camera_near, camera_far ); // pre rendu dans depth tex
-  projectionM3 = glm::perspective( 45.0f, ( float )depth_map_res_x_house / ( float )depth_map_res_y_house, camera_near, camera_far ); // pre rendu dans depth tex HOUSE
+  projectionM  = glm::perspective( 45.0f, ( float )w / ( float )h, _camera->_near, _camera->_far ); // rendu de base
+  projectionM2 = glm::perspective( 45.0f, ( float )depth_map_res_x / ( float )depth_map_res_y, _camera->_near, _camera->_far ); // pre rendu dans depth tex
+  projectionM3 = glm::perspective( 45.0f, ( float )depth_map_res_x_house / ( float )depth_map_res_y_house, _camera->_near, _camera->_far ); // pre rendu dans depth tex HOUSE
   
 
   // Scene rendering
@@ -1383,8 +1314,8 @@ static void Draw()
   glActiveTexture( GL_TEXTURE0 );
   glBindTexture( GL_TEXTURE_2D, temp_tex_color_buffer[ 1 ] /*final_tex_color_buffer[0]*/ /*pingpongColorbuffers[0]*/ /*tex_depth_ssr*/ );
   //glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[ 1 ] /*final_tex_color_buffer[0]*/ /*pingpongColorbuffers[0]*/ /*tex_depth_ssr*/ );
-  glUniform1f( glGetUniformLocation( observer_shader._program, "uCameraNear" ), camera_near );
-  glUniform1f( glGetUniformLocation( observer_shader._program, "uCameraFar" ), camera_far );
+  glUniform1f( glGetUniformLocation( observer_shader._program, "uCameraNear" ), _camera->_near );
+  glUniform1f( glGetUniformLocation( observer_shader._program, "uCameraFar" ), _camera->_far );
   glBindVertexArray( observerVAO );
 
   //glDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
@@ -1413,9 +1344,9 @@ void RenderScene( bool iIsFinalFBO )
   // ----------------
   glm::mat4 projectionM, Msend, viewMatrix, Msend2, projectionM2, projectionM3;
 
-  projectionM = glm::perspective( 45.0f, ( float )w / ( float )h, camera_near, camera_far );
-  projectionM3 = glm::perspective( 45.0f, ( float )w / ( float )h, -camera_near, -camera_far );
-  viewMatrix = glm::lookAt( cameraPos, cameraPos + cameraFront, cameraUp ); 
+  projectionM = glm::perspective( 45.0f, ( float )w / ( float )h, _camera->_near, _camera->_far );
+  projectionM3 = glm::perspective( 45.0f, ( float )w / ( float )h, -_camera->_near, -_camera->_far );
+  viewMatrix = glm::lookAt( _camera->_position, _camera->_position + _camera->_front, _camera->_up ); 
 
   glm::mat4 lightProjection, lightView, light_space_matrix, skybox_light_space_matrix;
   //GLfloat far =  glm::distance(lights[2].lightPos, glm::vec3(house.x,house.y,house.z)) * 1.2f;
@@ -1539,7 +1470,7 @@ void RenderScene( bool iIsFinalFBO )
   glUniform1f( glGetUniformLocation( pbr_shader._program, "uSpecularSTR" ), ground1->_specular_str );
   glUniform1f( glGetUniformLocation( pbr_shader._program, "uShiniSTR" ), ground1->_shini_str );
 
-  glUniform3fv( glGetUniformLocation(pbr_shader._program, "uViewPos" ), 1, &cameraPos[ 0 ] );
+  glUniform3fv( glGetUniformLocation(pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
   glUniform1f( glGetUniformLocation( pbr_shader._program, "uAlpha" ), ground1->_alpha );
   glUniform1f( glGetUniformLocation( pbr_shader._program, "uID" ), ground1->_id );    
@@ -1582,15 +1513,12 @@ void RenderScene( bool iIsFinalFBO )
       glUniform3fv( glGetUniformLocation( pbr_shader._program, ( "LightSpecularColor["+temp+"]" ).c_str() ),1, &lights[ i ]._light_specular_color[ 0 ] );
     }
 
-    glUniform1f( glGetUniformLocation( pbr_shader._program, "constant[0]" ), table[ i ]._constant );
-    glUniform1f( glGetUniformLocation( pbr_shader._program, "linear[0]" ),  table[ i ]._linear );
-    glUniform1f( glGetUniformLocation( pbr_shader._program, "quadratic[0]" ), table[ i ]._quadratic );
     glUniform1f( glGetUniformLocation( pbr_shader._program, "ambientSTR" ), table[ i ]._ambient_str );
     glUniform1f( glGetUniformLocation( pbr_shader._program, "diffuseSTR" ), table[ i ]._diffuse_str );
     glUniform1f( glGetUniformLocation( pbr_shader._program, "specularSTR" ), table[ i ]._specular_str );
     glUniform1f( glGetUniformLocation( pbr_shader._program, "uShiniSTR" ), table[ i ]._shini_str );
 
-    glUniform3fv( glGetUniformLocation( pbr_shader._program, "uViewPos" ), 1, &cameraPos[ 0 ] );
+    glUniform3fv( glGetUniformLocation( pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
     glUniform1f( glGetUniformLocation( pbr_shader._program, "uAlpha" ), table[ i ]._alpha );
     glUniform1f( glGetUniformLocation( pbr_shader._program, "uID" ), table[ i ]._id );    

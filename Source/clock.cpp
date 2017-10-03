@@ -18,3 +18,13 @@ void Clock::TimeUpdate()
   _delta_time            = ( new_current_time - _current_time ); 
   _current_time          = new_current_time;
 }
+
+void Clock::PrintState()
+{   
+  std::cout << "\nClock Status :" << std::endl 
+            <<   "--------------" << std::endl;
+  std::cout << "Initial time = " << _initial_time << std::endl;
+  std::cout << "Current_time = " << _current_time << std::endl;
+  std::cout << "Delta_time   = " << _delta_time   << std::endl;
+  std::cout << std::endl;
+}

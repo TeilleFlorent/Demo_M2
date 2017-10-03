@@ -1,6 +1,7 @@
 #include "classic_model.hpp"
 #include "clock.hpp"
 #include "hdr_image_manager.hpp"
+#include "camera.hpp"
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -41,9 +42,6 @@ class Object
     float _diffuse_str;
     float _specular_str;
     int _shini_str;
-    float _constant;
-    float _linear;
-    float _quadratic;
     float _shadow_darkness;
     bool _normal_mapping;
 
