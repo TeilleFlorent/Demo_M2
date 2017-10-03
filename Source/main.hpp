@@ -2,15 +2,12 @@
 #include "clock.hpp"
 #include "hdr_image_manager.hpp"
 #include "camera.hpp"
+#include "toolbox.hpp"
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "glm/gtx/string_cast.hpp"
-#include "glm/ext.hpp"
-
-using namespace std;
 
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -19,8 +16,7 @@ using namespace std;
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
-#define myPI 3.141593
-#define myPI_2 1.570796
+using namespace std;
 
 
 //******************************************************************************
@@ -87,13 +83,6 @@ static void ManageEvents( SDL_Window * iWindow );
 
 static void Draw();
 
-static void PrintFPS();
-
-GLuint LoadCubeMap();
-
-static GLfloat * BuildSphere( int iLongitudes,
-                              int iLatitudes );
-
 void RenderScene( bool iIsFinalFBO );
 
 void RenderQuad();
@@ -103,15 +92,3 @@ void RenderCube();
 void BlurProcess();
 
 void BloomProcess();
-
-void InitAudio();
-
-void LoadAudio();
-
-float RandFloatRange( float iMin,
-                      float iMax );
-
-void PrintMatrix( glm::mat4 * iMatrix );
-
-bool IsTextureRGBA( SDL_Surface * t );
-
