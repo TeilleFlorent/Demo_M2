@@ -1,4 +1,4 @@
-# Demo_M1_S2
+# Demo_M2
 
 Real time demo entirely realise in C++ and openGL-GLSL 3.3.
 
