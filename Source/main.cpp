@@ -107,6 +107,9 @@ static int nb_lights;
 // Clock
 Clock * _clock;
 
+// HDRManager
+HDRManager * _hdr_image_manager;
+
 // All scene's objects
 static int nb_table = 3;
 static Object * table;
@@ -229,11 +232,14 @@ int main()
     /*table_model.Load_Model("../Models/cube2/Crate_Fragile.3DS", 0);
     table_model.Print_info_model();*/
 
-    // Init scene data
-    InitData();
-
     // Create and init scene clock
     _clock = new Clock();
+
+    // Create HDR Image Manager
+    _hdr_image_manager = new HDRManager();
+
+    // Init scene data
+    InitData();
 
     // Run the program loop
     Loop( _win );
@@ -545,12 +551,12 @@ static void InitData()
   // -------------------
 
   // Load hdr skybox texture
-  stbi_set_flip_vertically_on_load( true );
+  _hdr_image_manager->stbi_set_flip_vertically_on_load( true );
   int width, height, nrComponents;
   //std::string temp_str("../skybox/hdr skybox 2/Ridgecrest_Road_Ref.hdr");
   //std::string temp_str("../skybox/hdr skybox 1/Arches_E_PineTree_3k.hdr");
   std::string temp_str("../skybox/hdr skybox 3/QueenMary_Chimney_Ref.hdr");
-  float *data = stbi_loadf( temp_str.c_str(), &width, &height, &nrComponents, 0 );
+  float * data = _hdr_image_manager->stbi_loadf( temp_str.c_str(), &width, &height, &nrComponents, 0 );
   if( data )
   {
     glGenTextures( 1, &hdrTexture );
@@ -560,7 +566,7 @@ static void InitData()
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    stbi_image_free( data );
+    _hdr_image_manager->stbi_image_free( data );
   }
   else
   {
@@ -1824,7 +1830,7 @@ static void PrintFPS()
   }
 }
 
-GLuint LoadCubeMap( vector< const GLchar* > iPaths )
+GLuint LoadCubeMap()
 {
   GLuint textureID;
   SDL_Surface * t = NULL;

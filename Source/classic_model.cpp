@@ -173,27 +173,25 @@ void Model::LoadModel( string iPath )
   }
 
   this->_directory = iPath.substr( 0, iPath.find_last_of('/') );
-  this->ProcessNode( _scene->mRootNode, _scene, 0 );
+  this->ProcessNode( _scene->mRootNode, 0 );
 }
 
 void Model::ProcessNode( aiNode * iNode,
-                         const aiScene* iScene, 
                          int iMeshNum )
 {
   for( GLuint i = 0; i < iNode->mNumMeshes; i++ )
   {
     aiMesh * mesh = _scene->mMeshes[ iNode->mMeshes[ i ] ]; 
-    this->_meshes.push_back( this->ProcessMesh( mesh, _scene, iMeshNum) );  
+    this->_meshes.push_back( this->ProcessMesh( mesh, iMeshNum) );  
   }
    
   for( GLuint i = 0; i < iNode->mNumChildren; i++ )
   {
-    this->ProcessNode( iNode->mChildren[ i ], _scene, i );
+    this->ProcessNode( iNode->mChildren[ i ], i );
   }
 }
 
 Mesh Model::ProcessMesh( aiMesh * iMesh, 
-                         const aiScene * iScene, 
                          int iMeshNum )
 {
   vector< Vertex > vertices;

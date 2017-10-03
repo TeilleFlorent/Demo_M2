@@ -1,6 +1,6 @@
 #include "classic_model.hpp"
 #include "clock.hpp"
-#include "stb_image.hpp"
+#include "hdr_image_manager.hpp"
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -91,7 +91,7 @@ static void Draw();
 
 static void PrintFPS();
 
-GLuint LoadCubeMap( vector< const GLchar * > iPaths );
+GLuint LoadCubeMap();
 
 static GLfloat * BuildSphere( int iLongitudes,
                               int iLatitudes );

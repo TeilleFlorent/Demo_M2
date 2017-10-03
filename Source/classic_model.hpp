@@ -101,11 +101,9 @@ class Model
     void LoadModel( string iPath );
 
     void ProcessNode( aiNode * iNode,
-                      const aiScene* iScene,
                       int iMeshNum );
 
     Mesh ProcessMesh( aiMesh* iMesh,
-                      const aiScene * iScene,
                       int iMeshNum );
 
     vector< Texture > LoadMaterialTextures( aiMaterial * iMaterial,
