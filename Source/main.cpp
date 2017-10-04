@@ -5,9 +5,6 @@
 //**********  Global variables  ************************************************
 //******************************************************************************
 
-static SDL_Window * _win = NULL;
-static SDL_GLContext _openGL_context = NULL;
-
 // Shaders
 Shader pbr_shader;
 Shader skybox_shader;
@@ -57,7 +54,7 @@ unsigned int captureRBO;
 static unsigned int hdrTexture;
 static unsigned int envCubemap;
 static unsigned int irradianceMap;   
-std::vector<const GLchar*> faces; // data skybox cube map texture
+std::vector< const GLchar * > faces; // data skybox cube map texture
 
 static GLuint pingpongColorbuffers[2];
 static GLuint temp_tex_color_buffer[2];
@@ -77,15 +74,12 @@ float reflection_cubeMap_res = /*2048.0*/ 512;
 float tex_VL_res_seed = 2048.0;
 float tex_VL_res_x, tex_VL_res_y;
 
-// Dimension fenetre SDL
-static int w = 800 * 1.5;
-static int h = 600 * 1.5;
-static int final_w = w;
-static int final_h = h;
-
 // Lights
 static Light * lights;
 static int nb_lights;
+
+// Window
+Window * _window;
 
 // Toolbox
 Toolbox * _toolbox;
@@ -132,114 +126,87 @@ int main()
   // Init srand seed
   srand( time( NULL ) );
 
-  // Init SDL
-  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
-  {
-    fprintf( stderr, "Erreur lors de l'initialisation de SDL :  %s", SDL_GetError() );
-    return -1;
-  }
-  atexit( SDL_Quit );
+  // Create and init window
+  _window = new Window();
 
-  // Init window
-  _win = InitWindow( w,
-                     h,
-                     &_openGL_context );
+  // Create toolbox
+  _toolbox = new Toolbox();
+
+  // Create and init scene camera
+  _camera = new Camera();
   
-  if( _win )
-  { 
-    SDL_SetRelativeMouseMode( SDL_TRUE );
+  // Create and init scene clock
+  _clock = new Clock();
 
-    // Init OpenGL
-    InitGL( _win );
-
-    // Init glew
-    glewExperimental = GL_TRUE;
-    GLenum err = glewInit();
-    if( err != GLEW_OK )
-    {
-      exit( 1 );
-    }
-    if( !GLEW_VERSION_2_1 )
-    {
-      exit( 1 ); 
-    }
+  // Create HDR Image Manager
+  _hdr_image_manager = new HDRManager();
 
 
-    // Compilation des shaders
-    // -----------------------
-    pbr_shader.SetShaderClassicPipeline(                "../shaders/pbr_lighting.vs",       "../shaders/pbr_lighting.fs" );
-    skybox_shader.SetShaderClassicPipeline(             "../shaders/skybox.vs",             "../shaders/skybox.fs" );
-    flat_color_shader.SetShaderClassicPipeline(         "../shaders/flat_color.vs",         "../shaders/flat_color.fs" );
-    observer_shader.SetShaderClassicPipeline(           "../shaders/observer.vs",           "../shaders/observer.fs" );
-    blur_shader.SetShaderClassicPipeline(               "../shaders/blur.vs",               "../shaders/blur.fs" );
-    bloom_shader.SetShaderClassicPipeline(              "../shaders/bloom_blending.vs",     "../shaders/bloom_blending.fs" );
-    blit_shader.SetShaderClassicPipeline(               "../shaders/blit.vs",               "../shaders/blit.fs" );
-    cube_map_converter_shader.SetShaderClassicPipeline( "../shaders/cube_map_converter.vs", "../shaders/cube_map_converter.fs" );
-    diffuse_irradiance_shader.SetShaderClassicPipeline( "../shaders/cube_map_converter.vs", "../shaders/diffuse_irradiance.fs" );
+  // Compilation des shaders
+  // -----------------------
+  pbr_shader.SetShaderClassicPipeline(                "../shaders/pbr_lighting.vs",       "../shaders/pbr_lighting.fs" );
+  skybox_shader.SetShaderClassicPipeline(             "../shaders/skybox.vs",             "../shaders/skybox.fs" );
+  flat_color_shader.SetShaderClassicPipeline(         "../shaders/flat_color.vs",         "../shaders/flat_color.fs" );
+  observer_shader.SetShaderClassicPipeline(           "../shaders/observer.vs",           "../shaders/observer.fs" );
+  blur_shader.SetShaderClassicPipeline(               "../shaders/blur.vs",               "../shaders/blur.fs" );
+  bloom_shader.SetShaderClassicPipeline(              "../shaders/bloom_blending.vs",     "../shaders/bloom_blending.fs" );
+  blit_shader.SetShaderClassicPipeline(               "../shaders/blit.vs",               "../shaders/blit.fs" );
+  cube_map_converter_shader.SetShaderClassicPipeline( "../shaders/cube_map_converter.vs", "../shaders/cube_map_converter.fs" );
+  diffuse_irradiance_shader.SetShaderClassicPipeline( "../shaders/cube_map_converter.vs", "../shaders/diffuse_irradiance.fs" );
 
 
-    // Set texture uniform location
-    // ----------------------------
-    pbr_shader.Use();
-    glUniform1i( glGetUniformLocation( pbr_shader._program, "uTextureDiffuse1" ), 0 ) ;
-    glUniform1i( glGetUniformLocation( pbr_shader._program, "uTextureNormal1" ), 1 );
-    glUniform1i( glGetUniformLocation( pbr_shader._program, "uTextureHeight1" ), 2 ) ;
-    glUniform1i( glGetUniformLocation( pbr_shader._program, "uTextureAO1" ), 3 );
-    glUniform1i( glGetUniformLocation( pbr_shader._program, "uTextureRoughness1" ), 4 );
-    glUniform1i( glGetUniformLocation( pbr_shader._program, "uTextureMetalness1" ), 5 );
-    glUniform1i( glGetUniformLocation( pbr_shader._program, "uTextureSpecular1" ), 6 );
+  // Set texture uniform location
+  // ----------------------------
+  pbr_shader.Use();
+  glUniform1i( glGetUniformLocation( pbr_shader._program, "uTextureDiffuse1" ), 0 ) ;
+  glUniform1i( glGetUniformLocation( pbr_shader._program, "uTextureNormal1" ), 1 );
+  glUniform1i( glGetUniformLocation( pbr_shader._program, "uTextureHeight1" ), 2 ) ;
+  glUniform1i( glGetUniformLocation( pbr_shader._program, "uTextureAO1" ), 3 );
+  glUniform1i( glGetUniformLocation( pbr_shader._program, "uTextureRoughness1" ), 4 );
+  glUniform1i( glGetUniformLocation( pbr_shader._program, "uTextureMetalness1" ), 5 );
+  glUniform1i( glGetUniformLocation( pbr_shader._program, "uTextureSpecular1" ), 6 );
 
-    glUniform1i( glGetUniformLocation( pbr_shader._program, "uIrradianceCubeMap" ), 9 ); 
-    glUseProgram( 0 );
+  glUniform1i( glGetUniformLocation( pbr_shader._program, "uIrradianceCubeMap" ), 9 ); 
+  glUseProgram( 0 );
 
-    skybox_shader.Use();
-    glUniform1i( glGetUniformLocation( skybox_shader._program, "uSkyboxTexture" ), 0 );
-    glUseProgram( 0 );
+  skybox_shader.Use();
+  glUniform1i( glGetUniformLocation( skybox_shader._program, "uSkyboxTexture" ), 0 );
+  glUseProgram( 0 );
 
-    observer_shader.Use();
-    glUniform1i( glGetUniformLocation( observer_shader._program, "uTexture1" ), 0 );
-    glUseProgram( 0 );
+  observer_shader.Use();
+  glUniform1i( glGetUniformLocation( observer_shader._program, "uTexture1" ), 0 );
+  glUseProgram( 0 );
 
-    blit_shader.Use();
-    glUniform1i( glGetUniformLocation( blit_shader._program, "uTexture1" ), 0 );
-    glUseProgram( 0 );
+  blit_shader.Use();
+  glUniform1i( glGetUniformLocation( blit_shader._program, "uTexture1" ), 0 );
+  glUseProgram( 0 );
 
-    blur_shader.Use();
-    glUniform1i( glGetUniformLocation( blur_shader._program, "uTexture" ), 0 );
-    glUseProgram( 0 );
+  blur_shader.Use();
+  glUniform1i( glGetUniformLocation( blur_shader._program, "uTexture" ), 0 );
+  glUseProgram( 0 );
 
-    bloom_shader.Use();
-    glUniform1i( glGetUniformLocation( bloom_shader._program, "uBaseColorTexture" ), 0 );
-    glUniform1i( glGetUniformLocation( bloom_shader._program, "uBloomBrightnessTexture" ), 1 );
-    glUseProgram( 0 );
+  bloom_shader.Use();
+  glUniform1i( glGetUniformLocation( bloom_shader._program, "uBaseColorTexture" ), 0 );
+  glUniform1i( glGetUniformLocation( bloom_shader._program, "uBloomBrightnessTexture" ), 1 );
+  glUseProgram( 0 );
 
 
-    // Scene models loading
-    // --------------------
-    table_model.Load_Model( "../Models/cube/Rounded Cube.fbx", 0 );
-    table_model.Print_info_model();
-    /*table_model.Load_Model("../Models/cube2/Crate_Fragile.3DS", 0);
-    table_model.Print_info_model();*/
+  // Scene models loading
+  // --------------------
+  table_model.Load_Model( "../Models/cube/Rounded Cube.fbx", 0 );
+  table_model.Print_info_model();
+  /*table_model.Load_Model("../Models/cube2/Crate_Fragile.3DS", 0);
+  table_model.Print_info_model();*/
 
-    // Create toolbox
-    _toolbox = new Toolbox();
 
-    // Create and init scene camera
-    _camera = new Camera();
-    
-    // Create and init scene clock
-    _clock = new Clock();
+  // Init scene data
+  InitData();
 
-    // Create HDR Image Manager
-    _hdr_image_manager = new HDRManager();
+  atexit( Quit );
 
-    // Init scene data
-    InitData();
+  // Run the program loop
+  Loop( _window->_SDL_window );
 
-    // Run the program loop
-    Loop( _win );
-
-  }
   return 0;
 }
 
@@ -342,70 +309,11 @@ static void Quit()
 
   // Delete window
   // -------------
-  if( _openGL_context )
-    SDL_GL_DeleteContext( _openGL_context );
-  if( _win )
-    SDL_DestroyWindow( _win );
+  if( _window->_openGL_context )
+    SDL_GL_DeleteContext( _window->_openGL_context );
+  if( _window->_SDL_window )
+    SDL_DestroyWindow( _window->_SDL_window );
 
-}
-
-static SDL_Window * InitWindow( int iWidth,
-                                int iHeight,
-                                SDL_GLContext * iOpenGLContext )
-{
-  SDL_Window * win = NULL;
-  SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
-  SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
-  SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
-  SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
-  SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
-  //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-  //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-
-  // Create SDL window
-  win = SDL_CreateWindow( "Train",
-                          SDL_WINDOWPOS_CENTERED,
-                          SDL_WINDOWPOS_CENTERED, 
-                          iWidth,
-                          iHeight,
-                          SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN /*| SDL_WINDOW_FULLSCREEN*/ );
-
-  if( win == NULL )
-  {
-    return NULL;
-  }
-
-  // Create OpenGL context into the SDL window
-  *iOpenGLContext = SDL_GL_CreateContext( win );
-
-  if( iOpenGLContext == NULL )
-  {
-    SDL_DestroyWindow( win );
-    return NULL;
-  }
-
-  fprintf( stderr, "Version d'OpenGL : %s\n", glGetString( GL_VERSION ) );
-  fprintf( stderr, "Version de shaders supportes : %s\n", glGetString( GL_SHADING_LANGUAGE_VERSION ) );  
-  atexit( Quit );
-  return win;
-}
-
-static void InitGL( SDL_Window * win )
-{
-  glClearColor( 1.0f, 1.0f, 1.0f, 1.0f );
-  glEnable( GL_DEPTH_TEST );
-  glDepthFunc( GL_LESS ); 
-
-  ResizeGL( win );
-
-  //glEnable(GL_BLEND);
-  //glBlendEquation(GL_FUNC_ADD);
-  //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
- 
-  //glEnable(GL_MULTISAMPLE); // active anti aliasing 
-  
-  //glFrontFace(GL_CCW);
-  //glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
 }
 
 static void InitData()
@@ -758,7 +666,7 @@ static void InitData()
     for( GLuint i = 0; i < 2; i++ ) 
     {
       glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[ i ] );
-      glTexImage2DMultisample( GL_TEXTURE_2D_MULTISAMPLE, nb_multi_sample , GL_RGB16F, w, h, GL_TRUE );
+      glTexImage2DMultisample( GL_TEXTURE_2D_MULTISAMPLE, nb_multi_sample , GL_RGB16F, _window->_width, _window->_height, GL_TRUE );
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );  
@@ -766,7 +674,7 @@ static void InitData()
       glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[ i ], 0 );
     }
     glBindRenderbuffer( GL_RENDERBUFFER, dephtRBO );
-    glRenderbufferStorageMultisample( GL_RENDERBUFFER, nb_multi_sample, GL_DEPTH24_STENCIL8, w, h ); 
+    glRenderbufferStorageMultisample( GL_RENDERBUFFER, nb_multi_sample, GL_DEPTH24_STENCIL8, _window->_width, _window->_height ); 
     glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, dephtRBO );
 
     GLuint attachments2[ 2 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
@@ -783,7 +691,7 @@ static void InitData()
     for( GLuint i = 0; i < 2; i++ ) 
     {
       glBindTexture( GL_TEXTURE_2D, temp_tex_color_buffer[ i ] );
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_FLOAT, NULL );
+      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, _window->_width, _window->_height, 0, GL_RGB, GL_FLOAT, NULL );
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );  
@@ -791,7 +699,7 @@ static void InitData()
       glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, temp_tex_color_buffer[ i ], 0 );
     }
     glBindRenderbuffer( GL_RENDERBUFFER, dephtRBO );
-    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h );
+    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, _window->_width, _window->_height );
     glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, dephtRBO );
     GLuint attachments2[ 2 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
     glDrawBuffers( 2, attachments2 );
@@ -814,7 +722,7 @@ static void InitData()
   for( GLuint i = 0; i < 2; i++ ) 
   {
     glBindTexture( GL_TEXTURE_2D, final_tex_color_buffer[ i ] );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_FLOAT, NULL );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, _window->_width, _window->_height, 0, GL_RGB, GL_FLOAT, NULL );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR ); 
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );  
@@ -822,7 +730,7 @@ static void InitData()
     glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, final_tex_color_buffer[ i ], 0 );
   }
   glBindRenderbuffer( GL_RENDERBUFFER, final_depht_RBO );
-  glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h );
+  glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, _window->_width, _window->_height );
   glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, final_depht_RBO );
   glBindRenderbuffer( GL_RENDERBUFFER, 0 );
   if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
@@ -840,7 +748,7 @@ static void InitData()
   {
     glBindFramebuffer( GL_FRAMEBUFFER, pingpongFBO[ i ] );
     glBindTexture( GL_TEXTURE_2D, pingpongColorbuffers[ i ] );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, w * bloom_downsample, h * bloom_downsample, 0, GL_RGB, GL_FLOAT, NULL );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, _window->_width * bloom_downsample, _window->_height * bloom_downsample, 0, GL_RGB, GL_FLOAT, NULL );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR ); 
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE ); 
@@ -1122,156 +1030,24 @@ static void InitData()
 
 }
 
-static void ResizeGL( SDL_Window * iWindow )
-{
-  SDL_GetWindowSize( iWindow, &w, &h );
-
-  //std::cout << "W = " << w << ", H = " << h << std::endl;
-
-  SDL_WarpMouseInWindow( iWindow, w / 2.0, h / 2.0 );
-}
-
 static void Loop( SDL_Window * iWindow ) 
 {
   SDL_GL_SetSwapInterval( 1 );
   
   for(;;)
   {
-    ManageEvents( iWindow );
+    _window->ManageEvents( _camera );
 
     _clock->TimeUpdate();
-    //_clock->PrintState();
     
+    _camera->Update( _clock->_delta_time );
+
     Draw();
 
     _toolbox->PrintFPS();
 
     SDL_GL_SwapWindow( iWindow );
-    
-    //_camera->PrintState();
-
   }
-}
-
-static void ManageEvents( SDL_Window * iWindow )
-{
-  SDL_Event event;
-
-
-  // Camera position update
-  // ----------------------
-  _camera->KeyboardPositionUpdate( _clock->_delta_time );
-
-
-  // Key & window Event 
-  // ------------------
-  while( SDL_PollEvent( &event ) )
-  {
-    switch( event.type )
-    {
-
-      case SDL_KEYDOWN :
-        switch( event.key.keysym.sym ) 
-        {
-
-          case SDLK_ESCAPE:
-            exit( 0 );
-
-          case 'z' :
-            _camera->_Z_state = 1;
-            break;
-
-          case 'q' :
-            _camera->_Q_state = 1;
-            break;
-
-          case 's' :
-            _camera->_S_state = 1;
-            break;
-
-          case 'd' :
-            _camera->_D_state = 1;
-            break;
-
-          case 'a' :
-            for( int i = 0 ; i < nb_lights ; i++ )
-            {     
-              lights[ i ]._light_pos.y += 0.5;
-            }   
-            break;
-
-          case 'e' :
-            for( int i = 0 ; i < nb_lights ; i++ )
-            {     
-              lights[ i ]._light_pos.y -= 0.5;
-            }     
-            break;
-
-          case 'r' :
-            for( int i = 0 ; i < nb_table ; i++ )
-            {     
-              table[ i ]._angle += 0.02;
-            }     
-            break;
-       
-          case 'v' :
-            bloom = ( bloom == true ) ? false : true;
-            break;
-
-          default:
-            fprintf( stderr, "La touche %s a ete pressee\n", SDL_GetKeyName( event.key.keysym.sym ) );
-            break;
-        }
-        break;
-
-      case SDL_KEYUP :
-        switch( event.key.keysym.sym ) 
-        {
-          case 'z' :
-            _camera->_Z_state = 0;
-            break;
-
-          case 'q' :
-            _camera->_Q_state = 0;
-            break;
-
-          case 's' :
-            _camera->_S_state = 0;
-            break;
-
-          case 'd' :
-            _camera->_D_state = 0;
-            break;
-        }
-        break;
-
-      case SDL_WINDOWEVENT :
-        if( event.window.windowID == SDL_GetWindowID( iWindow ) ) 
-        {
-          switch( event.window.event )  
-          {
-            case SDL_WINDOWEVENT_RESIZED :
-              SDL_GetWindowSize( iWindow, &w, &h );
-              ResizeGL( iWindow );    
-              InitData();
-              break;
-            case SDL_WINDOWEVENT_CLOSE :
-              event.type = SDL_QUIT;
-              SDL_PushEvent( &event );
-              break;
-          }
-        }
-        break;
-      case SDL_QUIT:
-        exit(0);
-    }
-  }
-
-
-  // Mouse event
-  // -----------
-  _camera->MouseFrontUpdate();
-  
 }
 
 static void Draw() 
@@ -1280,7 +1056,7 @@ static void Draw()
   // -------------------------------
   glm::mat4 projectionM, projectionM2, projectionM3;
 
-  projectionM  = glm::perspective( 45.0f, ( float )w / ( float )h, _camera->_near, _camera->_far ); // rendu de base
+  projectionM  = glm::perspective( 45.0f, ( float )_window->_width / ( float )_window->_height, _camera->_near, _camera->_far ); // rendu de base
   projectionM2 = glm::perspective( 45.0f, ( float )depth_map_res_x / ( float )depth_map_res_y, _camera->_near, _camera->_far ); // pre rendu dans depth tex
   projectionM3 = glm::perspective( 45.0f, ( float )depth_map_res_x_house / ( float )depth_map_res_y_house, _camera->_near, _camera->_far ); // pre rendu dans depth tex HOUSE
   
@@ -1290,7 +1066,7 @@ static void Draw()
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
 
   // Draw observer
-  glViewport( 0, 0, w, h );
+  glViewport( 0, 0, _window->_width, _window->_height );
   observer_shader.Use();
   glActiveTexture( GL_TEXTURE0 );
   glBindTexture( GL_TEXTURE_2D, temp_tex_color_buffer[ 1 ] /*final_tex_color_buffer[0]*/ /*pingpongColorbuffers[0]*/ /*tex_depth_ssr*/ );
@@ -1304,15 +1080,15 @@ static void Draw()
   glUseProgram( 0 );
  
   // Render scene
-  glViewport( 0, 0, w, h );
+  glViewport( 0, 0, _window->_width, _window->_height );
   RenderScene( true );
 
   // Blur calculation on bright texture
-  glViewport( 0, 0, w * bloom_downsample, h * bloom_downsample );
+  glViewport( 0, 0, _window->_width * bloom_downsample, _window->_height * bloom_downsample );
   BlurProcess();
 
   // Bloom blending calculation => final render
-  glViewport( 0, 0, w, h );
+  glViewport( 0, 0, _window->_width, _window->_height );
   BloomProcess();
 
   glUseProgram( 0 );
@@ -1325,8 +1101,8 @@ void RenderScene( bool iIsFinalFBO )
   // ----------------
   glm::mat4 projectionM, Msend, viewMatrix, Msend2, projectionM2, projectionM3;
 
-  projectionM = glm::perspective( 45.0f, ( float )w / ( float )h, _camera->_near, _camera->_far );
-  projectionM3 = glm::perspective( 45.0f, ( float )w / ( float )h, -_camera->_near, -_camera->_far );
+  projectionM = glm::perspective( 45.0f, ( float )_window->_width / ( float )_window->_height, _camera->_near, _camera->_far );
+  projectionM3 = glm::perspective( 45.0f, ( float )_window->_width / ( float )_window->_height, -_camera->_near, -_camera->_far );
   viewMatrix = glm::lookAt( _camera->_position, _camera->_position + _camera->_front, _camera->_up ); 
 
   glm::mat4 lightProjection, lightView, light_space_matrix, skybox_light_space_matrix;
@@ -1407,8 +1183,8 @@ void RenderScene( bool iIsFinalFBO )
   Msend = glm::rotate( Msend, ground1->_angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
   Msend = glm::scale( Msend, glm::vec3( ground1->_scale * 2.0f,ground1->_scale * 2.0f, ground1->_scale * 1.0f ) ); 
 
-  projectionM2[ 0 ] = glm::vec4( ( float )( w / 2.0 ), 0.0, 0.0, ( float )( w / 2.0 ) );
-  projectionM2[ 1 ] = glm::vec4( 0.0, ( float )( h / 2.0 ), 0.0, ( float )( h / 2.0 ) );
+  projectionM2[ 0 ] = glm::vec4( ( float )( _window->_width / 2.0 ), 0.0, 0.0, ( float )( _window->_width / 2.0 ) );
+  projectionM2[ 1 ] = glm::vec4( 0.0, ( float )( _window->_height / 2.0 ), 0.0, ( float )( _window->_height / 2.0 ) );
   projectionM2[ 2 ] = glm::vec4( 0.0, 0.0, 1.0, 0.0 );
   projectionM2[ 3 ] = glm::vec4( 0.0, 0.0, 0.0, 1.0 );
 

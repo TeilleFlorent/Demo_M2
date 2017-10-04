@@ -3,14 +3,12 @@
 #include "hdr_image_manager.hpp"
 #include "camera.hpp"
 #include "toolbox.hpp"
+#include "window.hpp"
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-#define GLEW_STATIC
-#include <GL/glew.h>
 
 #include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL.h>
@@ -65,21 +63,13 @@ class Light
 //**********  Pipeline Functions  **********************************************
 //******************************************************************************
 
-static SDL_Window * InitWindow( int iWidth,
-                                int iHeight,
-                                SDL_GLContext * iOpenGLContext );
-
 static void Quit();
 
 static void InitGL( SDL_Window * iWindow );
 
 static void InitData();
 
-static void ResizeGL( SDL_Window * iWindow );
-
 static void Loop( SDL_Window * iWindow );
-
-static void ManageEvents( SDL_Window * iWindow );
 
 static void Draw();
 

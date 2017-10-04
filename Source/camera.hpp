@@ -1,3 +1,6 @@
+#ifndef CAMERA_H
+#define CAMERA_H
+
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
@@ -23,11 +26,13 @@ class Camera
 
     Camera();
 
-    void PrintState();
+    void Update( float iDeltaTime );
 
     void KeyboardPositionUpdate( float iDeltaTime );
 
     void MouseFrontUpdate();
+
+    void PrintState();
 
  
     // Camera class members
@@ -50,3 +55,5 @@ class Camera
     int _S_state;
  
 };
+
+#endif  // CAMERA_H

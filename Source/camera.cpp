@@ -24,15 +24,10 @@ Camera::Camera()
   _S_state = 0;
 }
 
-void Camera::PrintState()
-{ 
-  std::cout << "\nCamera Status :" << std::endl 
-            <<   "---------------" << std::endl;
-  std::cout << "Position vector = ( " << _position.x << ", " << _position.y << ", " << _position.z << " )" << std::endl;  
-  std::cout << "Front vector    = ( " << _front.x    << ", " << _front.y    << ", " << _front.z    << " )" << std::endl;  
-  std::cout << "Yaw   = " << _yaw << std::endl 
-            << "Pitch = " << _pitch << std::endl;  
-  std::cout << std::endl;
+void Camera::Update( float iDeltaTime )
+{
+  KeyboardPositionUpdate( iDeltaTime );
+  MouseFrontUpdate();
 }
 
 void Camera::KeyboardPositionUpdate( float iDeltaTime )
@@ -86,4 +81,15 @@ void Camera::MouseFrontUpdate()
   _front.y = sin( glm::radians( _pitch ) );
   _front.z = sin( glm::radians( _yaw ) ) * cos( glm::radians( _pitch ) );
   _front = glm::normalize( _front );
+}
+
+void Camera::PrintState()
+{ 
+  std::cout << "\nCamera Status :" << std::endl 
+            <<   "---------------" << std::endl;
+  std::cout << "Position vector = ( " << _position.x << ", " << _position.y << ", " << _position.z << " )" << std::endl;  
+  std::cout << "Front vector    = ( " << _front.x    << ", " << _front.y    << ", " << _front.z    << " )" << std::endl;  
+  std::cout << "Yaw   = " << _yaw << std::endl 
+            << "Pitch = " << _pitch << std::endl;  
+  std::cout << std::endl;
 }
