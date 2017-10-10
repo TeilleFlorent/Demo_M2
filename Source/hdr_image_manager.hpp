@@ -142,13 +142,9 @@ class HDRManager
     HDRManager();
 
     // float-per-channel interface
-    #ifndef STBI_NO_LINEAR
     float * stbi_loadf( char const * filename, int * x, int * y, int * channels_in_file, int desired_channels );
 
-    #ifndef STBI_NO_STDIO
     float * stbi_loadf_from_file( FILE * f, int * x, int * y, int * channels_in_file, int desired_channels );
-    #endif
-    #endif
 
     // free the loaded image -- this is just free()
     void stbi_image_free( void * retval_from_stbi_load );
@@ -157,16 +153,11 @@ class HDRManager
     void stbi_set_flip_vertically_on_load( int flag_true_if_should_flip );
 
     ////   end header file   /////////////////////////////////////////////////////
-    #endif // INCLUDE_IMAGE_HDR_MANAGER_H
-
-    #ifdef HDR_IMAGE_MANAGER_IMPLEMENTATION
 
     void stbi__refill_buffer( stbi__context * s );
 
     // initialize a callback-based context
     void stbi__start_callbacks( stbi__context * s, stbi_io_callbacks * c, void * user );
-
-    #ifndef STBI_NO_STDIO
 
     static int stbi__stdio_read( void *  user, char * data, int size );
 
@@ -175,8 +166,6 @@ class HDRManager
     static int stbi__stdio_eof( void * user );
 
     void stbi__start_file( stbi__context * s, FILE * f );
-
-    #endif // !STBI_NO_STDIO
 
     void stbi__rewind( stbi__context * s );
 
@@ -218,9 +207,7 @@ class HDRManager
     // stbi__errpf - error returning pointer to float
     // stbi__errpuc - error returning pointer to unsigned char
 
-    #ifndef STBI_NO_LINEAR
     float * stbi__ldr_to_hdr( stbi_uc * data, int x, int y, int comp );
-    #endif
 
     stbi_uc * stbi__hdr_to_ldr( float * data, int x, int y, int comp );
 
@@ -232,14 +219,9 @@ class HDRManager
 
     void stbi__float_postprocess( float * result, int * x, int * y, int * comp, int req_comp );
 
-    #ifndef STBI_NO_STDIO
     FILE * stbi__fopen( char const * filename, char const * mode );
-    #endif //!STBI_NO_STDIO
 
-    #ifndef STBI_NO_LINEAR
     float * stbi__loadf_main( stbi__context * s, int * x, int * y, int * comp, int req_comp );
-
-    #endif // !STBI_NO_LINEAR
 
     stbi_uc stbi__get8( stbi__context * s );
 
@@ -253,8 +235,6 @@ class HDRManager
 
     void stbi__hdr_convert( float * output, stbi_uc * input, int req_comp );
 
-    #endif // HDR_IMAGE_MANAGER_IMPLEMENTATION
-
 
     // HDRManager class members
     // ------------------------
@@ -263,12 +243,12 @@ class HDRManager
 
     const char * _stbi__g_failure_reason;
 
-    #ifndef STBI_NO_LINEAR
     float _stbi__l2h_gamma;
     float _stbi__l2h_scale;
-    #endif
 
     float _stbi__h2l_gamma_i;
     float _stbi__h2l_scale_i;
 
 };
+
+#endif // INCLUDE_IMAGE_HDR_MANAGER_H

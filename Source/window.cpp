@@ -1,4 +1,5 @@
 #include "window.hpp"
+#include "scene.hpp"
 
 
 //******************************************************************************
@@ -14,6 +15,18 @@ Window::Window()
   _height = 600 * 1.5;
 
   Initialization();
+  _toolbox = new Toolbox( this );
+  _scene = new Scene( this );
+}
+
+void Window::Quit()
+{
+  // Delete window
+  // -------------
+  if( _openGL_context )
+    SDL_GL_DeleteContext( _openGL_context );
+  if( _SDL_window )
+    SDL_DestroyWindow( _SDL_window );
 }
 
 void Window::Initialization()
@@ -36,7 +49,7 @@ void Window::Initialization()
   }
 
   // Init OpenGL
-  InitGL( _SDL_window );
+  InitGL();
 
   // Init glew
   glewExperimental = GL_TRUE;
@@ -67,7 +80,7 @@ SDL_Window * Window::InitSDLWindow( int iWidth,
   //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
   // Create SDL window
-  win = SDL_CreateWindow( "Train",
+  win = SDL_CreateWindow( "OpenGL Demo",
                           SDL_WINDOWPOS_CENTERED,
                           SDL_WINDOWPOS_CENTERED, 
                           iWidth,
@@ -88,12 +101,12 @@ SDL_Window * Window::InitSDLWindow( int iWidth,
     return NULL;
   }
 
-  fprintf( stderr, "Version d'OpenGL : %s\n", glGetString( GL_VERSION ) );
+  fprintf( stderr, "\nVersion d'OpenGL : %s\n", glGetString( GL_VERSION ) );
   fprintf( stderr, "Version de shaders supportes : %s\n", glGetString( GL_SHADING_LANGUAGE_VERSION ) );  
   return win;
 }
 
-void Window::InitGL( SDL_Window * iWin )
+void Window::InitGL()
 {
   glClearColor( 1.0f, 1.0f, 1.0f, 1.0f );
   glEnable( GL_DEPTH_TEST );
@@ -155,30 +168,30 @@ void Window::ManageEvents( Camera * iCamera )
             iCamera->_D_state = 1;
             break;
 
-          /*case 'a' :
-            for( int i = 0 ; i < nb_lights ; i++ )
+          case 'a' :
+            for( int i = 0 ; i < _scene->_lights.size() ; i++ )
             {     
-              lights[ i ]._light_pos.y += 0.5;
+              _scene->_lights[ i ]._position.y += 0.5;
             }   
             break;
 
           case 'e' :
-            for( int i = 0 ; i < nb_lights ; i++ )
+            for( int i = 0 ; i < _scene->_lights.size() ; i++ )
             {     
-              lights[ i ]._light_pos.y -= 0.5;
+              _scene->_lights[ i ]._position.y -= 0.5;
             }     
             break;
 
           case 'r' :
-            for( int i = 0 ; i < nb_table ; i++ )
+            for( int i = 0 ; i < _scene->_tables.size() ; i++ )
             {     
-              table[ i ]._angle += 0.02;
+              _scene->_tables[ i ]._angle += 0.02;
             }     
             break;
        
           case 'v' :
-            bloom = ( bloom == true ) ? false : true;
-            break;*/
+            _scene->_bloom = ( _scene->_bloom == true ) ? false : true;
+            break;
 
           default:
             fprintf( stderr, "La touche %s a ete pressee\n", SDL_GetKeyName( event.key.keysym.sym ) );
@@ -207,15 +220,15 @@ void Window::ManageEvents( Camera * iCamera )
         }
         break;
 
-      /*case SDL_WINDOWEVENT :
+      case SDL_WINDOWEVENT :
         if( event.window.windowID == SDL_GetWindowID( _SDL_window ) ) 
         {
           switch( event.window.event )  
           {
             case SDL_WINDOWEVENT_RESIZED :
               SDL_GetWindowSize( _SDL_window, &_width, &_height );
-              _window->Resize();    
-              InitData();
+              Resize();    
+              _scene->SceneDataInitialization();
               break;
             case SDL_WINDOWEVENT_CLOSE :
               event.type = SDL_QUIT;
@@ -223,7 +236,7 @@ void Window::ManageEvents( Camera * iCamera )
               break;
           }
         }
-        break;*/
+        break;
       case SDL_QUIT:
         exit( 0 );
     }

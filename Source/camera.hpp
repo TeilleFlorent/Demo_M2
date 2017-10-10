@@ -26,7 +26,7 @@ class Camera
 
     Camera();
 
-    void Update( float iDeltaTime );
+    void CameraUpdate( float iDeltaTime );
 
     void KeyboardPositionUpdate( float iDeltaTime );
 

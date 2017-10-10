@@ -1,9 +1,15 @@
+#include "camera.hpp"
+#include "toolbox.hpp"
+#include "hdr_image_manager.hpp"
+
+
+#ifndef WINDOW_H
+#define WINDOW_H
+
 #include <SDL2/SDL.h>
 
 #define GLEW_STATIC
 #include <GL/glew.h>
-
-#include "camera.hpp"
 
 using namespace std;
 
@@ -11,6 +17,8 @@ using namespace std;
 //******************************************************************************
 //**********  Class Window  ****************************************************
 //******************************************************************************
+
+class Scene;
 
 class Window
 {
@@ -23,9 +31,11 @@ class Window
 
     Window();
 
+    void Quit();
+
     void Initialization();  
 
-    void InitGL( SDL_Window * iWindow );
+    void InitGL();
 
     SDL_Window * InitSDLWindow( int iWidth,
                                 int iHeight,
@@ -39,10 +49,18 @@ class Window
     // Window class members
     // --------------------
     
-    SDL_Window * _SDL_window;
+    SDL_Window *  _SDL_window;
+    
     SDL_GLContext _openGL_context;
+    
+    Scene * _scene;
+
+    Toolbox * _toolbox;
 
     int _width;
+
     int _height;
 
 };
+
+#endif  // WINDOW_H

@@ -1,3 +1,6 @@
+#ifndef CLOCK_H
+#define CLOCK_H
+
 #include <SDL2/SDL.h>
 
 #include <iostream>
@@ -33,3 +36,5 @@ class Clock
     float _delta_time;   
 
 };
+
+#endif  // CLOCK_H

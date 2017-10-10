@@ -1,6 +1,8 @@
 #include "shader.hpp"
 
-using namespace std;
+
+#ifndef CLASSIC_MODEL_H
+#define CLASSIC_MODEL_H
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -15,6 +17,11 @@ using namespace std;
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
+
+using namespace std;
 
 
 //******************************************************************************
@@ -117,11 +124,13 @@ class Model
 
     // Class data
     // ----------
-    vector< Mesh > _meshes;
-    string _directory;
+    vector< Mesh >    _meshes;
+    string            _directory;
     vector< Texture > _textures_loaded;    // optimisation (ne charge pas deux foix les meme texture)
-    int _model_id;
-    Assimp::Importer _importer;
-    const aiScene * _scene;
-    int _vertice_count;
+    int               _model_id;
+    Assimp::Importer  _importer;
+    const aiScene *   _scene;
+    int               _vertice_count;
 };    
+
+#endif  // CLASSIC_MODEL_H

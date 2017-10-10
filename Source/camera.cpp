@@ -24,7 +24,7 @@ Camera::Camera()
   _S_state = 0;
 }
 
-void Camera::Update( float iDeltaTime )
+void Camera::CameraUpdate( float iDeltaTime )
 {
   KeyboardPositionUpdate( iDeltaTime );
   MouseFrontUpdate();

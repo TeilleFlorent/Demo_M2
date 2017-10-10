@@ -1,3 +1,6 @@
+#ifndef SHADER_H
+#define SHADER_H
+
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -6,9 +9,6 @@ using namespace std;
 
 #define GLEW_STATIC
 #include <GL/glew.h>
-
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
 
 
 //******************************************************************************
@@ -33,3 +33,6 @@ class Shader
     GLuint _program;
     
 };
+
+#endif  // SHADER_H
+

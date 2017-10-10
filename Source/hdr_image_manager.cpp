@@ -1,4 +1,3 @@
-#define HDR_IMAGE_MANAGER_IMPLEMENTATION
 #include "hdr_image_manager.hpp"
 
 

@@ -1,13 +1,60 @@
 #include "toolbox.hpp"
+#include "window.hpp"
 
 
 //******************************************************************************
 //**********  Class Toolbox  ***************************************************
 //******************************************************************************
 
-Toolbox::Toolbox()
+Toolbox::Toolbox( Window * iParentWindow )
+{ 
+  // Get pointer on the scene window
+  _window = iParentWindow;
+
+  _sphere_longitude_count = 20;
+  _sphere_latitude_count = 20;
+  _sphere_vertices_count = 0; 
+  _hdr_image_manager = new HDRManager();  
+
+  _quadVAO     = 0;
+  _quadVBO     = 0;
+
+  _cubeVAO     = 0;
+  _cubeVBO     = 0;
+
+  _observerVAO = 0;
+  _observerVBO = 0;
+
+  _depth_map_res_seed     = /*2048.0*/ 1024.0;
+  _reflection_cubeMap_res = /*2048.0*/ 512;
+  _tex_VL_res_seed        = 2048.0;
+}
+
+void Toolbox::Quit()
 {
-  
+  // Delete VAOs
+  // -----------
+  if( _quadVAO )
+    glDeleteVertexArrays( 1, &_quadVAO );
+  if( _cubeVAO )
+    glDeleteVertexArrays( 1, &_cubeVAO );  
+  if( _observerVAO )
+    glDeleteVertexArrays( 1, &_observerVAO );  
+
+  // Delete VBOs
+  // -----------
+  if( _quadVBO )
+    glDeleteBuffers( 1, &_quadVBO );
+  if( _cubeVBO )
+    glDeleteBuffers( 1, &_cubeVBO );
+  if( _observerVBO )
+    glDeleteBuffers( 1, &_observerVBO );
+
+  if( _pingpongFBO[ 0 ] )
+    glDeleteFramebuffers( 1, &_pingpongFBO[ 0 ] );
+  if( _pingpongFBO[ 1 ] )
+    glDeleteFramebuffers( 1, &_pingpongFBO[ 1 ] );
+
 }
 
 void Toolbox::PrintFPS()
@@ -176,4 +223,131 @@ void Toolbox::InitAudio()
 void Toolbox::LoadAudio()
 {
 
+}
+
+void Toolbox::RenderQuad()
+{
+  if( _quadVAO == 0 )
+  {
+    GLfloat quadVertices[] =
+    {
+      // Positions        // UV
+      -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+      -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+       1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+       1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+    };
+
+    // Setup plane VAO
+    glGenVertexArrays( 1, &_quadVAO );
+    glGenBuffers( 1, &_quadVBO );
+    glBindVertexArray( _quadVAO );
+    glBindBuffer( GL_ARRAY_BUFFER, _quadVBO );
+    glBufferData( GL_ARRAY_BUFFER, sizeof( quadVertices ), &quadVertices, GL_STATIC_DRAW );
+    glEnableVertexAttribArray( 0 );
+    glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof( GLfloat ), ( GLvoid* )0 );
+    glEnableVertexAttribArray( 1 );
+    glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof( GLfloat ), ( GLvoid* )( 3 * sizeof( GLfloat ) ) );
+  }
+  glBindVertexArray( _quadVAO );
+  glDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
+  glBindVertexArray( 0 );
+}
+
+void Toolbox::RenderCube()
+{ 
+
+
+  // Create cube VAO
+  // ---------------
+  if( _cubeVAO == 0 )
+  {
+    GLfloat vertices[] =
+    {
+      // Back face
+      -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // Bottom-left
+       1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
+       1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f, // bottom-right         
+       1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
+      -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
+      -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f, // top-left
+      
+      // Front face
+      -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
+       1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f, // bottom-right
+       1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
+       1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
+      -1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f, // top-left
+      -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
+      
+      // Left face
+      -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
+      -1.0f,  1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-left
+      -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
+      -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
+      -1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-right
+      -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
+      
+      // Right face
+      1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
+      1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
+      1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-right         
+      1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
+      1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
+      1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left     
+      
+      // Bottom face
+      -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+       1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
+       1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+       1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+      -1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
+      -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+      
+      // Top face
+      -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
+       1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+       1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right     
+       1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+      -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
+      -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left        
+    };
+
+    glGenVertexArrays( 1, &_cubeVAO );
+    glGenBuffers( 1, &_cubeVBO );
+    glBindBuffer( GL_ARRAY_BUFFER, _cubeVBO );
+    glBufferData( GL_ARRAY_BUFFER, sizeof( vertices ), vertices, GL_STATIC_DRAW);
+    glBindVertexArray( _cubeVAO );
+    glEnableVertexAttribArray( 0 );
+    glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof( GLfloat ), ( GLvoid* )0 );
+    glEnableVertexAttribArray( 1 );
+    glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof( GLfloat ), ( GLvoid* )( 3 * sizeof( GLfloat ) ) );
+    glEnableVertexAttribArray( 2 );
+    glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof( GLfloat ), ( GLvoid* )( 6 * sizeof( GLfloat ) ) );
+    glBindBuffer( GL_ARRAY_BUFFER, 0 );
+    glBindVertexArray( 0 );
+  }
+
+  // Render Cube
+  // -----------
+  glBindVertexArray( _cubeVAO );
+  glDrawArrays( GL_TRIANGLES, 0, 36 );
+  glBindVertexArray( 0 );
+}
+
+void Toolbox::RenderObserver()
+{
+  // Draw observer
+  glViewport( 0, 0, _window->_width, _window->_height );
+  _window->_scene->_observer_shader.Use();
+  glActiveTexture( GL_TEXTURE0 );
+  glBindTexture( GL_TEXTURE_2D, _temp_tex_color_buffer[ 1 ] /*final_tex_color_buffer[0]*/ /*pingpongColorbuffers[0]*/ /*tex_depth_ssr*/ );
+  //glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[ 1 ] /*final_tex_color_buffer[0]*/ /*pingpongColorbuffers[0]*/ /*tex_depth_ssr*/ );
+  glUniform1f( glGetUniformLocation( _window->_scene->_observer_shader._program, "uCameraNear" ), _window->_scene->_camera->_near );
+  glUniform1f( glGetUniformLocation( _window->_scene->_observer_shader._program, "uCameraFar" ), _window->_scene->_camera->_far );
+  glBindVertexArray( _observerVAO );
+
+  glDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
+  glBindVertexArray( 0 );
+  glUseProgram( 0 );
 }

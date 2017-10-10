@@ -1,84 +1,31 @@
-#include "classic_model.hpp"
-#include "clock.hpp"
-#include "hdr_image_manager.hpp"
-#include "camera.hpp"
-#include "toolbox.hpp"
-#include "window.hpp"
-
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+
+#include "window.hpp"
+#include "scene.hpp"
 
 using namespace std;
 
 
 //******************************************************************************
-//**********  Class Object  ****************************************************
+//**********  Global variables  ************************************************
 //******************************************************************************
 
-class Object
-{
-
-  public:
-
-    float _angle;
-    float _acca;
-    float _id;
-    float _scale;
-    float _x, _y, _z;
-    double _alpha;
-    float _ambient_str;
-    float _diffuse_str;
-    float _specular_str;
-    int _shini_str;
-    float _shadow_darkness;
-    bool _normal_mapping;
-
-};
-
-
-//******************************************************************************
-//**********  Class Light  *****************************************************
-//******************************************************************************
-
-class Light
-{
-
-  public:
-
-    glm::vec3 _light_pos;  
-    glm::vec3 _save_light_pos;
-    glm::vec3 _light_color;
-    glm::vec3 _light_specular_color;
-
-};
+// Window
+Window * _window;
 
 
 //******************************************************************************
 //**********  Pipeline Functions  **********************************************
 //******************************************************************************
 
-static void Quit();
+void Loop( SDL_Window * iWindow );
 
-static void InitGL( SDL_Window * iWindow );
+void Quit();
 
-static void InitData();
-
-static void Loop( SDL_Window * iWindow );
-
-static void Draw();
-
-void RenderScene( bool iIsFinalFBO );
-
-void RenderQuad();
-
-void RenderCube();
-
-void BlurProcess();
-
-void BloomProcess();
+void Draw();
