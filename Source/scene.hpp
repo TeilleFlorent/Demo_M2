@@ -87,12 +87,12 @@ class Scene
 
     // Bloom param
     float _exposure;
-    bool _bloom;
+    bool  _bloom;
     float _bloom_downsample;
 
     // Multi sample param
     bool _multi_sample;
-    int _nb_multi_sample;
+    int  _nb_multi_sample;
 
     // IBL param
     int _res_IBL_cubeMap;

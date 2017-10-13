@@ -17,20 +17,24 @@ Object::Object( int       iID,
                 int       iShiniStr,
                 bool      iGenerateShadow,
                 float     iShadowDarkness,
-                bool      iNormalMapping )
+                bool      iNormalMapping,
+                bool      iBloom,
+                float     iBloomBrightness )
 {
-  _id              = iID;
-  _position        = iPosition;
-  _angle           = iAngle;
-  _acca            = iAcca;
-  _scale           = iScale;
-  _alpha           = iAlpha;
-  _ambient_str     = iAmbientStr;
-  _diffuse_str     = iDiffuseStr;
-  _specular_str    = iSpecularStr;
-  _shini_str       = iShiniStr;
-  _generate_shadow = iGenerateShadow;
-  _shadow_darkness = iShadowDarkness;
-  _normal_mapping  = iNormalMapping;
+  _id               = iID;
+  _position         = iPosition;
+  _angle            = iAngle;
+  _acca             = iAcca;
+  _scale            = iScale;
+  _alpha            = iAlpha;
+  _ambient_str      = iAmbientStr;
+  _diffuse_str      = iDiffuseStr;
+  _specular_str     = iSpecularStr;
+  _shini_str        = iShiniStr;
+  _generate_shadow  = iGenerateShadow;
+  _shadow_darkness  = iShadowDarkness;
+  _normal_mapping   = iNormalMapping;
+  _bloom            = iBloom;
+  _bloom_brightness = iBloomBrightness;
 }
 

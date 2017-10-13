@@ -15,7 +15,7 @@
 #include <math.h>  // ldexp
 #endif
 
-#define STBI__HDR_BUFLEN 1024
+#define STBI__HDR_BUFLEN 2048
 
 using namespace std;
 

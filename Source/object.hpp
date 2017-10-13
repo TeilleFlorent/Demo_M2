@@ -29,7 +29,9 @@ class Object
             int       iShiniStr,
             bool      iGenerateShadow,
             float     iShadowDarkness,
-            bool      iNormalMapping );
+            bool      iNormalMapping,
+            bool      iBloom,
+            float     iBloomBrightness );
 
 
     // Object class members
@@ -48,6 +50,8 @@ class Object
     bool      _generate_shadow;
     float     _shadow_darkness;
     bool      _normal_mapping;
+    bool      _bloom;
+    float     _bloom_brightness;
 };
 
 #endif  // OBJECT_H

@@ -37,6 +37,8 @@ uniform float uDiffuseSTR;
 uniform float uSpecularSTR;
 uniform float uShiniSTR;
 uniform float uShadowDarkness;
+uniform bool  uBloom;
+uniform float uBloomBrightness;
 
 uniform float uAlpha;
 uniform float uID;
@@ -321,10 +323,15 @@ void main()
   // Main out color
   FragColor = vec4( PBR_lighting_result, final_alpha );
 
-  // Second out color => draw only brighest fragments
-  float brightness = dot( PBR_lighting_result, vec3( 0.2126, 0.7152, 0.0722 ) );
-  if( brightness > 0.99 )
+  // Second out color => draw only brightest fragments
+  vec3 bright_color = vec3( 0.0, 0.0, 0.0 );
+  if( uBloom )
   {
-    FragColorBrightness = vec4( PBR_lighting_result, final_alpha );
+    float brightness = dot( PBR_lighting_result, vec3( 0.2126, 0.7152, 0.0722 ) );
+    if( brightness > uBloomBrightness )
+    {
+      bright_color = PBR_lighting_result;
+    }
   }
+  FragColorBrightness = vec4( bright_color, final_alpha );
 }

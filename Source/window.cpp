@@ -27,6 +27,9 @@ void Window::Quit()
     SDL_GL_DeleteContext( _openGL_context );
   if( _SDL_window )
     SDL_DestroyWindow( _SDL_window );
+
+  _scene->Quit();
+  _toolbox->Quit();
 }
 
 void Window::Initialization()
@@ -150,7 +153,10 @@ void Window::ManageEvents( Camera * iCamera )
         {
 
           case SDLK_ESCAPE:
+            std::cout << std::endl << "Program Quit" << std::endl;
+            Quit();
             exit( 0 );
+            break;
 
           case 'z' :
             iCamera->_Z_state = 1;
@@ -241,4 +247,29 @@ void Window::ManageEvents( Camera * iCamera )
         exit( 0 );
     }
   }
+}
+
+void Window::Draw() 
+{ 
+
+  // Frame drawing
+  // ------------- 
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
+
+  // Render observer
+  _toolbox->RenderObserver();
+ 
+  // Render scene
+  glViewport( 0, 0, _width, _height );
+  _scene->RenderScene( true );
+
+  // Blur calculation on bright texture
+  glViewport( 0, 0, _width * _scene->_bloom_downsample, _height * _scene->_bloom_downsample );
+  _scene->BlurProcess();
+
+  // Bloom blending calculation => final render
+  glViewport( 0, 0, _width, _height );
+  _scene->BloomProcess();
+
+  glUseProgram( 0 );
 }

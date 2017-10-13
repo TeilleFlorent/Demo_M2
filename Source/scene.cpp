@@ -25,7 +25,7 @@ Scene::Scene( Window * iParentWindow )
 
   // Init bloom param
   _exposure         = 0.65;
-  _bloom            = false;
+  _bloom            = true;
   _bloom_downsample = 0.5;
 
   // Init multi sample param
@@ -57,6 +57,9 @@ Scene::Scene( Window * iParentWindow )
   // Create lights
   _lights.clear();
   LightsInitialization();  
+
+  // Init scene data 
+  SceneDataInitialization();
 }
 
 void Scene::Quit()
@@ -255,8 +258,8 @@ void Scene::SceneDataInitialization()
   _window->_toolbox->_hdr_image_manager->stbi_set_flip_vertically_on_load( true );
   int width, height, nrComponents;
   //std::string temp_str("../skybox/hdr skybox 2/Ridgecrest_Road_Ref.hdr");
-  //std::string temp_str("../skybox/hdr skybox 1/Arches_E_PineTree_3k.hdr");
-  std::string temp_str("../skybox/hdr skybox 3/QueenMary_Chimney_Ref.hdr");
+  std::string temp_str("../skybox/hdr skybox 1/Arches_E_PineTree_3k.hdr");
+  //std::string temp_str("../skybox/hdr skybox 3/QueenMary_Chimney_Ref.hdr");
   float * data = _window->_toolbox->_hdr_image_manager->stbi_loadf( temp_str.c_str(), &width, &height, &nrComponents, 0 );
   if( data )
   {
@@ -330,7 +333,15 @@ void Scene::SceneDataInitialization()
   glBindTexture( GL_TEXTURE_CUBE_MAP, _irradianceMap );
   for( unsigned int i = 0; i < 6; ++i )
   {
-    glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB32F, _res_irradiance_cubeMap, _res_irradiance_cubeMap, 0, GL_RGB, GL_FLOAT, nullptr );
+    glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                  0,
+                  GL_RGB32F,
+                  _res_irradiance_cubeMap,
+                  _res_irradiance_cubeMap,
+                  0,
+                  GL_RGB,
+                  GL_FLOAT, 
+                  nullptr );
   }
   glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
   glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
@@ -823,7 +834,9 @@ void Scene::ObjectsInitialization()
                                8,
                                false,
                                0.75,
-                               true ) );
+                               true,   // normal mapping
+                               false,   // bloom
+                               1.0 ) );
   }
 
 
@@ -841,7 +854,9 @@ void Scene::ObjectsInitialization()
                          8,
                          false,
                          0.75,
-                         true );
+                         true,
+                         false,
+                         1.0 );
 
 }
 
@@ -898,8 +913,7 @@ void Scene::ShadersInitialization()
 
 void Scene::LoadModels()
 {
-  // Scene models loading
-  // --------------------
+  // Table model loading
   _table_model = new Model();
   _table_model->Load_Model( "../Models/cube/Rounded Cube.fbx", 0 );
   _table_model->Print_info_model();
@@ -950,6 +964,10 @@ void Scene::RenderScene( bool iIsFinalFBO )
   glUniformMatrix4fv( glGetUniformLocation( _skybox_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( Msend ) );
   glUniform1f( glGetUniformLocation( _skybox_shader._program, "uAlpha" ), 1.0 );
 
+  glUniform1i( glGetUniformLocation( _skybox_shader._program, "uBloom" ), false );
+  glUniform1f( glGetUniformLocation( _skybox_shader._program, "uBloomBrightness" ), _ground1->_bloom_brightness );
+
+
   glActiveTexture( GL_TEXTURE0 );
   glBindTexture( GL_TEXTURE_CUBE_MAP, /*irradianceMap*/ _envCubemap ); // bind les 6 textures du cube map 
 
@@ -977,7 +995,11 @@ void Scene::RenderScene( bool iIsFinalFBO )
     glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uViewMatrix" ) , 1, GL_FALSE, glm::value_ptr( viewMatrix ) );
     glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( Msend ) );
     glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projectionM ) );
-    glUniform3f( glGetUniformLocation( _flat_color_shader._program, "uColor" ), lampColor.x,lampColor.y,lampColor.z );
+    glUniform3f( glGetUniformLocation( _flat_color_shader._program, "uColor" ), lampColor.x, lampColor.y, lampColor.z );
+
+    glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), true );
+    glUniform1f( glGetUniformLocation( _flat_color_shader._program, "uBloomBrightness" ), 1.0f );
+
     glDrawArrays( GL_TRIANGLES, 0, _window->_toolbox->_sphere_vertices_count );
   }
   glBindVertexArray( 0 );
@@ -985,7 +1007,7 @@ void Scene::RenderScene( bool iIsFinalFBO )
 
 
   // Draw _ground1
-  // ------------
+  // -------------
   _pbr_shader.Use();
 
   Msend = glm::mat4();
@@ -1037,6 +1059,9 @@ void Scene::RenderScene( bool iIsFinalFBO )
   glUniform1f( glGetUniformLocation( _pbr_shader._program, "uSpecularSTR" ), _ground1->_specular_str );
   glUniform1f( glGetUniformLocation( _pbr_shader._program, "uShiniSTR" ), _ground1->_shini_str );
 
+  glUniform1i( glGetUniformLocation( _pbr_shader._program, "uBloom" ), _ground1->_bloom );
+  glUniform1f( glGetUniformLocation( _pbr_shader._program, "uBloomBrightness" ), _ground1->_bloom_brightness );
+
   glUniform3fv( glGetUniformLocation( _pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
   glUniform1f( glGetUniformLocation( _pbr_shader._program, "uAlpha" ), _ground1->_alpha );
@@ -1083,6 +1108,9 @@ void Scene::RenderScene( bool iIsFinalFBO )
     glUniform1f( glGetUniformLocation( _pbr_shader._program, "diffuseSTR" ), _tables[ i ]._diffuse_str );
     glUniform1f( glGetUniformLocation( _pbr_shader._program, "specularSTR" ), _tables[ i ]._specular_str );
     glUniform1f( glGetUniformLocation( _pbr_shader._program, "uShiniSTR" ), _tables[ i ]._shini_str );
+
+    glUniform1i( glGetUniformLocation( _pbr_shader._program, "uBloom" ), _tables[ i ]._bloom );
+    glUniform1f( glGetUniformLocation( _pbr_shader._program, "uBloomBrightness" ), _tables[ i ]._bloom_brightness );
 
     glUniform3fv( glGetUniformLocation( _pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
