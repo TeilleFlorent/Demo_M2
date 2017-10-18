@@ -26,7 +26,7 @@ uniform float uBloomBrightness;
 void main()
 {   
   // Main out color
-  FragColor = vec4( uColor * 3.0, 1.0 );
+  FragColor = vec4( uColor, 1.0 );
 
   // Second out color => draw only brightest fragments
   vec3 bright_color = vec3( 0.0, 0.0, 0.0 );

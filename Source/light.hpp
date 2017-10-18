@@ -23,6 +23,10 @@ class Light
            glm::vec3 iColor,
            float iIntensity );
 
+    static void SetLightsMultiplier( float iMultiplier );
+
+    static float GetLightsMultiplier();
+
 
     // Light class members
     // -------------------
@@ -30,6 +34,11 @@ class Light
     glm::vec3 _position;  
     glm::vec3 _color;
     float     _intensity;
+
+
+  private:
+
+    static float _intensity_multiplier;
 
 };
 

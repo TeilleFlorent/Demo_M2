@@ -39,6 +39,8 @@ class Scene
 
     void ObjectsInitialization();
 
+    void IBLCubeMapsInitialization();
+
     void LoadModels();
 
     void RenderScene( bool iIsFinalFBO );
@@ -73,9 +75,11 @@ class Scene
     GLuint _groundVBO;
 
     // Textures
-    unsigned int _hdrTexture;
-    unsigned int _envCubemap;
-    unsigned int _irradianceMap;   
+    std::vector< unsigned int > _hdr_textures;
+    std::vector< unsigned int > _env_cubemaps;
+    std::vector< unsigned int > _irradiance_maps;   
+    int _current_env;
+   
     std::vector< const GLchar * > _faces; // data skybox cube map texture
 
     GLuint _tex_albedo_ground;

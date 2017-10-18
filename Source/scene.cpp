@@ -35,6 +35,7 @@ Scene::Scene( Window * iParentWindow )
   // Init IBL param
   _res_IBL_cubeMap        = 512;
   _res_irradiance_cubeMap = 32;
+  _current_env = 0;
 
   // Get pointer on the scene window
   _window = iParentWindow;
@@ -55,11 +56,13 @@ Scene::Scene( Window * iParentWindow )
   LoadModels();
 
   // Create lights
-  _lights.clear();
   LightsInitialization();  
 
   // Init scene data 
   SceneDataInitialization();
+
+  // Init all IBL cubemap
+  IBLCubeMapsInitialization();
 }
 
 void Scene::Quit()
@@ -71,12 +74,15 @@ void Scene::Quit()
     glDeleteTextures( 1, &_window->_toolbox->_pingpongColorbuffers[ 0 ] );
   if( _window->_toolbox->_pingpongColorbuffers[ 1 ] )
     glDeleteTextures( 1, &_window->_toolbox->_pingpongColorbuffers[ 1 ] );
-  if( _hdrTexture )
-    glDeleteTextures( 1, &_hdrTexture );
-  if( _envCubemap )
-    glDeleteTextures( 1, &_envCubemap );
-  if( _irradianceMap )
-    glDeleteTextures( 1, &_irradianceMap );
+  for( int i = 0; i < _hdr_textures.size(); i++ )
+  {
+    if( _hdr_textures[ i ] )
+      glDeleteTextures( 1, &_hdr_textures[ i ] );
+    if( _env_cubemaps[ i ] )
+      glDeleteTextures( 1, &_env_cubemaps[ i ] );
+    if( _irradiance_maps[ i ] )
+      glDeleteTextures( 1, &_irradiance_maps[ i ] );
+  }
   if( _window->_toolbox->_temp_tex_color_buffer[ 0 ] )
     glDeleteTextures( 1, &_window->_toolbox->_temp_tex_color_buffer[ 0 ] );
   if( _window->_toolbox->_temp_tex_color_buffer[ 1 ] )
@@ -139,7 +145,6 @@ void Scene::Quit()
     glDeleteRenderbuffers( 1, &_window->_toolbox->_final_depht_RBO );
   if( _window->_toolbox->_captureRBO )
     glDeleteRenderbuffers( 1, &_window->_toolbox->_captureRBO );
-
 }
 
 void Scene::SceneDataInitialization()
@@ -251,127 +256,6 @@ void Scene::SceneDataInitialization()
   _faces.push_back( "../skybox/s1/left.png" );
 
 
-  // IBL all pre process
-  // -------------------
-
-  // Load hdr skybox texture
-  _window->_toolbox->_hdr_image_manager->stbi_set_flip_vertically_on_load( true );
-  int width, height, nrComponents;
-  //std::string temp_str("../skybox/hdr skybox 2/Ridgecrest_Road_Ref.hdr");
-  std::string temp_str("../skybox/hdr skybox 1/Arches_E_PineTree_3k.hdr");
-  //std::string temp_str("../skybox/hdr skybox 3/QueenMary_Chimney_Ref.hdr");
-  float * data = _window->_toolbox->_hdr_image_manager->stbi_loadf( temp_str.c_str(), &width, &height, &nrComponents, 0 );
-  if( data )
-  {
-    glGenTextures( 1, &_hdrTexture );
-    glBindTexture( GL_TEXTURE_2D, _hdrTexture );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data ); // note how we specify the texture's data value to be float
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    _window->_toolbox->_hdr_image_manager->stbi_image_free( data );
-  }
-  else
-  {
-    std::cout << "Failed to load HDR image.\n" << std::endl;
-  }
-
-  // Gen FBO and RBO to render hdr tex into cube map tex
-  glGenFramebuffers( 1, &_window->_toolbox->_captureFBO );
-  glGenRenderbuffers( 1, &_window->_toolbox->_captureRBO );
-  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_captureFBO );
-  glBindRenderbuffer( GL_RENDERBUFFER, _window->_toolbox->_captureRBO );
-  glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, _res_IBL_cubeMap, _res_IBL_cubeMap );
-  glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _window->_toolbox->_captureRBO );
-
-  // Gen cubemap texture
-  glGenTextures( 1, &_envCubemap );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _envCubemap );
-  for( unsigned int i = 0; i < 6; ++i )
-  {
-    glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, _res_IBL_cubeMap, _res_IBL_cubeMap, 0, GL_RGB, GL_FLOAT, nullptr );
-  }
-  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE );
-  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-
-  // create 6 matrix to each cube map face
-  glm::mat4 captureProjection = glm::perspective( glm::radians( 90.0f ), 1.0f, 0.1f, 10.0f );
-  glm::mat4 captureViews[] =
-  {
-    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  1.0f,  0.0f,  0.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) ),
-    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3( -1.0f,  0.0f,  0.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) ),
-    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f,  1.0f,  0.0f ), glm::vec3( 0.0f,  0.0f,  1.0f ) ),
-    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f, -1.0f,  0.0f ), glm::vec3( 0.0f,  0.0f, -1.0f ) ),
-    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f,  0.0f,  1.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) ),
-    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f,  0.0f, -1.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) )
-  };
-
-  // Convert skybox hdr texture into cube map texture
-  _cube_map_converter_shader.Use();
-  glUniform1i(glGetUniformLocation( _cube_map_converter_shader._program, "uEquirectangularMap" ), 0 );
-  glActiveTexture( GL_TEXTURE0 );
-  glBindTexture( GL_TEXTURE_2D, _hdrTexture );
-  glUniformMatrix4fv( glGetUniformLocation( _cube_map_converter_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( captureProjection ) );
-
-  glViewport( 0, 0, _res_IBL_cubeMap, _res_IBL_cubeMap ); // don't forget to configure the viewport to the capture dimensions.
-  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_captureFBO );
-  for( unsigned int i = 0; i < 6; ++i )
-  {
-    glUniformMatrix4fv( glGetUniformLocation( _cube_map_converter_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( captureViews[ i ] ) );
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, _envCubemap, 0 );
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-    _window->_toolbox->RenderCube();
-  }
-  glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
-  // Gen irradiance cube map texture
-  glGenTextures( 1, &_irradianceMap );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _irradianceMap );
-  for( unsigned int i = 0; i < 6; ++i )
-  {
-    glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                  0,
-                  GL_RGB32F,
-                  _res_irradiance_cubeMap,
-                  _res_irradiance_cubeMap,
-                  0,
-                  GL_RGB,
-                  GL_FLOAT, 
-                  nullptr );
-  }
-  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE );
-  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-
-  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_captureFBO );
-  glBindRenderbuffer( GL_RENDERBUFFER, _window->_toolbox->_captureRBO );
-  glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, _res_irradiance_cubeMap, _res_irradiance_cubeMap );
-
-  // Diffuse irradiance cube map calculation  
-  _diffuse_irradiance_shader.Use();
-  glUniform1i( glGetUniformLocation( _diffuse_irradiance_shader._program, "uEnvironmentMap" ), 0 );
-  glActiveTexture( GL_TEXTURE0 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _envCubemap );
-  glUniformMatrix4fv( glGetUniformLocation( _diffuse_irradiance_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( captureProjection ) );
-
-  glViewport( 0, 0, _res_irradiance_cubeMap, _res_irradiance_cubeMap ); // don't forget to configure the viewport to the capture dimensions.
-  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_captureFBO );
-  for( unsigned int i = 0; i < 6; ++i )
-  {
-    glUniformMatrix4fv( glGetUniformLocation( _diffuse_irradiance_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( captureViews[ i ] ) );
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, _irradianceMap, 0 );
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-    _window->_toolbox->RenderCube();
-  }
-  glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
-
   // Create observer VAO
   // -------------------
   glGenVertexArrays( 1, &_window->_toolbox->_observerVAO );
@@ -405,19 +289,23 @@ void Scene::SceneDataInitialization()
   // Create ground VAO
   // -----------------
   if( _groundVAO == 0 )
-  {
-    // Positions
-    glm::vec3 pos1( -1.0,  1.0, 0.0 );
-    glm::vec3 pos2( -1.0, -1.0, 0.0 );
-    glm::vec3 pos3(  1.0, -1.0, 0.0 );
-    glm::vec3 pos4(  1.0,  1.0, 0.0 );
+  { 
+    // Positions, build 1*1 meter square
+    glm::vec3 pos1( -0.5,  0.5, 0.0 );
+    glm::vec3 pos2( -0.5, -0.5, 0.0 );
+    glm::vec3 pos3(  0.5, -0.5, 0.0 );
+    glm::vec3 pos4(  0.5,  0.5, 0.0 );
     
     // texture coordinates
     glm::vec2 uv1( 0.0, 1.0 );
     glm::vec2 uv2( 0.0, 0.0 );
     glm::vec2 uv3( 1.0, 0.0 );
     glm::vec2 uv4( 1.0, 1.0 );
-    
+    uv1 *= 0.5 * _ground1->_scale[ 0 ];
+    uv2 *= 0.5 * _ground1->_scale[ 0 ];
+    uv3 *= 0.5 * _ground1->_scale[ 0 ];
+    uv4 *= 0.5 * _ground1->_scale[ 0 ];
+
     // normal vector
     glm::vec3 nm( 0.0, 0.0, 1.0 );
 
@@ -779,22 +667,31 @@ void Scene::SceneDataInitialization()
 }
 
 void Scene::LightsInitialization()
-{
-  _lights.push_back( Light ( glm::vec3( -7, 12, -10 ),
-                             glm::vec3( 1.0, 1.0, 1.0 ) * glm::vec3( 6.0 ),
-                             1.0 ) );    
+{ 
+  _lights.clear();
+  
+  Light::SetLightsMultiplier( 200.0 );
+
+  _lights.push_back( Light ( glm::vec3( 0, 3.0, 0 ),
+                             glm::vec3( 1.0, 1.0, 1.0 ),
+                             0.5 ) );    
 
  /* _lights.push_back( Light ( glm::vec3( -7, 12, 10 )
-                             glm::vec3( 1.0, 1.0, 1.0 ) * glm::vec3( 6.0 ),
+                             glm::vec3( 1.0, 1.0, 1.0 ),
                              1.0 ) );
 
   _lights.push_back( Light ( glm::vec3( 7, 12, -10 ),
-                             glm::vec3( 1.0, 1.0, 1.0 ) * glm::vec3( 6.0 ),
+                             glm::vec3( 1.0, 1.0, 1.0 ),
                              1.0 ) );
 
   _lights.push_back( Light ( glm::vec3( 7, 12, -10 ),
-                             glm::vec3( 1.0, 1.0, 1.0 ) * glm::vec3( 6.0 ),
+                             glm::vec3( 1.0, 1.0, 1.0 ),
                              1.0 ) );*/
+
+  for( int i = 0; i < _lights.size(); i++ )
+  {
+    _lights[ i ]._intensity *= Light::GetLightsMultiplier();
+  }
 }
 
 void Scene::ObjectsInitialization()
@@ -810,15 +707,15 @@ void Scene::ObjectsInitialization()
     switch( i )
     {
       case 0:
-        position = glm::vec3( -0.8, 0.188, 0.0 );
+        position = glm::vec3( -1.5, 0.7, 0.0 );
         break;
       
       case 1:
-        position = glm::vec3( 0.0, 0.188, 0.0 );
+        position = glm::vec3( 0.0, 0.7, 0.0 );
         break;
 
       case 2:
-        position = glm::vec3( 0.8, 0.188, 0.0 );
+        position = glm::vec3( 1.5, 0.7, 0.0 );
         break;
     }
 
@@ -826,11 +723,8 @@ void Scene::ObjectsInitialization()
                                position,
                                0.0,
                                0.0,
-                               0.0075,
-                               1.0,
-                               1.0,
-                               1.0,
-                               1.0,
+                               glm::vec3( 0.01, 0.01, 0.01 ),
+                               1.0,   // alpha
                                8,
                                false,
                                0.75,
@@ -841,15 +735,12 @@ void Scene::ObjectsInitialization()
 
 
   // _Ground1 object initialization
-  // -----------------------------
+  // ------------------------------
   _ground1 = new Object( 1,
                          glm::vec3( 0.0, 0.0, 0.0 ),
                          _PI_2,
                          0.0,
-                         1.0,
-                         1.0,
-                         1.0,
-                         1.0,
+                         glm::vec3( 10.0, 10.0, 1.0 ),
                          1.0,
                          8,
                          false,
@@ -858,6 +749,142 @@ void Scene::ObjectsInitialization()
                          false,
                          1.0 );
 
+}
+
+void Scene::IBLCubeMapsInitialization()
+{ 
+  std::vector< std::string > hdr_texture_paths;
+  hdr_texture_paths.push_back( std::string( "../skybox/hdr skybox 2/Ridgecrest_Road_Ref.hdr" ) );
+  hdr_texture_paths.push_back( std::string( "../skybox/hdr skybox 1/Arches_E_PineTree_3k.hdr" ) );
+  hdr_texture_paths.push_back( std::string( "../skybox/hdr skybox 3/QueenMary_Chimney_Ref.hdr" ) );
+
+  for( unsigned int i = 0; i < hdr_texture_paths.size(); i++ )
+  {
+
+    unsigned int hdr_texture;
+    unsigned int env_cubemap;
+    unsigned int irradiance_map;
+
+    // Load hdr skybox texture
+    _window->_toolbox->_hdr_image_manager->stbi_set_flip_vertically_on_load( true );
+    int width, height, nrComponents;
+    
+    float * data = _window->_toolbox->_hdr_image_manager->stbi_loadf( hdr_texture_paths[ i ].c_str(), &width, &height, &nrComponents, 0 );
+    if( data )
+    {
+      glGenTextures( 1, &hdr_texture );
+      glBindTexture( GL_TEXTURE_2D, hdr_texture );
+      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data ); // note how we specify the texture's data value to be float
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+      _window->_toolbox->_hdr_image_manager->stbi_image_free( data );
+    }
+    else
+    {
+      std::cout << "Failed to load HDR image.\n" << std::endl;
+    }
+
+    // Gen FBO and RBO to render hdr tex into cube map tex
+    glGenFramebuffers( 1, &_window->_toolbox->_captureFBO );
+    glGenRenderbuffers( 1, &_window->_toolbox->_captureRBO );
+    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_captureFBO );
+    glBindRenderbuffer( GL_RENDERBUFFER, _window->_toolbox->_captureRBO );
+    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, _res_IBL_cubeMap, _res_IBL_cubeMap );
+    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _window->_toolbox->_captureRBO );
+
+    // Gen cubemap texture
+    glGenTextures( 1, &env_cubemap );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, env_cubemap );
+    for( unsigned int i = 0; i < 6; ++i )
+    {
+      glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, _res_IBL_cubeMap, _res_IBL_cubeMap, 0, GL_RGB, GL_FLOAT, nullptr );
+    }
+    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+
+    // create 6 matrix to each cube map face
+    glm::mat4 captureProjection = glm::perspective( glm::radians( 90.0f ), 1.0f, 0.1f, 10.0f );
+    glm::mat4 captureViews[] =
+    {
+      glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  1.0f,  0.0f,  0.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) ),
+      glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3( -1.0f,  0.0f,  0.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) ),
+      glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f,  1.0f,  0.0f ), glm::vec3( 0.0f,  0.0f,  1.0f ) ),
+      glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f, -1.0f,  0.0f ), glm::vec3( 0.0f,  0.0f, -1.0f ) ),
+      glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f,  0.0f,  1.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) ),
+      glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f,  0.0f, -1.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) )
+    };
+
+    // Convert skybox hdr texture into cube map texture
+    _cube_map_converter_shader.Use();
+    glUniform1i(glGetUniformLocation( _cube_map_converter_shader._program, "uEquirectangularMap" ), 0 );
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, hdr_texture );
+    glUniformMatrix4fv( glGetUniformLocation( _cube_map_converter_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( captureProjection ) );
+
+    glViewport( 0, 0, _res_IBL_cubeMap, _res_IBL_cubeMap ); // don't forget to configure the viewport to the capture dimensions.
+    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_captureFBO );
+    for( unsigned int i = 0; i < 6; ++i )
+    {
+      glUniformMatrix4fv( glGetUniformLocation( _cube_map_converter_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( captureViews[ i ] ) );
+      glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, env_cubemap, 0 );
+      glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+      _window->_toolbox->RenderCube();
+    }
+    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+
+    // Gen irradiance cube map texture
+    glGenTextures( 1, &irradiance_map );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, irradiance_map );
+    for( unsigned int i = 0; i < 6; ++i )
+    {
+      glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                    0,
+                    GL_RGB32F,
+                    _res_irradiance_cubeMap,
+                    _res_irradiance_cubeMap,
+                    0,
+                    GL_RGB,
+                    GL_FLOAT, 
+                    nullptr );
+    }
+    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+
+    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_captureFBO );
+    glBindRenderbuffer( GL_RENDERBUFFER, _window->_toolbox->_captureRBO );
+    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, _res_irradiance_cubeMap, _res_irradiance_cubeMap );
+
+    // Diffuse irradiance cube map calculation  
+    _diffuse_irradiance_shader.Use();
+    glUniform1i( glGetUniformLocation( _diffuse_irradiance_shader._program, "uEnvironmentMap" ), 0 );
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, env_cubemap );
+    glUniformMatrix4fv( glGetUniformLocation( _diffuse_irradiance_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( captureProjection ) );
+
+    glViewport( 0, 0, _res_irradiance_cubeMap, _res_irradiance_cubeMap ); // don't forget to configure the viewport to the capture dimensions.
+    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_captureFBO );
+    for( unsigned int i = 0; i < 6; ++i )
+    {
+      glUniformMatrix4fv( glGetUniformLocation( _diffuse_irradiance_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( captureViews[ i ] ) );
+      glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradiance_map, 0 );
+      glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+      _window->_toolbox->RenderCube();
+    }
+    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+
+    // save texture IDs
+    _hdr_textures.push_back( hdr_texture );
+    _env_cubemaps.push_back( env_cubemap);
+    _irradiance_maps.push_back( irradiance_map );
+  }
 }
 
 void Scene::ShadersInitialization()
@@ -969,7 +996,7 @@ void Scene::RenderScene( bool iIsFinalFBO )
 
 
   glActiveTexture( GL_TEXTURE0 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, /*irradianceMap*/ _envCubemap ); // bind les 6 textures du cube map 
+  glBindTexture( GL_TEXTURE_CUBE_MAP, /*_irradiance_maps[ _current_env ]*/ _env_cubemaps[ _current_env ] ); // bind les 6 textures du cube map 
 
   glBindVertexArray( _skyboxVAO );
   glEnable( GL_BLEND );
@@ -990,8 +1017,8 @@ void Scene::RenderScene( bool iIsFinalFBO )
   {
     Msend= glm::mat4();
     Msend = glm::translate( Msend, _lights[ i ]._position );
-    Msend = glm::scale( Msend, glm::vec3( 1.0f ) ); 
-    glm::vec3 lampColor = _lights[ i ]._color;
+    Msend = glm::scale( Msend, glm::vec3( 0.06f ) ); 
+    glm::vec3 lampColor = _lights[ i ]._color * _lights[ i ]._intensity;
     glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uViewMatrix" ) , 1, GL_FALSE, glm::value_ptr( viewMatrix ) );
     glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( Msend ) );
     glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projectionM ) );
@@ -1006,15 +1033,15 @@ void Scene::RenderScene( bool iIsFinalFBO )
   glUseProgram( 0 );
 
 
-  // Draw _ground1
-  // -------------
+  // Draw ground1
+  // ------------
   _pbr_shader.Use();
 
   Msend = glm::mat4();
 
   Msend = glm::translate( Msend, _ground1->_position );
   Msend = glm::rotate( Msend, _ground1->_angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
-  Msend = glm::scale( Msend, glm::vec3( _ground1->_scale * 2.0f, _ground1->_scale * 2.0f, _ground1->_scale * 1.0f ) ); 
+  Msend = glm::scale( Msend, _ground1->_scale ); 
 
   projectionM2[ 0 ] = glm::vec4( ( float )( _window->_width / 2.0 ), 0.0, 0.0, ( float )( _window->_width / 2.0 ) );
   projectionM2[ 1 ] = glm::vec4( 0.0, ( float )( _window->_height / 2.0 ), 0.0, ( float )( _window->_height / 2.0 ) );
@@ -1037,7 +1064,7 @@ void Scene::RenderScene( bool iIsFinalFBO )
   glBindTexture( GL_TEXTURE_2D, _tex_metalness_ground ); 
 
   glActiveTexture( GL_TEXTURE9 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _irradianceMap /*envCubemap*/ ); // bind les 6 textures du cube map 
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_maps[ _current_env ] /*envCubemap*/ ); // bind les 6 textures du cube map 
 
   glUniformMatrix4fv( glGetUniformLocation( _pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( viewMatrix ) );
   glUniformMatrix4fv( glGetUniformLocation( _pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( Msend ) );
@@ -1050,14 +1077,10 @@ void Scene::RenderScene( bool iIsFinalFBO )
   for( int i = 0; i < _lights.size(); i++ )
   {
     string temp = to_string( i );
-    glUniform3fv( glGetUniformLocation( _pbr_shader._program, ( "uLightPos["+ temp +"]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
-    glUniform3fv( glGetUniformLocation( _pbr_shader._program, ( "uLightColor["+temp+"]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+    glUniform3fv( glGetUniformLocation( _pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+    glUniform3fv( glGetUniformLocation( _pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+    glUniform1f(  glGetUniformLocation( _pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
   }
-
-  glUniform1f( glGetUniformLocation( _pbr_shader._program, "uAmbientSTR" ), _ground1->_ambient_str );
-  glUniform1f( glGetUniformLocation( _pbr_shader._program, "uDiffuseSTR" ), _ground1->_diffuse_str );
-  glUniform1f( glGetUniformLocation( _pbr_shader._program, "uSpecularSTR" ), _ground1->_specular_str );
-  glUniform1f( glGetUniformLocation( _pbr_shader._program, "uShiniSTR" ), _ground1->_shini_str );
 
   glUniform1i( glGetUniformLocation( _pbr_shader._program, "uBloom" ), _ground1->_bloom );
   glUniform1f( glGetUniformLocation( _pbr_shader._program, "uBloomBrightness" ), _ground1->_bloom_brightness );
@@ -1067,7 +1090,6 @@ void Scene::RenderScene( bool iIsFinalFBO )
   glUniform1f( glGetUniformLocation( _pbr_shader._program, "uAlpha" ), _ground1->_alpha );
   glUniform1f( glGetUniformLocation( _pbr_shader._program, "uID" ), _ground1->_id );    
   glUniform1f( glGetUniformLocation( _pbr_shader._program, "uCubeMapFaceNum" ), -1.0 );     
-  glUniform1i( glGetUniformLocation( _pbr_shader._program, "_pre_rendu" ), false );     
 
   glBindVertexArray( _groundVAO );
   glDrawArrays( GL_TRIANGLES, 0, 6 );
@@ -1085,10 +1107,10 @@ void Scene::RenderScene( bool iIsFinalFBO )
 
     Msend = glm::translate( Msend, _tables[ i ]._position );
     Msend = glm::rotate( Msend, _tables[ i ]._angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
-    Msend = glm::scale( Msend, glm::vec3( _tables[ i ]._scale ) * 1.0f ); 
+    Msend = glm::scale( Msend, _tables[ i ]._scale ); 
 
     glActiveTexture( GL_TEXTURE9 );
-    glBindTexture( GL_TEXTURE_CUBE_MAP, _irradianceMap ); 
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_maps[ _current_env ] ); 
 
     glUniformMatrix4fv( glGetUniformLocation( _pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( viewMatrix ) );
     glUniformMatrix4fv( glGetUniformLocation( _pbr_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( Msend ) );
@@ -1100,14 +1122,10 @@ void Scene::RenderScene( bool iIsFinalFBO )
     for( int i = 0; i < _lights.size(); i++ )
     {
       string temp = to_string( i );
-      glUniform3fv( glGetUniformLocation( _pbr_shader._program, ( "uLightPos["+ temp +"]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
-      glUniform3fv( glGetUniformLocation( _pbr_shader._program, ( "LightColor["+temp+"]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform3fv( glGetUniformLocation( _pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( _pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( _pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
     }
-
-    glUniform1f( glGetUniformLocation( _pbr_shader._program, "ambientSTR" ), _tables[ i ]._ambient_str );
-    glUniform1f( glGetUniformLocation( _pbr_shader._program, "diffuseSTR" ), _tables[ i ]._diffuse_str );
-    glUniform1f( glGetUniformLocation( _pbr_shader._program, "specularSTR" ), _tables[ i ]._specular_str );
-    glUniform1f( glGetUniformLocation( _pbr_shader._program, "uShiniSTR" ), _tables[ i ]._shini_str );
 
     glUniform1i( glGetUniformLocation( _pbr_shader._program, "uBloom" ), _tables[ i ]._bloom );
     glUniform1f( glGetUniformLocation( _pbr_shader._program, "uBloomBrightness" ), _tables[ i ]._bloom_brightness );

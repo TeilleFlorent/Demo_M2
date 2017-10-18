@@ -11,12 +11,12 @@ Camera::Camera()
   _front    = glm::vec3( 0.759404, -0.076719, 0.646080 );
   _up       = glm::vec3( 0.0f, 1.0f,  0.0f );     
     
-  _near       = 0.1f;
+  _near       = 0.01f;
   _far        = 100.0f;
   _yaw        = 40.390213;
   _pitch      = -4.399978;
 
-  _move_speed = 1.0;
+  _move_speed = 3.0;
 
   _Z_state = 0;
   _D_state = 0;

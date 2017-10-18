@@ -177,26 +177,36 @@ void Window::ManageEvents( Camera * iCamera )
           case 'a' :
             for( int i = 0 ; i < _scene->_lights.size() ; i++ )
             {     
-              _scene->_lights[ i ]._position.y += 0.5;
+              _scene->_lights[ i ]._position.y += 0.1;
             }   
             break;
 
           case 'e' :
             for( int i = 0 ; i < _scene->_lights.size() ; i++ )
             {     
-              _scene->_lights[ i ]._position.y -= 0.5;
+              _scene->_lights[ i ]._position.y -= 0.1;
             }     
             break;
 
           case 'r' :
             for( int i = 0 ; i < _scene->_tables.size() ; i++ )
             {     
-              _scene->_tables[ i ]._angle += 0.02;
+              _scene->_ground1->_angle += 0.02;
             }     
             break;
        
-          case 'v' :
+          case SDLK_F1 :
             _scene->_bloom = ( _scene->_bloom == true ) ? false : true;
+            break;
+
+          case SDLK_F3 :
+            if( _scene->_current_env < _scene->_hdr_textures.size() - 1 )
+              _scene->_current_env++;
+            break;
+
+          case SDLK_F2 :
+            if( _scene->_current_env > 0 )
+              _scene->_current_env--;
             break;
 
           default:

@@ -21,11 +21,8 @@ class Object
             glm::vec3 iPosition,
             float     iAngle,
             float     iAcca,
-            float     iScale,
+            glm::vec3 iScale,
             float     iAlpha,
-            float     iAmbientStr,
-            float     iDiffuseStr,
-            float     iSpecularStr,
             int       iShiniStr,
             bool      iGenerateShadow,
             float     iShadowDarkness,
@@ -41,11 +38,8 @@ class Object
     glm::vec3 _position;
     float     _angle;
     float     _acca;
-    float     _scale;
+    glm::vec3 _scale;
     float     _alpha;
-    float     _ambient_str;
-    float     _diffuse_str;
-    float     _specular_str;
     int       _shini_str;
     bool      _generate_shadow;
     float     _shadow_darkness;

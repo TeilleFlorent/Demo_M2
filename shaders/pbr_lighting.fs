@@ -1,6 +1,6 @@
 #version 330 
 
-#define MAX_NB_LIGHTS 10
+#define MAX_NB_LIGHTS 20
 #define PI 3.14159265358979323846264338
 
 struct Material
@@ -25,17 +25,13 @@ layout ( location = 1 ) out vec4 FragColorBrightness;
 
 // Fragment input uniforms
 // -----------------------
-uniform int uLightCount;
-uniform vec3 uLightPos[ MAX_NB_LIGHTS ];
-uniform vec3 uLightColor[ MAX_NB_LIGHTS ];
-uniform vec3 uLightSpecularColor[ MAX_NB_LIGHTS ];
+uniform int   uLightCount;
+uniform vec3  uLightPos[ MAX_NB_LIGHTS ];
+uniform vec3  uLightColor[ MAX_NB_LIGHTS ];
+uniform float uLightIntensity[ MAX_NB_LIGHTS ];
 
 uniform vec3 uViewPos;
 
-uniform float uAmbientSTR;
-uniform float uDiffuseSTR;
-uniform float uSpecularSTR;
-uniform float uShiniSTR;
 uniform float uShadowDarkness;
 uniform bool  uBloom;
 uniform float uBloomBrightness;
@@ -170,7 +166,7 @@ vec3 ReflectanceEquationCalculation( vec2 iUV,
     float attenuation = 1.0 / ( distance * distance );
     
     // Get light radiance value
-    vec3 light_radiance = ( uLightColor[ i ] * 100.0 ) * attenuation;
+    vec3 light_radiance = ( uLightColor[ i ] * uLightIntensity[ i ] ) * attenuation;
 
 
     // Cook-Torrance BRDF ( specular )
@@ -206,12 +202,12 @@ vec3 ReflectanceEquationCalculation( vec2 iUV,
 
     // Get NdotL value
     // ---------------
-    float NdotL = max( dot( iNormal, light_dir ), 0.0 );        
+    float normal_dot_light_dir = max( dot( iNormal, light_dir ), 0.0 );        
 
 
     // Final light influence
     // ---------------------
-    Lo += ( ( kD * ( albedo_by_PI ) ) + light_specular ) * light_radiance * NdotL;  // already multiplied the specular by the Fresnel ( kS )
+    Lo += ( ( kD * ( albedo_by_PI ) ) + light_specular ) * light_radiance * normal_dot_light_dir;  // already multiplied the specular by the Fresnel ( kS )
     
   }   
 
@@ -264,29 +260,29 @@ vec3 LightingCalculation( vec3 iNormal,
   // ---------------------
   
   // Compute reflectance equation calculation to each scene light
-  vec3 Lo = ReflectanceEquationCalculation( iUV,
-                                            iViewDir,
-                                            iNormal,
-                                            F0,
-                                            max_dot_N_V,
-                                            material );
+  vec3 lights_reflectance = ReflectanceEquationCalculation( iUV,
+                                                            iViewDir,
+                                                            iNormal,
+                                                            F0,
+                                                            max_dot_N_V,
+                                                            material );
 
 
   // IBL calculation part
   // --------------------
    
   // Compute indirect irradiance
-  vec3 ambient = IndirectIrradianceCalculation( max_dot_N_V,
-                                                material,
-                                                F0,
-                                                iNormal,
-                                                TBN );
+  vec3 diffuse_IBL = IndirectIrradianceCalculation( max_dot_N_V,
+                                                    material,
+                                                    F0,
+                                                    iNormal,
+                                                    TBN );
   
 
   // Return fragment final PBR lighting 
   // ----------------------------------
   
-  return ambient + Lo;
+  return diffuse_IBL /*+ lights_reflectance*/;
 }
 
 

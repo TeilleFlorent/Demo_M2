@@ -1,6 +1,6 @@
 #version 330
 
-#define MAX_NB_LIGHTS 10
+#define MAX_NB_LIGHTS 20
 
 
 //******************************************************************************
@@ -78,10 +78,6 @@ void main()
 	oViewSpaceFragPos = vec3( uViewMatrix * uModelMatrix * vec4( _position, 1.0f ) );
 	
 	oUV = _uv;
-	if( uID == 1.0 )
-	{
-		oUV = _uv * 10.0; 
-	}
 
 	oNormal = N;  
 
@@ -90,9 +86,11 @@ void main()
 
 	for( int i = 0; i < uLightCount; i++ )
 	{
-		oTangentLightPos[ i ] = TBN * uLightPos[ i ];
+		//oTangentLightPos[ i ] = TBN * uLightPos[ i ];
 	}
-	
+
+	oTangentLightPos[ 0 ] = TBN * uLightPos[ 0 ];
+
 	oTBN[ 0 ] = TBN[ 0 ];
 	oTBN[ 1 ] = TBN[ 1 ];
 	oTBN[ 2 ] = TBN[ 2 ];
