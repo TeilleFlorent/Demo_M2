@@ -10,6 +10,7 @@ Clock::Clock()
   _initial_time = ( float )SDL_GetTicks() / 1000.0;
   _current_time = 0.0f;
   _delta_time   = 0.0f;
+  TimeUpdate();
 }
 
 void Clock::TimeUpdate()
@@ -23,7 +24,6 @@ void Clock::PrintState()
 {   
   std::cout << "\nClock Status :" << std::endl 
             <<   "--------------" << std::endl;
-  std::cout << "Initial time = " << _initial_time << std::endl;
   std::cout << "Current_time = " << _current_time << std::endl;
   std::cout << "Delta_time   = " << _delta_time   << std::endl;
   std::cout << std::endl;

@@ -65,7 +65,7 @@ void Toolbox::PrintFPS()
   t = SDL_GetTicks();
   if( t - t0 > 1000 )
   {
-    fprintf( stderr, "Fps -> %80.2f\n", ( 1000.0 * f / ( t - t0 ) ) );
+    fprintf( stderr, "\nFPS -> %80.2f\n", ( 1000.0 * f / ( t - t0 ) ) );
     t0 = t;
     f  = 0;
   }
@@ -256,7 +256,6 @@ void Toolbox::RenderQuad()
 
 void Toolbox::RenderCube()
 { 
-
 
   // Create cube VAO
   // ---------------

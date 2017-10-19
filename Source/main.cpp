@@ -26,13 +26,19 @@ void Loop()
   // Get pointer on the scene
   Scene * scene = window->_scene;
 
+  // Get pointer on the scene's camera
+  Camera * camera = scene->_camera;
+
+  // Get pointer on the scene's clock
+  Clock * clock = scene->_clock;
+
   for(;;)
   {
-    window->ManageEvents( scene->_camera );
+    window->ManageEvents( camera );
 
-    scene->_clock->TimeUpdate();
+    clock->TimeUpdate();
     
-    scene->_camera->CameraUpdate( scene->_clock->_delta_time );
+    camera->CameraUpdate( clock->_delta_time );
 
     window->Draw();
 

@@ -65,12 +65,10 @@ class Scene
     Shader _diffuse_irradiance_shader;
 
     // VAOs
-    GLuint _skyboxVAO;
     GLuint _lampVAO;
     GLuint _groundVAO;
 
     // VBOs
-    GLuint _skyboxVBO;
     GLuint _lampVBO;
     GLuint _groundVBO;
 
@@ -99,8 +97,9 @@ class Scene
     int  _nb_multi_sample;
 
     // IBL param
-    int _res_IBL_cubeMap;
-    int _res_irradiance_cubeMap;
+    int   _res_IBL_cubeMap;
+    int   _res_irradiance_cubeMap;
+    float _irradiance_sample_delta;
 
     // Pointer on the scene window
     Window * _window;

@@ -8,11 +8,32 @@
 
 Scene::Scene( Window * iParentWindow )
 { 
-  _skyboxVAO   = 0;
+  
+  // Scene effects settings
+  // ----------------------
+  
+  // Init bloom param
+  _exposure         = 1.0;
+  _bloom            = true;
+  _bloom_downsample = 0.5;
+
+  // Init multi sample param
+  _multi_sample            = false;
+  _nb_multi_sample         = 4;
+
+  // Init IBL param
+  _res_IBL_cubeMap        = 512;
+  _res_irradiance_cubeMap = 32;
+  _irradiance_sample_delta = 0.025;
+  _current_env = 0;
+
+
+  // Scene data initialization
+  // -------------------------
+  
   _lampVAO     = 0;
   _groundVAO   = 0;
 
-  _skyboxVBO   = 0;
   _lampVBO     = 0;
   _groundVBO   = 0;
 
@@ -23,19 +44,6 @@ Scene::Scene( Window * iParentWindow )
   _tex_roughness_ground = 0;
   _tex_metalness_ground = 0;
 
-  // Init bloom param
-  _exposure         = 0.65;
-  _bloom            = true;
-  _bloom_downsample = 0.5;
-
-  // Init multi sample param
-  _multi_sample    = false;
-  _nb_multi_sample = 4;
-
-  // Init IBL param
-  _res_IBL_cubeMap        = 512;
-  _res_irradiance_cubeMap = 32;
-  _current_env = 0;
 
   // Get pointer on the scene window
   _window = iParentWindow;
@@ -63,6 +71,7 @@ Scene::Scene( Window * iParentWindow )
 
   // Init all IBL cubemap
   IBLCubeMapsInitialization();
+ 
 }
 
 void Scene::Quit()
@@ -107,8 +116,6 @@ void Scene::Quit()
 
   // Delete VAOs
   // -----------
-  if( _skyboxVAO )
-    glDeleteVertexArrays( 1, &_skyboxVAO );
   if( _lampVAO )
     glDeleteVertexArrays( 1, &_lampVAO );
   if( _groundVAO )
@@ -119,8 +126,6 @@ void Scene::Quit()
   // -----------
   if( _lampVBO )
     glDeleteBuffers( 1, &_lampVBO );
-  if( _skyboxVBO )
-    glDeleteBuffers( 1, &_skyboxVBO );
   if( _groundVBO )
     glDeleteBuffers( 1, &_groundVBO );
 
@@ -159,58 +164,6 @@ void Scene::SceneDataInitialization()
   // Create all primitive geometry data
   // ----------------------------------
 
-  // Create cube geometry
-  GLfloat skyboxVertices[] =
-  {
-    // Back Face
-    -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, // Bottom-left
-     0.5f,  0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f, // top-right
-     0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, // bottom-right         
-     0.5f,  0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f, // top-right
-    -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
-    -0.5f,  0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, // top-left
-
-    // Front face
-    -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom-left
-     0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, // bottom-right
-     0.5f,  0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // top-right
-     0.5f,  0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // top-right
-    -0.5f,  0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, // top-left
-    -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom-left
-
-    // Left face
-    -0.5f,  0.5f,  0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-right
-    -0.5f,  0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top-left
-    -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-left
-    -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-left
-    -0.5f, -0.5f,  0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // bottom-right
-    -0.5f,  0.5f,  0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-right
-
-    // Right face
-    0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-left
-    0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-right
-    0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top-right         
-    0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-right
-    0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-left
-    0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // bottom-left     
-
-    // Bottom face
-    -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, // top-right
-     0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, // top-left
-     0.5f, -0.5f,  0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, // bottom-left
-     0.5f, -0.5f,  0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, // bottom-left
-    -0.5f, -0.5f,  0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, // bottom-right
-    -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, // top-right
-
-    // Top face
-    -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, // top-left
-     0.5f, 0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom-right
-     0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, // top-right     
-     0.5f, 0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom-right
-    -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, // top-left
-    -0.5f, 0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f  // bottom-left        
-  };
-
   // Create observer geometry
   GLfloat observer[] =
   {
@@ -230,22 +183,6 @@ void Scene::SceneDataInitialization()
                                                        _window->_toolbox->_sphere_latitude_count );
   _window->_toolbox->_sphere_vertices_count = ( 6 * 3 * _window->_toolbox->_sphere_longitude_count * _window->_toolbox->_sphere_latitude_count );
 
-
-  // Create skybox VAO
-  // -----------------
-  glGenVertexArrays( 1, &_skyboxVAO );
-  glBindVertexArray( _skyboxVAO );
-  glGenBuffers( 1, &_skyboxVBO );
-  glBindBuffer( GL_ARRAY_BUFFER, _skyboxVBO );
-  glBufferData( GL_ARRAY_BUFFER, sizeof( skyboxVertices ), &skyboxVertices, GL_STATIC_DRAW );
-  glEnableVertexAttribArray( 0 );
-  glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof( GLfloat ), ( GLvoid* )0 );
-  glEnableVertexAttribArray( 1 );
-  glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof( GLfloat ), ( GLvoid* )( 3 * sizeof( GLfloat ) ) );
-  glEnableVertexAttribArray( 2 );
-  glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof( GLfloat ), ( GLvoid* )( 6 * sizeof( GLfloat ) ) );
-  glBindVertexArray( 0 );
-  glBindBuffer( GL_ARRAY_BUFFER, 0 );
 
   // Skybox texture
   _faces.push_back( "../skybox/s1/front.png" );
@@ -670,23 +607,14 @@ void Scene::LightsInitialization()
 { 
   _lights.clear();
   
-  Light::SetLightsMultiplier( 200.0 );
+  Light::SetLightsMultiplier( 100.0 );
 
-  _lights.push_back( Light ( glm::vec3( 0, 3.0, 0 ),
-                             glm::vec3( 1.0, 1.0, 1.0 ),
-                             0.5 ) );    
-
- /* _lights.push_back( Light ( glm::vec3( -7, 12, 10 )
-                             glm::vec3( 1.0, 1.0, 1.0 ),
-                             1.0 ) );
-
-  _lights.push_back( Light ( glm::vec3( 7, 12, -10 ),
-                             glm::vec3( 1.0, 1.0, 1.0 ),
-                             1.0 ) );
-
-  _lights.push_back( Light ( glm::vec3( 7, 12, -10 ),
-                             glm::vec3( 1.0, 1.0, 1.0 ),
-                             1.0 ) );*/
+  for( int i = 0; i < 10; i++ )
+  {
+    _lights.push_back( Light ( glm::vec3( -5.0 + ( i * 1.0 ), 0.5, 0 ),
+                               glm::vec3( 1.0, 1.0, 1.0 ),
+                               0.1 ) );    
+  }
 
   for( int i = 0; i < _lights.size(); i++ )
   {
@@ -707,15 +635,15 @@ void Scene::ObjectsInitialization()
     switch( i )
     {
       case 0:
-        position = glm::vec3( -1.5, 0.7, 0.0 );
+        position = glm::vec3( -1.5, 1.0, 2.0 );
         break;
       
       case 1:
-        position = glm::vec3( 0.0, 0.7, 0.0 );
+        position = glm::vec3( 0.0, 1.0, 2.0 );
         break;
 
       case 2:
-        position = glm::vec3( 1.5, 0.7, 0.0 );
+        position = glm::vec3( 1.5, 1.0, 2.0 );
         break;
     }
 
@@ -864,11 +792,13 @@ void Scene::IBLCubeMapsInitialization()
 
     // Diffuse irradiance cube map calculation  
     _diffuse_irradiance_shader.Use();
+    glUniformMatrix4fv( glGetUniformLocation( _diffuse_irradiance_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( captureProjection ) );
+    glUniform1f( glGetUniformLocation( _diffuse_irradiance_shader._program, "uSampleDelta" ), _irradiance_sample_delta );
     glUniform1i( glGetUniformLocation( _diffuse_irradiance_shader._program, "uEnvironmentMap" ), 0 );
+
     glActiveTexture( GL_TEXTURE0 );
     glBindTexture( GL_TEXTURE_CUBE_MAP, env_cubemap );
-    glUniformMatrix4fv( glGetUniformLocation( _diffuse_irradiance_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( captureProjection ) );
-
+    
     glViewport( 0, 0, _res_irradiance_cubeMap, _res_irradiance_cubeMap ); // don't forget to configure the viewport to the capture dimensions.
     glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_captureFBO );
     for( unsigned int i = 0; i < 6; ++i )
@@ -994,15 +924,13 @@ void Scene::RenderScene( bool iIsFinalFBO )
   glUniform1i( glGetUniformLocation( _skybox_shader._program, "uBloom" ), false );
   glUniform1f( glGetUniformLocation( _skybox_shader._program, "uBloomBrightness" ), _ground1->_bloom_brightness );
 
-
   glActiveTexture( GL_TEXTURE0 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, /*_irradiance_maps[ _current_env ]*/ _env_cubemaps[ _current_env ] ); // bind les 6 textures du cube map 
+  //glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_maps[ _current_env ] ); // bind les 6 textures du cube map 
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _env_cubemaps[ _current_env ] ); // bind les 6 textures du cube map 
 
-  glBindVertexArray( _skyboxVAO );
   glEnable( GL_BLEND );
-  glDrawArrays( GL_TRIANGLES, 0, 36 );
+  _window->_toolbox->RenderCube();
   glDisable( GL_BLEND );
-  glBindVertexArray( 0 );
 
   glDepthMask( GL_TRUE );  // réactivé pour draw le reste
   glUseProgram( 0 );
@@ -1070,8 +998,6 @@ void Scene::RenderScene( bool iIsFinalFBO )
   glUniformMatrix4fv( glGetUniformLocation( _pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( Msend ) );
   glUniformMatrix4fv( glGetUniformLocation( _pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projectionM ) );
 
-  //glUniformMatrix4fv(glGetUniformLocation(pbr_shader.Program, "uLightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(light_space_matrix));
-
   glUniform1i( glGetUniformLocation( _pbr_shader._program, "uLightCount" ), _lights.size() );
 
   for( int i = 0; i < _lights.size(); i++ )
@@ -1116,7 +1042,6 @@ void Scene::RenderScene( bool iIsFinalFBO )
     glUniformMatrix4fv( glGetUniformLocation( _pbr_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( Msend ) );
     glUniformMatrix4fv( glGetUniformLocation( _pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projectionM ) );
 
-    //glUniformMatrix4fv( glGetUniformLocation(pbr_shader._program, "uLightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(light_space_matrix));
     glUniform1i( glGetUniformLocation( _pbr_shader._program, "uLightCount" ), _lights.size() );
 
     for( int i = 0; i < _lights.size(); i++ )

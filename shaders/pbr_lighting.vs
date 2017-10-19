@@ -1,6 +1,6 @@
 #version 330
 
-#define MAX_NB_LIGHTS 20
+#define MAX_NB_LIGHTS 25
 
 
 //******************************************************************************
@@ -81,15 +81,13 @@ void main()
 
 	oNormal = N;  
 
-	oTangentViewPos  = TBN * uViewPos;
-	oTangentFragPos  = TBN * oFragPos;
+	oTangentViewPos = TBN * uViewPos;
+	oTangentFragPos = TBN * oFragPos;
 
 	for( int i = 0; i < uLightCount; i++ )
 	{
-		//oTangentLightPos[ i ] = TBN * uLightPos[ i ];
+		oTangentLightPos[ i ] = TBN * uLightPos[ i ];
 	}
-
-	oTangentLightPos[ 0 ] = TBN * uLightPos[ 0 ];
 
 	oTBN[ 0 ] = TBN[ 0 ];
 	oTBN[ 1 ] = TBN[ 1 ];

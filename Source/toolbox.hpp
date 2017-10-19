@@ -84,10 +84,11 @@ class Toolbox
     // VAO a VBO
     GLuint _quadVAO;
     GLuint _quadVBO;
-    GLuint _observerVAO;
 
     GLuint _cubeVAO;
     GLuint _cubeVBO;
+
+    GLuint _observerVAO;
     GLuint _observerVBO;
 
     // FBOs & RBOs
@@ -111,7 +112,6 @@ class Toolbox
 
     float _reflection_cubeMap_res;
     float _tex_VL_res_seed;
-
 
 };
 

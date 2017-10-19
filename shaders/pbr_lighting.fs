@@ -1,6 +1,6 @@
 #version 330 
 
-#define MAX_NB_LIGHTS 20
+#define MAX_NB_LIGHTS 25
 #define PI 3.14159265358979323846264338
 
 struct Material
@@ -282,7 +282,7 @@ vec3 LightingCalculation( vec3 iNormal,
   // Return fragment final PBR lighting 
   // ----------------------------------
   
-  return diffuse_IBL /*+ lights_reflectance*/;
+  return diffuse_IBL + lights_reflectance;
 }
 
 

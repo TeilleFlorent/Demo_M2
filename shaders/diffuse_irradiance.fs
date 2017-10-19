@@ -16,7 +16,7 @@ layout ( location = 0 ) out vec4 FragColor;
 // Fragment input uniforms
 // -----------------------
 uniform samplerCube uEnvironmentMap;
-
+uniform float uSampleDelta;
 
 // Fragment inputs from vertex shader 
 // ----------------------------------
@@ -38,12 +38,10 @@ void main()
   vec3 right = cross( up, normal );
   up         = cross( normal, right );
      
-  float sample_delta = 0.01f;
   float sample_count = 0.0f;
-
-  for( float phi = 0.0; phi < 2.0 * PI; phi += sample_delta )
+  for( float phi = 0.0; phi < 2.0 * PI; phi += uSampleDelta )
   {
-    for( float theta = 0.0; theta < 0.5 * PI; theta += sample_delta )
+    for( float theta = 0.0; theta < 0.5 * PI; theta += uSampleDelta )
     {
       // Spherical to cartesian (in tangent space)
       vec3 tangent_sample = vec3( sin( theta ) * cos( phi ), sin( theta ) * sin( phi ), cos( theta ) );
@@ -57,5 +55,5 @@ void main()
   }
 
   irradiance = PI * irradiance * ( 1.0 / sample_count );
-  FragColor = vec4( irradiance , 1.0);
+  FragColor = vec4( irradiance , 1.0 );
 }

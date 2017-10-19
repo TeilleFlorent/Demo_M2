@@ -37,7 +37,7 @@ void Window::Initialization()
   // Init SDL
   if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
   {
-    fprintf( stderr, "Erreur lors de l'initialisation de SDL :  %s", SDL_GetError() );
+    fprintf( stderr, "\nErreur lors de l'initialisation de SDL :  %s", SDL_GetError() );
     exit( 1 );
   }
   atexit( SDL_Quit );
@@ -139,6 +139,7 @@ void Window::Resize()
 void Window::ManageEvents( Camera * iCamera )
 {
   SDL_Event event;
+  std::string temp;
 
 
   // Key & window Event 
@@ -197,11 +198,9 @@ void Window::ManageEvents( Camera * iCamera )
        
           case SDLK_F1 :
             _scene->_bloom = ( _scene->_bloom == true ) ? false : true;
-            break;
-
-          case SDLK_F3 :
-            if( _scene->_current_env < _scene->_hdr_textures.size() - 1 )
-              _scene->_current_env++;
+            temp = ( ( _scene->_bloom == true ) ? "Bloom effect : On" : "Bloom effect : Off" );
+            std::cout << std::endl << temp << std::endl
+                                   << "--------------" << std::endl; 
             break;
 
           case SDLK_F2 :
@@ -209,8 +208,27 @@ void Window::ManageEvents( Camera * iCamera )
               _scene->_current_env--;
             break;
 
+          case SDLK_F3 :
+            if( _scene->_current_env < _scene->_hdr_textures.size() - 1 )
+              _scene->_current_env++;
+            break;
+
+          case SDLK_F4 :
+            if( _scene->_exposure > 0.01 )
+              _scene->_exposure -= 0.01;
+            std::cout << std::endl << "Exposure value : " << _scene->_exposure << std::endl
+                                   << "----------------" << std::endl;
+            break;
+
+          case SDLK_F5 :
+            if( _scene->_exposure < 1.99 )
+              _scene->_exposure += 0.01;
+            std::cout << std::endl << "Exposure value : " << _scene->_exposure << std::endl
+                                   << "----------------" << std::endl;
+            break;
+
           default:
-            fprintf( stderr, "La touche %s a ete pressee\n", SDL_GetKeyName( event.key.keysym.sym ) );
+            fprintf( stderr, "\nLa touche %s a ete pressee\n", SDL_GetKeyName( event.key.keysym.sym ) );
             break;
         }
         break;
