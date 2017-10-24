@@ -2,7 +2,7 @@
 
 
 Real time demo entirely realise in C++ and openGL-GLSL 3.3.
-----------------------
+-----------------------------------------------------------
 
 
 1) Compile Cmake module :
