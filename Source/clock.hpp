@@ -25,6 +25,10 @@ class Clock
 
     void TimeUpdate();
 
+    float GetCurrentTime();
+
+    float GetDeltaTime();
+    
     void PrintState();
 
 

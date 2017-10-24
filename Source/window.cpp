@@ -79,8 +79,8 @@ SDL_Window * Window::InitSDLWindow( int iWidth,
   SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
   SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
   SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
-  //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-  //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+  //SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, 1 );
+  //SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, 16 );
 
   // Create SDL window
   win = SDL_CreateWindow( "OpenGL Demo",
@@ -121,7 +121,7 @@ void Window::InitGL()
   //glBlendEquation(GL_FUNC_ADD);
   //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
  
-  //glEnable(GL_MULTISAMPLE); // active anti aliasing 
+  //glEnable( GL_MULTISAMPLE ); // active anti aliasing 
   
   //glFrontFace(GL_CCW);
   //glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
@@ -130,9 +130,6 @@ void Window::InitGL()
 void Window::Resize()
 {
   SDL_GetWindowSize( _SDL_window, &_width, &_height );
-
-  //std::cout << "W = " << w << ", H = " << h << std::endl;
-
   SDL_WarpMouseInWindow( _SDL_window, _width / 2.0, _height / 2.0 );
 }
 

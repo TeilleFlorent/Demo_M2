@@ -38,7 +38,7 @@ void Loop()
 
     clock->TimeUpdate();
     
-    camera->CameraUpdate( clock->_delta_time );
+    camera->CameraUpdate( clock->GetDeltaTime() );
 
     window->Draw();
 

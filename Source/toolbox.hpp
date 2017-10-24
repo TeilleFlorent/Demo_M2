@@ -1,9 +1,8 @@
-#include "scene.hpp"
-#include "hdr_image_manager.hpp"
-
-
 #ifndef TOOLBOX_H
 #define TOOLBOX_H
+
+#include "scene.hpp"
+#include "hdr_image_manager.hpp"
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -92,21 +91,22 @@ class Toolbox
     GLuint _observerVBO;
 
     // FBOs & RBOs
-    GLuint _hdrFBO;
-    GLuint _dephtRBO;
+    GLuint _temp_hdr_FBO;
+    GLuint _temp_depht_RBO;
 
     GLuint _final_hdr_FBO;
     GLuint _final_depht_RBO;
 
     unsigned int _captureFBO;
     unsigned int _captureRBO;
-    GLuint _pingpongFBO[ 2 ];
+    GLuint _pingpong_FBO[ 2 ];
 
-    GLuint _pingpongColorbuffers[ 2 ];
+    // Textures
+    GLuint _pingpong_color_buffers[ 2 ];
     GLuint _temp_tex_color_buffer[ 2 ];
     GLuint _final_tex_color_buffer[ 2 ];
 
-    // Texture resolution
+    // Textures resolution
     float _depth_map_res_seed;
     float _depth_map_res_x, _depth_map_res_y;
 

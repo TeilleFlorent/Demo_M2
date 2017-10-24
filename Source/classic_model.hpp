@@ -4,6 +4,7 @@
 #ifndef CLASSIC_MODEL_H
 #define CLASSIC_MODEL_H
 
+
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -20,6 +21,7 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+
 
 using namespace std;
 
@@ -46,11 +48,12 @@ class Vertex
 
 class Texture
 {
+
   public:
   
     GLuint _id;
     string _type;
-    aiString _path;
+    string _path;
 };
 
 
@@ -60,22 +63,26 @@ class Texture
 
 class Mesh
 {
+
   public:
+
 
     // Class functions
     // ---------------
-    Mesh( vector< Vertex > iVertices,
-          vector< GLuint > iIndices,
+    Mesh( vector< Vertex >  iVertices,
+          vector< GLuint >  iIndices,
           vector< Texture > iTextures );
 
     void Draw( Shader iShader,
-               int iID ); 
+               int    iID ); 
+
     
     // Class data
     // ---------  
-    vector< Vertex > _vertices;
-    vector< GLuint > _indices;
+    vector< Vertex >  _vertices;
+    vector< GLuint >  _indices;
     vector< Texture > _textures;
+
 
   private:
   
@@ -90,9 +97,13 @@ class Mesh
 //**********  Class Model  *****************************************************
 //******************************************************************************
 
+class Toolbox;
+
 class Model 
 {
+
   public:
+
 
     // Class functions
     // ---------------
@@ -101,36 +112,45 @@ class Model
     void Draw( Shader iShader );   
 
     void Load_Model( string iPath,
-                     int iID );
+                     int    iID,
+                     string iName );
 
     void Print_info_model();
 
     void LoadModel( string iPath );
 
     void ProcessNode( aiNode * iNode,
-                      int iMeshNum );
+                      int      iMeshNum );
 
     Mesh ProcessMesh( aiMesh* iMesh,
-                      int iMeshNum );
+                      int     iMeshNum );
 
-    vector< Texture > LoadMaterialTextures( aiMaterial * iMaterial,
-                                            aiTextureType iTextureType,
-                                            string iTypeName, 
-                                            int iMeshNum );
+    vector< Texture > LoadModelTextures( int iMeshNum );
     
-    GLint TextureFromFile( const char * iPath,
-                           string iDirectory );
+    GLuint TextureFromFile( string iTexturePath );
+
+    static void SetToolbox( Toolbox * iToolbox );
+
+    static Toolbox * GetToolbox();
 
 
     // Class data
     // ----------
     vector< Mesh >    _meshes;
     string            _directory;
-    vector< Texture > _textures_loaded;    // optimisation (ne charge pas deux foix les meme texture)
+    vector< Texture > _textures_loaded;
     int               _model_id;
     Assimp::Importer  _importer;
     const aiScene *   _scene;
     int               _vertice_count;
+    string            _model_name; 
+
+
+  private:
+
+    // Pointer on the window program toolbox
+    static Toolbox * _toolbox;
+
 };    
 
 #endif  // CLASSIC_MODEL_H

@@ -50,10 +50,10 @@ void Toolbox::Quit()
   if( _observerVBO )
     glDeleteBuffers( 1, &_observerVBO );
 
-  if( _pingpongFBO[ 0 ] )
-    glDeleteFramebuffers( 1, &_pingpongFBO[ 0 ] );
-  if( _pingpongFBO[ 1 ] )
-    glDeleteFramebuffers( 1, &_pingpongFBO[ 1 ] );
+  if( _pingpong_FBO[ 0 ] )
+    glDeleteFramebuffers( 1, &_pingpong_FBO[ 0 ] );
+  if( _pingpong_FBO[ 1 ] )
+    glDeleteFramebuffers( 1, &_pingpong_FBO[ 1 ] );
 
 }
 

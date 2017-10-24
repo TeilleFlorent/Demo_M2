@@ -19,13 +19,13 @@ Scene::Scene( Window * iParentWindow )
 
   // Init multi sample param
   _multi_sample            = false;
-  _nb_multi_sample         = 4;
+  _nb_multi_sample         = 2;
 
   // Init IBL param
   _res_IBL_cubeMap        = 512;
   _res_irradiance_cubeMap = 32;
   _irradiance_sample_delta = 0.025;
-  _current_env = 0;
+  _current_env = 2;
 
 
   // Scene data initialization
@@ -79,10 +79,10 @@ void Scene::Quit()
 
   // Delete textures
   // ---------------
-  if( _window->_toolbox->_pingpongColorbuffers[ 0 ] )
-    glDeleteTextures( 1, &_window->_toolbox->_pingpongColorbuffers[ 0 ] );
-  if( _window->_toolbox->_pingpongColorbuffers[ 1 ] )
-    glDeleteTextures( 1, &_window->_toolbox->_pingpongColorbuffers[ 1 ] );
+  if( _window->_toolbox->_pingpong_color_buffers[ 0 ] )
+    glDeleteTextures( 1, &_window->_toolbox->_pingpong_color_buffers[ 0 ] );
+  if( _window->_toolbox->_pingpong_color_buffers[ 1 ] )
+    glDeleteTextures( 1, &_window->_toolbox->_pingpong_color_buffers[ 1 ] );
   for( int i = 0; i < _hdr_textures.size(); i++ )
   {
     if( _hdr_textures[ i ] )
@@ -132,20 +132,20 @@ void Scene::Quit()
 
   // Delete FBOs
   // -----------
-  if( _window->_toolbox->_hdrFBO )
-    glDeleteFramebuffers( 1, &_window->_toolbox->_hdrFBO );
+  if( _window->_toolbox->_temp_hdr_FBO )
+    glDeleteFramebuffers( 1, &_window->_toolbox->_temp_hdr_FBO );
   if( _window->_toolbox->_final_hdr_FBO )
     glDeleteFramebuffers( 1, &_window->_toolbox->_final_hdr_FBO );
-  if( _window->_toolbox->_hdrFBO )
-    glDeleteFramebuffers( 1, &_window->_toolbox->_hdrFBO );
+  if( _window->_toolbox->_temp_hdr_FBO )
+    glDeleteFramebuffers( 1, &_window->_toolbox->_temp_hdr_FBO );
   if( _window->_toolbox->_captureFBO )
     glDeleteFramebuffers( 1, &_window->_toolbox->_captureFBO );
 
 
   // Delete RBOs
   // -----------
-  if( _window->_toolbox->_dephtRBO )
-    glDeleteRenderbuffers( 1, &_window->_toolbox->_dephtRBO );
+  if( _window->_toolbox->_temp_depht_RBO )
+    glDeleteRenderbuffers( 1, &_window->_toolbox->_temp_depht_RBO );
   if( _window->_toolbox->_final_depht_RBO )
     glDeleteRenderbuffers( 1, &_window->_toolbox->_final_depht_RBO );
   if( _window->_toolbox->_captureRBO )
@@ -315,9 +315,9 @@ void Scene::SceneDataInitialization()
 
   // Create temp color buffer
   // ------------------------
-  glGenFramebuffers( 1, &_window->_toolbox->_hdrFBO );
-  glGenRenderbuffers( 1, &_window->_toolbox->_dephtRBO );
-  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_hdrFBO );
+  glGenFramebuffers( 1, &_window->_toolbox->_temp_hdr_FBO );
+  glGenRenderbuffers( 1, &_window->_toolbox->_temp_depht_RBO );
+  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
   glGenTextures( 2, _window->_toolbox->_temp_tex_color_buffer );
 
   if( _multi_sample )
@@ -332,9 +332,9 @@ void Scene::SceneDataInitialization()
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
       glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, _window->_toolbox->_temp_tex_color_buffer[ i ], 0 );
     }
-    glBindRenderbuffer( GL_RENDERBUFFER, _window->_toolbox->_dephtRBO );
+    glBindRenderbuffer( GL_RENDERBUFFER, _window->_toolbox->_temp_depht_RBO );
     glRenderbufferStorageMultisample( GL_RENDERBUFFER, _nb_multi_sample, GL_DEPTH24_STENCIL8, _window->_width, _window->_height ); 
-    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _window->_toolbox->_dephtRBO );
+    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _window->_toolbox->_temp_depht_RBO );
 
     GLuint attachments2[ 2 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
     glDrawBuffers( 2, attachments2 );
@@ -357,9 +357,10 @@ void Scene::SceneDataInitialization()
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
       glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, _window->_toolbox->_temp_tex_color_buffer[ i ], 0 );
     }
-    glBindRenderbuffer( GL_RENDERBUFFER, _window->_toolbox->_dephtRBO );
+    glBindRenderbuffer( GL_RENDERBUFFER, _window->_toolbox->_temp_depht_RBO );
     glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, _window->_width, _window->_height );
-    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _window->_toolbox->_dephtRBO );
+
+    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _window->_toolbox->_temp_depht_RBO );
     GLuint attachments2[ 2 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
     glDrawBuffers( 2, attachments2 );
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
@@ -397,22 +398,23 @@ void Scene::SceneDataInitialization()
     std::cout << "Framebuffer not complete!" << std::endl;
   }
   glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-    
+  glBindTexture( GL_TEXTURE_2D, 0 );
+
 
   // Create pingpong buffer
   // ----------------------
-  glGenFramebuffers( 2, _window->_toolbox->_pingpongFBO );
-  glGenTextures( 2, _window->_toolbox->_pingpongColorbuffers );
+  glGenFramebuffers( 2, _window->_toolbox->_pingpong_FBO );
+  glGenTextures( 2, _window->_toolbox->_pingpong_color_buffers );
   for( GLuint i = 0; i < 2; i++ )
   {
-    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_pingpongFBO[ i ] );
-    glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_pingpongColorbuffers[ i ] );
+    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_pingpong_FBO[ i ] );
+    glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_pingpong_color_buffers[ i ] );
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, _window->_width * _bloom_downsample, _window->_height * _bloom_downsample, 0, GL_RGB, GL_FLOAT, NULL );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR ); 
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE ); 
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _window->_toolbox->_pingpongColorbuffers[ i ], 0 );
+    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _window->_toolbox->_pingpong_color_buffers[ i ], 0 );
     if( glCheckFramebufferStatus( GL_FRAMEBUFFER ) != GL_FRAMEBUFFER_COMPLETE )
     {
       std::cout << "Framebuffer not complete!" << std::endl;
@@ -423,7 +425,7 @@ void Scene::SceneDataInitialization()
     
 
   // Load ground albedo texture
-  // ---------------------------- 
+  // --------------------------
   glGenTextures( 1, &_tex_albedo_ground );
   glBindTexture( GL_TEXTURE_2D, _tex_albedo_ground );
   if( ( t = IMG_Load( "../Textures/ground1/albedo.png" ) ) != NULL )
@@ -647,7 +649,7 @@ void Scene::ObjectsInitialization()
         break;
     }
 
-    _tables.push_back( Object( 0,
+    _tables.push_back( Object( 0, // ID
                                position,
                                0.0,
                                0.0,
@@ -664,7 +666,7 @@ void Scene::ObjectsInitialization()
 
   // _Ground1 object initialization
   // ------------------------------
-  _ground1 = new Object( 1,
+  _ground1 = new Object( 1, // ID
                          glm::vec3( 0.0, 0.0, 0.0 ),
                          _PI_2,
                          0.0,
@@ -827,7 +829,7 @@ void Scene::ShadersInitialization()
   _observer_shader.SetShaderClassicPipeline(           "../shaders/observer.vs",           "../shaders/observer.fs" );
   _blur_shader.SetShaderClassicPipeline(               "../shaders/blur.vs",               "../shaders/blur.fs" );
   _bloom_shader.SetShaderClassicPipeline(              "../shaders/bloom_blending.vs",     "../shaders/bloom_blending.fs" );
-  _blit_shader.SetShaderClassicPipeline(               "../shaders/blit.vs",               "../shaders/blit.fs" );
+  _blit_shader.SetShaderClassicPipeline(               "../shaders/multisample_blit.vs",   "../shaders/multisample_blit.fs" );
   _cube_map_converter_shader.SetShaderClassicPipeline( "../shaders/cube_map_converter.vs", "../shaders/cube_map_converter.fs" );
   _diffuse_irradiance_shader.SetShaderClassicPipeline( "../shaders/cube_map_converter.vs", "../shaders/diffuse_irradiance.fs" );
 
@@ -869,10 +871,11 @@ void Scene::ShadersInitialization()
 }
 
 void Scene::LoadModels()
-{
+{ 
+  Model::SetToolbox( _window->_toolbox );
   // Table model loading
   _table_model = new Model();
-  _table_model->Load_Model( "../Models/cube/Rounded Cube.fbx", 0 );
+  _table_model->Load_Model( "../Models/cube/Rounded Cube.fbx", 0, "Table1" );
   _table_model->Print_info_model();
 }
 
@@ -900,10 +903,10 @@ void Scene::RenderScene( bool iIsFinalFBO )
   {
     if( _multi_sample )
     {
-      glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_hdrFBO /*final_hdr_FBO*/ );
+      glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO /*final_hdr_FBO*/ );
     }
     else{
-      glBindFramebuffer( GL_FRAMEBUFFER, /*final_hdr_FBO*/ _window->_toolbox->_hdrFBO );
+      glBindFramebuffer( GL_FRAMEBUFFER, /*final_hdr_FBO*/ _window->_toolbox->_temp_hdr_FBO );
     }
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
   }
@@ -1076,7 +1079,7 @@ void Scene::RenderScene( bool iIsFinalFBO )
   {
     _blit_shader.Use();
 
-    // Bind classic texture where we gonna render
+    // Bind classic texture where we want to render
     glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_final_hdr_FBO );
     glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _window->_toolbox->_final_tex_color_buffer[ 0 ], 0 );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -1115,7 +1118,7 @@ void Scene::BlurProcess()
   
   for( GLuint i = 0; i < amount; i++ )
   {
-    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_pingpongFBO[ horizontal ] ); 
+    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_pingpong_FBO[ horizontal ] ); 
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
     horizontal = ( horizontal == 0 ) ? 1 : 0;
@@ -1123,7 +1126,7 @@ void Scene::BlurProcess()
     if( !first_ite )
     {
       glActiveTexture( GL_TEXTURE0 );
-      glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_pingpongColorbuffers[ horizontal ] );
+      glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_pingpong_color_buffers[ horizontal ] );
     }
     else
     {
@@ -1167,7 +1170,7 @@ void Scene::BloomProcess()
     glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_temp_tex_color_buffer[ 0 ] );
   }
   glActiveTexture( GL_TEXTURE1 );
-  glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_pingpongColorbuffers[ 0 ] );
+  glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_pingpong_color_buffers[ 0 ] );
   glUniform1i( glGetUniformLocation( _bloom_shader._program, "uBloom" ), _bloom );
   glUniform1f( glGetUniformLocation( _bloom_shader._program, "uExposure" ), _exposure );
   _window->_toolbox->RenderQuad();

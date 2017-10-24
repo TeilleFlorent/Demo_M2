@@ -1,4 +1,5 @@
 #include "classic_model.hpp"
+#include "toolbox.hpp"
 
 
 //******************************************************************************
@@ -26,6 +27,7 @@ void Mesh::Draw( Shader iShader,
   GLuint AONr = 1;
   GLuint roughnessNr = 1;
   GLuint metalnessNr = 1;
+
 
   // Mesh corresponding texture binding
   // ----------------------------------
@@ -62,6 +64,7 @@ void Mesh::Draw( Shader iShader,
     glUniform1i( glGetUniformLocation( iShader._program, ( name + number ).c_str() ), i );
     glBindTexture( GL_TEXTURE_2D, this->_textures[ i ]._id ); // bind la tex qui correspond au string generer et envoyer au juste avant
   }
+
 
   // Mesh Drawing
   // ------------
@@ -121,11 +124,12 @@ void Mesh::SetupMesh()
 //**********  Class Model  *****************************************************
 //******************************************************************************
 
+Toolbox * Model::_toolbox; 
+
 Model::Model()
 {
 }
 
-// draw tout les meshes du model
 void Model::Draw( Shader iShader )
 {
   for( GLuint i = 0; i < this->_meshes.size(); i++ )
@@ -135,26 +139,29 @@ void Model::Draw( Shader iShader )
 }
     
 void Model::Load_Model( string iPath, 
-                        int iID )
+                        int iID,
+                        string iName )
 {
-
-  this->_model_id = iID;
-  this->LoadModel( iPath );
+  _model_id = iID;
+  _model_name = iName;
+  LoadModel( iPath );
 }
 
 void Model::Print_info_model()
 {
   float res = 0;
-  cout << "\nCLASSIC MODEL:\n" << "nbMeshes = " << _meshes.size() << endl;
+  cout << "\n\nClassic model: " << "\"" << _model_name << "\"" << std::endl
+       <<     "-------------- " << std::endl
+       <<     "Mesh count : "   << _meshes.size() << endl;
 
   for( unsigned int i = 0; i < _meshes.size(); i++ )
   {
-    cout << "mesh " << i << ", nbVertices = " << _meshes[ i ]._vertices.size() << endl;
+    cout << "Mesh " << i << " -> vertice count : " << _meshes[ i ]._vertices.size() << endl;
     res += _meshes[ i ]._vertices.size();
   }
 
   _vertice_count = res;
-  cout << "nb_vertices_total = " << res << "\n" << endl;
+  cout << "Model total vertice count : " << res << "\n" << endl;
 }
 
 void Model::LoadModel( string iPath )
@@ -162,17 +169,17 @@ void Model::LoadModel( string iPath )
   // print tous les format supporté
   aiString all_supported_format;   
   _importer.GetExtensionList( all_supported_format );
-  //cout << bla.C_Str() << endl;   
+  //std::cout << all_supported_format.C_Str() << std::endl;   
   
   _scene = _importer.ReadFile( iPath, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace );
 
   if( !_scene || _scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !_scene->mRootNode )
   {
-      cout << "\n\nERROR ASSIMP => LoadModel() function\n\n" << _importer.GetErrorString() << endl;
-      return;
+    cout << "\n\nASSIMP ERROR => LoadModel() function\n\n" << _importer.GetErrorString() << endl;
+    return;
   }
 
-  this->_directory = iPath.substr( 0, iPath.find_last_of('/') );
+  this->_directory = iPath.substr( 0, iPath.find_last_of( '/' ) );
   this->ProcessNode( _scene->mRootNode, 0 );
 }
 
@@ -229,7 +236,7 @@ Mesh Model::ProcessMesh( aiMesh * iMesh,
     else
     {
       vertex._uv = glm::vec2( 0.0f, 0.0f );
-      printf( "\n\nThere is no UV\n\n" );
+      printf( "\n\nERROR ProcessMesh() function -> There is no UV\n\n" );
     }
 
     // Assimp tangent
@@ -302,206 +309,134 @@ Mesh Model::ProcessMesh( aiMesh * iMesh,
 
   // Load model textures
   // -------------------
-  aiMaterial * material = _scene->mMaterials[ iMesh->mMaterialIndex ];
-
-  vector< Texture > diffuseMaps = this->LoadMaterialTextures( material, aiTextureType_DIFFUSE, "texture_diffuse", iMeshNum );
-  textures.insert( textures.end(), diffuseMaps.begin(), diffuseMaps.end() );
-
-  /*if(model_id != 0){
-  // Specular maps
-  vector<Texture> specularMaps = this->loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular", num_mesh);
-  textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-  // Specular maps
-  vector<Texture> normalMaps = this->loadMaterialTextures(material, aiTextureType_HEIGHT , "texture_normal", num_mesh);
-  textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-  }*/
+  vector< Texture > model_textures = this->LoadModelTextures( iMeshNum );
+  textures.insert( textures.end(), model_textures.begin(), model_textures.end() );
       
   return Mesh( vertices, indices, textures );
 }
 
-vector< Texture > Model::LoadMaterialTextures( aiMaterial * iMaterial,
-                                               aiTextureType iType,
-                                               string iTypeName,
-                                               int iMeshNum )
+vector< Texture > Model::LoadModelTextures( int iMeshNum )
 {
-
   vector< Texture > textures;
+  Texture texture;
+  string texture_name;
+  string texture_path;
+  string texture_type;
 
+  
   // Load table1 textures 
   // --------------------
   if( this->_model_id == 0 )
   {
-    GLboolean skip = false;
-    string temp1;
-    aiString str;
+    // albedo
+    texture_type  = "texture_diffuse"; 
+    texture_name  = "albedo.png";            
+    texture_path  = this->_directory + '/' + texture_name;
+    texture._id   = TextureFromFile( texture_path );
+    texture._path = texture_path;
+    texture._type = texture_type;
+    textures.push_back( texture );
+    this->_textures_loaded.push_back( texture );  
 
-    if( !skip )
-    {
-      // albedo
-      temp1 = "albedo.png";            
-      str.Set( temp1 );
-      Texture texture;
-      texture._id = TextureFromFile( str.C_Str() , this->_directory );
-      texture._path = str;
-      temp1 = "texture_diffuse";
-      texture._type = temp1;
-      textures.push_back( texture );
-      this->_textures_loaded.push_back( texture );  
+    // normal
+    texture_type  = "texture_normal"; 
+    texture_name  = "normal.png";            
+    texture_path  = this->_directory + '/' + texture_name;
+    texture._id   = TextureFromFile( texture_path );
+    texture._path = texture_path;
+    texture._type = texture_type;
+    textures.push_back( texture );
+    this->_textures_loaded.push_back( texture ); 
 
-      // normal
-      temp1 = "normal.png";            
-      str.Set( temp1 );
-      texture._id = TextureFromFile( str.C_Str() , this->_directory );
-      texture._path = str;
-      temp1 = "texture_normal";
-      texture._type = temp1;
-      textures.push_back( texture );
-      this->_textures_loaded.push_back( texture ); 
+    // height
+    texture_type  = "texture_height"; 
+    texture_name  = "height.png";            
+    texture_path  = this->_directory + '/' + texture_name;
+    texture._id   = TextureFromFile( texture_path );
+    texture._path = texture_path;
+    texture._type = texture_type;
+    textures.push_back( texture );
+    this->_textures_loaded.push_back( texture );
 
-      // height
-      temp1 = "height.png";            
-      str.Set( temp1 );
-      texture._id = TextureFromFile( str.C_Str() , this->_directory );
-      texture._path = str;
-      temp1 = "texture_height";
-      texture._type = temp1;
-      textures.push_back( texture );
-      this->_textures_loaded.push_back( texture );
+    // AO
+    texture_type  = "texture_AO"; 
+    texture_name  = "AO.png";            
+    texture_path  = this->_directory + '/' + texture_name;
+    texture._id   = TextureFromFile( texture_path );
+    texture._path = texture_path;
+    texture._type = texture_type;
+    textures.push_back( texture );
+    this->_textures_loaded.push_back( texture );
 
-      // AO
-      temp1 = "AO.png";            
-      str.Set( temp1 );
-      texture._id = TextureFromFile( str.C_Str() , this->_directory );
-      texture._path = str;
-      temp1 = "texture_AO";
-      texture._type = temp1;
-      textures.push_back( texture );
-      this->_textures_loaded.push_back( texture );
+    // roughness 
+    texture_type  = "texture_roughness"; 
+    texture_name  = "roughness.png";            
+    texture_path  = this->_directory + '/' + texture_name;
+    texture._id   = TextureFromFile( texture_path );
+    texture._path = texture_path;
+    texture._type = texture_type;
+    textures.push_back( texture );
+    this->_textures_loaded.push_back( texture );
 
-      // roughness
-      temp1 = "roughness.png";            
-      str.Set( temp1 );
-      texture._id = TextureFromFile( str.C_Str() , this->_directory );
-      texture._path = str;
-      temp1 = "texture_roughness";
-      texture._type = temp1;
-      textures.push_back( texture );
-      this->_textures_loaded.push_back( texture );  
-
-      // metalness
-      temp1 = "metalness.png";            
-      str.Set( temp1 );
-      texture._id = TextureFromFile( str.C_Str() , this->_directory );
-      texture._path = str;
-      temp1 = "texture_metalness";
-      texture._type = temp1;
-      textures.push_back( texture );
-      this->_textures_loaded.push_back( texture );  
-    }
+    // metalness
+    texture_type  = "texture_metalness"; 
+    texture_name  = "metalness.png";            
+    texture_path  = this->_directory + '/' + texture_name;
+    texture._id   = TextureFromFile( texture_path );
+    texture._path = texture_path;
+    texture._type = texture_type;
+    textures.push_back( texture );
+    this->_textures_loaded.push_back( texture );
 
     return textures;
   }
 
-
-  // Optimisation texture loading system
-  // -----------------------------------
-  for( GLuint i = 0; i < iMaterial->GetTextureCount( iType ); i++ )
-  {
-    aiString str;
-    iMaterial->GetTexture( iType, i, &str );
-    
-    string test_path = str.data;
-    GLboolean skip = false;
- 
-    for( GLuint j = 0; j < _textures_loaded.size(); j++ )
-    {
-      if( _textures_loaded[ j ]._path == str )
-      {
-        textures.push_back( _textures_loaded[ j ] );
-        skip = true; 
-        break;
-      }
-    }
-  
-    if( !skip )
-    {   
-      Texture texture;
-      texture._id = TextureFromFile( str.C_Str(), this->_directory );
-      texture._type = iTypeName;
-      texture._path = str;
-      textures.push_back( texture );
-      this->_textures_loaded.push_back( texture );  
-    }
-  }
-
-  return textures;
 }
 
-GLint Model::TextureFromFile( const char * iPath,
-                              string iDirectory )
+GLuint Model::TextureFromFile( string iTexturePath )
 {
 
+  // Check loaded texture vector and for not load two times the same texture file
+  // ----------------------------------------------------------------------------
+  for( unsigned int i = 0; i < _textures_loaded.size(); i++ )
+  {
+    if( iTexturePath.compare( _textures_loaded[ i ]._path ) == 0 )
+    {
+      return _textures_loaded[ i ]._id;
+    }  
+  }
+
+
+  // Load new texture file
+  // ---------------------
   float aniso;
   glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso ); // get la valeur pour l'aniso
 
   SDL_Surface * t = NULL;
 
-  string filename = string( iPath );
-  filename = iDirectory + '/' + filename;
   GLuint textureID;
   glGenTextures( 1, &textureID );
-  t = IMG_Load( filename.c_str() );
+  t = IMG_Load( iTexturePath.c_str() );
 
-  /*
-  std::cout << "test1 = " << path << std::endl;
-  std::cout << "test2 = " << directory << std::endl;     
-  std::cout << "test3 = " << filename << std::endl;  
   if( !t )
   {
-    printf("image null\n");
-  }
-  */
- 
-  glBindTexture( GL_TEXTURE_2D, textureID );
-
-  if( t->format->format == SDL_PIXELFORMAT_RGB332
-   || t->format->format == SDL_PIXELFORMAT_RGB444
-   || t->format->format == SDL_PIXELFORMAT_RGB555
-   || t->format->format == SDL_PIXELFORMAT_RGB565
-   || t->format->format == SDL_PIXELFORMAT_RGB24
-   || t->format->format == SDL_PIXELFORMAT_RGB888
-  //|| t->format->format == SDL_PIXELFORMAT_RGBX8888
-   || t->format->format == SDL_PIXELFORMAT_RGB565
-   || t->format->format == SDL_PIXELFORMAT_BGR555
-   || t->format->format == SDL_PIXELFORMAT_BGR565
-   || t->format->format == SDL_PIXELFORMAT_BGR24
-   || t->format->format == SDL_PIXELFORMAT_BGR888 )
-  {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels);
+    printf( "Loading image fail => image null\n" );
   }
   else
   {
-    if( t->format->format == SDL_PIXELFORMAT_RGBA4444
-     || t->format->format == SDL_PIXELFORMAT_RGBA5551
-     || t->format->format == SDL_PIXELFORMAT_ARGB4444
-     || t->format->format == SDL_PIXELFORMAT_ABGR4444
-     || t->format->format == SDL_PIXELFORMAT_BGRA4444
-     || t->format->format == SDL_PIXELFORMAT_ABGR1555
-     || t->format->format == SDL_PIXELFORMAT_BGRA5551
-     || t->format->format == SDL_PIXELFORMAT_ARGB8888
-     || t->format->format == SDL_PIXELFORMAT_ABGR8888
-     || t->format->format == SDL_PIXELFORMAT_BGRA8888
-    //|| t->format->format == SDL_PIXELFORMAT_RGBX8888
-     || t->format->format == SDL_PIXELFORMAT_RGBA8888 )
-    {
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->pixels );
-    }
-    else
-    { 
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels );
-    }
+    //std::cout << "Texture : " << iTexturePath << " => Loaded" << std::endl;
   }
-
+  
+  glBindTexture( GL_TEXTURE_2D, textureID );
+  if( _toolbox->IsTextureRGBA( t ) )
+  {
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->pixels );
+  }
+  else
+  {
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels );
+  }
+ 
   glGenerateMipmap( GL_TEXTURE_2D );    
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
@@ -512,4 +447,14 @@ GLint Model::TextureFromFile( const char * iPath,
   glBindTexture( GL_TEXTURE_2D, 0 );
   SDL_FreeSurface( t );
   return textureID;
+}
+
+void Model::SetToolbox( Toolbox * iToolbox )
+{
+  _toolbox = iToolbox;
+}
+
+Toolbox * Model::GetToolbox()
+{
+  return _toolbox;
 }
