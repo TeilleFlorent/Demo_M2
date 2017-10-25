@@ -185,12 +185,12 @@ void Scene::SceneDataInitialization()
 
 
   // Skybox texture
-  _faces.push_back( "../skybox/s1/front.png" );
-  _faces.push_back( "../skybox/s1/back.png" );
-  _faces.push_back( "../skybox/s1/top.png" );
-  _faces.push_back( "../skybox/s1/bottom.png" );
-  _faces.push_back( "../skybox/s1/right.png" );
-  _faces.push_back( "../skybox/s1/left.png" );
+  _faces.push_back( "../Skybox/s1/front.png" );
+  _faces.push_back( "../Skybox/s1/back.png" );
+  _faces.push_back( "../Skybox/s1/top.png" );
+  _faces.push_back( "../Skybox/s1/bottom.png" );
+  _faces.push_back( "../Skybox/s1/right.png" );
+  _faces.push_back( "../Skybox/s1/left.png" );
 
 
   // Create observer VAO
@@ -684,9 +684,9 @@ void Scene::ObjectsInitialization()
 void Scene::IBLCubeMapsInitialization()
 { 
   std::vector< std::string > hdr_texture_paths;
-  hdr_texture_paths.push_back( std::string( "../skybox/hdr skybox 2/Ridgecrest_Road_Ref.hdr" ) );
-  hdr_texture_paths.push_back( std::string( "../skybox/hdr skybox 1/Arches_E_PineTree_3k.hdr" ) );
-  hdr_texture_paths.push_back( std::string( "../skybox/hdr skybox 3/QueenMary_Chimney_Ref.hdr" ) );
+  hdr_texture_paths.push_back( std::string( "../Skybox/hdr skybox 2/Ridgecrest_Road_Ref.hdr" ) );
+  hdr_texture_paths.push_back( std::string( "../Skybox/hdr skybox 1/Arches_E_PineTree_3k.hdr" ) );
+  hdr_texture_paths.push_back( std::string( "../Skybox/hdr skybox 3/QueenMary_Chimney_Ref.hdr" ) );
 
   for( unsigned int i = 0; i < hdr_texture_paths.size(); i++ )
   {
@@ -821,17 +821,18 @@ void Scene::IBLCubeMapsInitialization()
 
 void Scene::ShadersInitialization()
 {
+  
   // Compilation des shaders
   // -----------------------
-  _pbr_shader.SetShaderClassicPipeline(                "../shaders/pbr_lighting.vs",       "../shaders/pbr_lighting.fs" );
-  _skybox_shader.SetShaderClassicPipeline(             "../shaders/skybox.vs",             "../shaders/skybox.fs" );
-  _flat_color_shader.SetShaderClassicPipeline(         "../shaders/flat_color.vs",         "../shaders/flat_color.fs" );
-  _observer_shader.SetShaderClassicPipeline(           "../shaders/observer.vs",           "../shaders/observer.fs" );
-  _blur_shader.SetShaderClassicPipeline(               "../shaders/blur.vs",               "../shaders/blur.fs" );
-  _bloom_shader.SetShaderClassicPipeline(              "../shaders/bloom_blending.vs",     "../shaders/bloom_blending.fs" );
-  _blit_shader.SetShaderClassicPipeline(               "../shaders/multisample_blit.vs",   "../shaders/multisample_blit.fs" );
-  _cube_map_converter_shader.SetShaderClassicPipeline( "../shaders/cube_map_converter.vs", "../shaders/cube_map_converter.fs" );
-  _diffuse_irradiance_shader.SetShaderClassicPipeline( "../shaders/cube_map_converter.vs", "../shaders/diffuse_irradiance.fs" );
+  _pbr_shader.SetShaderClassicPipeline(                "../Shaders/pbr_lighting.vs",       "../Shaders/pbr_lighting.fs" );
+  _skybox_shader.SetShaderClassicPipeline(             "../Shaders/skybox.vs",             "../Shaders/skybox.fs" );
+  _flat_color_shader.SetShaderClassicPipeline(         "../Shaders/flat_color.vs",         "../Shaders/flat_color.fs" );
+  _observer_shader.SetShaderClassicPipeline(           "../Shaders/observer.vs",           "../Shaders/observer.fs" );
+  _blur_shader.SetShaderClassicPipeline(               "../Shaders/blur.vs",               "../Shaders/blur.fs" );
+  _bloom_shader.SetShaderClassicPipeline(              "../Shaders/bloom_blending.vs",     "../Shaders/bloom_blending.fs" );
+  _blit_shader.SetShaderClassicPipeline(               "../Shaders/multisample_blit.vs",   "../Shaders/multisample_blit.fs" );
+  _cube_map_converter_shader.SetShaderClassicPipeline( "../Shaders/cube_map_converter.vs", "../Shaders/cube_map_converter.fs" );
+  _diffuse_irradiance_shader.SetShaderClassicPipeline( "../Shaders/cube_map_converter.vs", "../Shaders/diffuse_irradiance.fs" );
 
 
   // Set texture uniform location
