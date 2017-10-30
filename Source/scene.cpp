@@ -8,7 +8,9 @@
 
 Scene::Scene( Window * iParentWindow )
 { 
-  
+  _pipeline_type = FORWARD_RENDERING;
+
+
   // Scene effects settings
   // ----------------------
   
@@ -18,24 +20,24 @@ Scene::Scene( Window * iParentWindow )
   _bloom_downsample = 0.5;
 
   // Init multi sample param
-  _multi_sample            = false;
-  _nb_multi_sample         = 2;
+  _multi_sample    = false;
+  _nb_multi_sample = 2;
 
   // Init IBL param
-  _res_IBL_cubeMap        = 512;
-  _res_irradiance_cubeMap = 32;
+  _res_IBL_cubeMap         = 512;
+  _res_irradiance_cubeMap  = 32;
   _irradiance_sample_delta = 0.025;
-  _current_env = 2;
+  _current_env             = 2;
 
 
   // Scene data initialization
   // -------------------------
   
-  _lampVAO     = 0;
-  _groundVAO   = 0;
+  _lampVAO   = 0;
+  _lampVBO   = 0;
 
-  _lampVBO     = 0;
-  _groundVBO   = 0;
+  _groundVAO = 0;
+  _groundVBO = 0;
 
   _tex_albedo_ground    = 0;
   _tex_normal_ground    = 0;
@@ -821,15 +823,15 @@ void Scene::IBLCubeMapsInitialization()
 
 void Scene::ShadersInitialization()
 {
-  
+
   // Compilation des shaders
   // -----------------------
   _pbr_shader.SetShaderClassicPipeline(                "../Shaders/pbr_lighting.vs",       "../Shaders/pbr_lighting.fs" );
   _skybox_shader.SetShaderClassicPipeline(             "../Shaders/skybox.vs",             "../Shaders/skybox.fs" );
   _flat_color_shader.SetShaderClassicPipeline(         "../Shaders/flat_color.vs",         "../Shaders/flat_color.fs" );
   _observer_shader.SetShaderClassicPipeline(           "../Shaders/observer.vs",           "../Shaders/observer.fs" );
-  _blur_shader.SetShaderClassicPipeline(               "../Shaders/blur.vs",               "../Shaders/blur.fs" );
-  _bloom_shader.SetShaderClassicPipeline(              "../Shaders/bloom_blending.vs",     "../Shaders/bloom_blending.fs" );
+  _blur_shader.SetShaderClassicPipeline(               "../Shaders/post_process.vs",       "../Shaders/blur.fs" );
+  _post_process_shader.SetShaderClassicPipeline(       "../Shaders/post_process.vs",       "../Shaders/post_process.fs" );
   _blit_shader.SetShaderClassicPipeline(               "../Shaders/multisample_blit.vs",   "../Shaders/multisample_blit.fs" );
   _cube_map_converter_shader.SetShaderClassicPipeline( "../Shaders/cube_map_converter.vs", "../Shaders/cube_map_converter.fs" );
   _diffuse_irradiance_shader.SetShaderClassicPipeline( "../Shaders/cube_map_converter.vs", "../Shaders/diffuse_irradiance.fs" );
@@ -865,9 +867,9 @@ void Scene::ShadersInitialization()
   glUniform1i( glGetUniformLocation( _blur_shader._program, "uTexture" ), 0 );
   glUseProgram( 0 );
 
-  _bloom_shader.Use();
-  glUniform1i( glGetUniformLocation( _bloom_shader._program, "uBaseColorTexture" ), 0 );
-  glUniform1i( glGetUniformLocation( _bloom_shader._program, "uBloomBrightnessTexture" ), 1 );
+  _post_process_shader.Use();
+  glUniform1i( glGetUniformLocation( _post_process_shader._program, "uBaseColorTexture" ), 0 );
+  glUniform1i( glGetUniformLocation( _post_process_shader._program, "uBloomBrightnessTexture" ), 1 );
   glUseProgram( 0 );
 }
 
@@ -880,7 +882,7 @@ void Scene::LoadModels()
   _table_model->Print_info_model();
 }
 
-void Scene::RenderScene( bool iIsFinalFBO )
+void Scene::SceneForwardRendering( bool iIsFinalFBO )
 {
 
   // Matrices setting
@@ -892,10 +894,6 @@ void Scene::RenderScene( bool iIsFinalFBO )
   viewMatrix = glm::lookAt( _camera->_position, _camera->_position + _camera->_front, _camera->_up ); 
 
   glm::mat4 lightProjection, lightView, light_space_matrix, skybox_light_space_matrix;
-  //GLfloat far =  glm::distance(lights[2].lightPos, glm::vec3(house.x,house.y,house.z)) * 1.2f;
-  //lightProjection = glm::ortho(-5.0f, 5.0f, -5.0f, 5.0f, 1.0f, far);
-  //lightView = glm::lookAt(lights[2].lightPos, glm::vec3(house.x,house.y,house.z) , glm::vec3(0.0,1.0,0.0));
-  //light_space_matrix = lightProjection * lightView;
 
 
   // Bind correct buffer for drawing
@@ -1108,6 +1106,11 @@ void Scene::RenderScene( bool iIsFinalFBO )
   glUseProgram( 0 );
 }
 
+void Scene::SceneDeferredRendering()
+{
+
+}
+
 void Scene::BlurProcess()
 { 
   glBindFramebuffer( GL_FRAMEBUFFER, 0 );   
@@ -1153,12 +1156,12 @@ void Scene::BlurProcess()
   glUseProgram(0);
 }
 
-void Scene::BloomProcess()
+void Scene::PostProcess()
 {
   glBindFramebuffer( GL_FRAMEBUFFER, 0 );
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-  _bloom_shader.Use();
+  _post_process_shader.Use();
 
   glActiveTexture( GL_TEXTURE0 );
   
@@ -1170,9 +1173,14 @@ void Scene::BloomProcess()
   {
     glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_temp_tex_color_buffer[ 0 ] );
   }
-  glActiveTexture( GL_TEXTURE1 );
-  glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_pingpong_color_buffers[ 0 ] );
-  glUniform1i( glGetUniformLocation( _bloom_shader._program, "uBloom" ), _bloom );
-  glUniform1f( glGetUniformLocation( _bloom_shader._program, "uExposure" ), _exposure );
+
+  if( _bloom )
+  {
+    glActiveTexture( GL_TEXTURE1 );
+    glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_pingpong_color_buffers[ 0 ] );
+  }
+
+  glUniform1i( glGetUniformLocation( _post_process_shader._program, "uBloom" ), _bloom );
+  glUniform1f( glGetUniformLocation( _post_process_shader._program, "uExposure" ), _exposure );
   _window->_toolbox->RenderQuad();
 }

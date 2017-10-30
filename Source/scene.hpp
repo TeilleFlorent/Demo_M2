@@ -11,6 +11,9 @@
 
 #include <GL/glew.h>
 
+#define FORWARD_RENDERING 0
+#define DEFERRED_RENDERING 1
+
 
 //******************************************************************************
 //**********  Class Scene  *****************************************************
@@ -43,11 +46,13 @@ class Scene
 
     void LoadModels();
 
-    void RenderScene( bool iIsFinalFBO );
+    void SceneForwardRendering( bool iIsFinalFBO );
+
+    void SceneDeferredRendering();
 
     void BlurProcess();
 
-    void BloomProcess();
+    void PostProcess();
 
 
     // Scene class members
@@ -59,7 +64,7 @@ class Scene
     Shader _flat_color_shader;
     Shader _observer_shader;
     Shader _blur_shader;
-    Shader _bloom_shader;
+    Shader _post_process_shader;
     Shader _blit_shader;
     Shader _cube_map_converter_shader;
     Shader _diffuse_irradiance_shader;
@@ -86,6 +91,12 @@ class Scene
     GLuint _tex_AO_ground;
     GLuint _tex_roughness_ground;
     GLuint _tex_metalness_ground;
+
+    // Pipeline Type 
+    int _pipeline_type;
+
+    // Deffered rendering data
+    unsigned int _g_buffer_FBO;
 
     // Bloom param
     float _exposure;

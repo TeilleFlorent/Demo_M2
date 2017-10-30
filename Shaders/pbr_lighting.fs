@@ -183,7 +183,7 @@ vec3 ReflectanceEquationCalculation( vec2 iUV,
     vec3 F    = FresnelSchlick( max( dot( halfway, iViewDir ), 0.0 ), iF0 );
     float G   = GeometrySmith( iNormal, iViewDir, light_dir, iMaterial._roughness );      
     vec3 nominator      = NDF * F * G; 
-    float denominator   = ( IV_max_dot_N_V * max( dot( iNormal, light_dir ) , 0.0 ) ) + 0.00001; // 0.001 to prevent divide by zero.
+    float denominator   = ( IV_max_dot_N_V * max( dot( iNormal, light_dir ) , 0.0 ) ) + 0.001; // 0.001 to prevent divide by zero.
     vec3 light_specular = nominator / denominator;
         
 

@@ -281,20 +281,30 @@ void Window::Draw()
   // ------------- 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
 
-  // Render observer
-  _toolbox->RenderObserver();
- 
   // Render scene
   glViewport( 0, 0, _width, _height );
-  _scene->RenderScene( true );
+  _scene->_pipeline_type == FORWARD_RENDERING ? _scene->SceneForwardRendering( true ) : _scene->SceneDeferredRendering();  
+  
+/*
+  if( _scene->_pipeline_type == FORWARD_RENDERING )
+  {
+    _scene->SceneForwardRendering( true );
+  }
+  else
+  {
+    _scene->SceneDeferredRendering();
+  }*/
 
-  // Blur calculation on bright texture
-  glViewport( 0, 0, _width * _scene->_bloom_downsample, _height * _scene->_bloom_downsample );
-  _scene->BlurProcess();
+  // Blur calculation on bloom's bright texture
+  if( _scene->_bloom )
+  {
+    glViewport( 0, 0, _width * _scene->_bloom_downsample, _height * _scene->_bloom_downsample );
+    _scene->BlurProcess();
+  }  
 
-  // Bloom blending calculation => final render
+  // Post process calculations => final render
   glViewport( 0, 0, _width, _height );
-  _scene->BloomProcess();
+  _scene->PostProcess();
 
   glUseProgram( 0 );
 }

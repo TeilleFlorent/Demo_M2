@@ -33,11 +33,11 @@ void main()
   const float gamma = 2.2;
 
   vec3 hdr_base_color = texture( uBaseColorTexture, oUV ).rgb;      
-  vec3 bloom_color = texture( uBloomBrightnessTexture, oUV ).rgb;
 
   if( uBloom )
   {
     // Bloom additive blending
+    vec3 bloom_color = texture( uBloomBrightnessTexture, oUV ).rgb;
     hdr_base_color += bloom_color; 
   }
 
