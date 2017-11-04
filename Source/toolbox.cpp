@@ -22,9 +22,6 @@ Toolbox::Toolbox( Window * iParentWindow )
   _cubeVAO     = 0;
   _cubeVBO     = 0;
 
-  _observerVAO = 0;
-  _observerVBO = 0;
-
   _depth_map_res_seed     = /*2048.0*/ 1024.0;
   _reflection_cubeMap_res = /*2048.0*/ 512;
   _tex_VL_res_seed        = 2048.0;
@@ -38,8 +35,7 @@ void Toolbox::Quit()
     glDeleteVertexArrays( 1, &_quadVAO );
   if( _cubeVAO )
     glDeleteVertexArrays( 1, &_cubeVAO );  
-  if( _observerVAO )
-    glDeleteVertexArrays( 1, &_observerVAO );  
+ 
 
   // Delete VBOs
   // -----------
@@ -47,9 +43,7 @@ void Toolbox::Quit()
     glDeleteBuffers( 1, &_quadVBO );
   if( _cubeVBO )
     glDeleteBuffers( 1, &_cubeVBO );
-  if( _observerVBO )
-    glDeleteBuffers( 1, &_observerVBO );
-
+ 
   if( _pingpong_FBO[ 0 ] )
     glDeleteFramebuffers( 1, &_pingpong_FBO[ 0 ] );
   if( _pingpong_FBO[ 1 ] )
@@ -340,13 +334,14 @@ void Toolbox::RenderObserver()
   glViewport( 0, 0, _window->_width, _window->_height );
   _window->_scene->_observer_shader.Use();
   glActiveTexture( GL_TEXTURE0 );
-  glBindTexture( GL_TEXTURE_2D, _temp_tex_color_buffer[ 1 ] /*final_tex_color_buffer[0]*/ /*pingpongColorbuffers[0]*/ /*tex_depth_ssr*/ );
+  //glBindTexture( GL_TEXTURE_2D, _window->_scene->_g_buffer_textures[ 2 ] );
+  glBindTexture( GL_TEXTURE_2D, _temp_tex_color_buffer[ 0 ] );
   //glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[ 1 ] /*final_tex_color_buffer[0]*/ /*pingpongColorbuffers[0]*/ /*tex_depth_ssr*/ );
+  
   glUniform1f( glGetUniformLocation( _window->_scene->_observer_shader._program, "uCameraNear" ), _window->_scene->_camera->_near );
   glUniform1f( glGetUniformLocation( _window->_scene->_observer_shader._program, "uCameraFar" ), _window->_scene->_camera->_far );
-  glBindVertexArray( _observerVAO );
 
-  glDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
+  RenderQuad();
   glBindVertexArray( 0 );
   glUseProgram( 0 );
 }

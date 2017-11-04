@@ -87,9 +87,6 @@ class Toolbox
     GLuint _cubeVAO;
     GLuint _cubeVBO;
 
-    GLuint _observerVAO;
-    GLuint _observerVBO;
-
     // FBOs & RBOs
     GLuint _temp_hdr_FBO;
     GLuint _temp_depht_RBO;

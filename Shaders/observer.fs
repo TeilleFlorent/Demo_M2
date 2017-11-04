@@ -52,7 +52,7 @@ vec4 TextureMultisample( sampler2DMS iSampler,
 
 void main()
 {
-  vec4 color_result = texture( uTexture1, oUV ).rgba;
+  vec3 color_result = texture( uTexture1, oUV ).rgb;
 
   /*ivec2 TC = ivec2(floor(textureSize(texture1) * TexCoord)); 
   result = TextureMultisample(texture1, TC).rgb;*/
@@ -62,6 +62,6 @@ void main()
   result = vec3((temp));*/
   //result = vec3(linearDepth(temp));
 
-  FragColor = vec4( color_result.rgb, color_result.a );
-  
+  FragColor = vec4( color_result, 1.0 );
+  //FragColor = vec4( vec3( color_result.b ), 1.0 );
 }

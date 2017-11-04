@@ -111,7 +111,7 @@ SDL_Window * Window::InitSDLWindow( int iWidth,
 
 void Window::InitGL()
 {
-  glClearColor( 1.0f, 1.0f, 1.0f, 1.0f );
+  glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
   glEnable( GL_DEPTH_TEST );
   glDepthFunc( GL_LESS ); 
 
@@ -175,14 +175,14 @@ void Window::ManageEvents( Camera * iCamera )
           case 'a' :
             for( int i = 0 ; i < _scene->_lights.size() ; i++ )
             {     
-              _scene->_lights[ i ]._position.y += 0.1;
+              _scene->_lights[ i ]._position.z += 0.1;
             }   
             break;
 
           case 'e' :
             for( int i = 0 ; i < _scene->_lights.size() ; i++ )
             {     
-              _scene->_lights[ i ]._position.y -= 0.1;
+              _scene->_lights[ i ]._position.z -= 0.1;
             }     
             break;
 
@@ -279,21 +279,14 @@ void Window::Draw()
 
   // Frame drawing
   // ------------- 
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
+  
+  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); 
 
   // Render scene
   glViewport( 0, 0, _width, _height );
   _scene->_pipeline_type == FORWARD_RENDERING ? _scene->SceneForwardRendering( true ) : _scene->SceneDeferredRendering();  
-  
-/*
-  if( _scene->_pipeline_type == FORWARD_RENDERING )
-  {
-    _scene->SceneForwardRendering( true );
-  }
-  else
-  {
-    _scene->SceneDeferredRendering();
-  }*/
+
+  //_toolbox->RenderObserver();
 
   // Blur calculation on bloom's bright texture
   if( _scene->_bloom )
@@ -305,6 +298,4 @@ void Window::Draw()
   // Post process calculations => final render
   glViewport( 0, 0, _width, _height );
   _scene->PostProcess();
-
-  glUseProgram( 0 );
 }

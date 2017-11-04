@@ -44,9 +44,15 @@ class Scene
 
     void IBLCubeMapsInitialization();
 
-    void LoadModels();
+    void ModelsLoading();
+
+    void DeferredBuffersInitialization();
 
     void SceneForwardRendering( bool iIsFinalFBO );
+
+    void DeferredGeometryPass();
+
+    void DeferredLightingPass();
 
     void SceneDeferredRendering();
 
@@ -58,8 +64,11 @@ class Scene
     // Scene class members
     // -------------------
     
+    // Pipeline Type 
+    int _pipeline_type;
+
     // Shaders
-    Shader _pbr_shader;
+    Shader _forward_pbr_shader;
     Shader _skybox_shader;
     Shader _flat_color_shader;
     Shader _observer_shader;
@@ -68,6 +77,8 @@ class Scene
     Shader _blit_shader;
     Shader _cube_map_converter_shader;
     Shader _diffuse_irradiance_shader;
+    Shader _geometry_pass_shader;
+    Shader _lighting_pass_shader;
 
     // VAOs
     GLuint _lampVAO;
@@ -92,11 +103,10 @@ class Scene
     GLuint _tex_roughness_ground;
     GLuint _tex_metalness_ground;
 
-    // Pipeline Type 
-    int _pipeline_type;
-
-    // Deffered rendering data
+    // Deferred rendering data
     unsigned int _g_buffer_FBO;
+    unsigned int _g_buffer_RBO;
+    std::vector< unsigned int > _g_buffer_textures; // [ position, normal, color, roughness_metalness_AO ]
 
     // Bloom param
     float _exposure;

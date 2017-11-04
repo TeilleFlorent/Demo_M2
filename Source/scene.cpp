@@ -8,7 +8,8 @@
 
 Scene::Scene( Window * iParentWindow )
 { 
-  _pipeline_type = FORWARD_RENDERING;
+  //_pipeline_type = FORWARD_RENDERING;
+  _pipeline_type = DEFERRED_RENDERING;
 
 
   // Scene effects settings
@@ -16,7 +17,7 @@ Scene::Scene( Window * iParentWindow )
   
   // Init bloom param
   _exposure         = 1.0;
-  _bloom            = true;
+  _bloom            = false;
   _bloom_downsample = 0.5;
 
   // Init multi sample param
@@ -63,7 +64,7 @@ Scene::Scene( Window * iParentWindow )
   ObjectsInitialization();
 
   // Load all scene models
-  LoadModels();
+  ModelsLoading();
 
   // Create lights
   LightsInitialization();  
@@ -73,7 +74,12 @@ Scene::Scene( Window * iParentWindow )
 
   // Init all IBL cubemap
   IBLCubeMapsInitialization();
- 
+
+  // Init deferred rendering g-buffer
+  if( _pipeline_type == DEFERRED_RENDERING )
+  {
+    DeferredBuffersInitialization();
+  }
 }
 
 void Scene::Quit()
@@ -193,21 +199,6 @@ void Scene::SceneDataInitialization()
   _faces.push_back( "../Skybox/s1/bottom.png" );
   _faces.push_back( "../Skybox/s1/right.png" );
   _faces.push_back( "../Skybox/s1/left.png" );
-
-
-  // Create observer VAO
-  // -------------------
-  glGenVertexArrays( 1, &_window->_toolbox->_observerVAO );
-  glBindVertexArray( _window->_toolbox->_observerVAO );
-  glEnableVertexAttribArray( 0 );
-  glEnableVertexAttribArray( 1 );
-  glGenBuffers( 1, &_window->_toolbox->_observerVBO );
-  glBindBuffer( GL_ARRAY_BUFFER, _window->_toolbox->_observerVBO );
-  glBufferData( GL_ARRAY_BUFFER, sizeof observer, observer, GL_STATIC_DRAW );
-  glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0 ,( const void * )( 0*( sizeof( float ) ) ) );  
-  glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, 0 ,( const void * )( 12*( sizeof( float ) ) ) );
-  glBindBuffer( GL_ARRAY_BUFFER, 0);
-  glBindVertexArray( 0);
 
 
   // Create lamp VAO
@@ -826,29 +817,48 @@ void Scene::ShadersInitialization()
 
   // Compilation des shaders
   // -----------------------
-  _pbr_shader.SetShaderClassicPipeline(                "../Shaders/pbr_lighting.vs",       "../Shaders/pbr_lighting.fs" );
-  _skybox_shader.SetShaderClassicPipeline(             "../Shaders/skybox.vs",             "../Shaders/skybox.fs" );
-  _flat_color_shader.SetShaderClassicPipeline(         "../Shaders/flat_color.vs",         "../Shaders/flat_color.fs" );
-  _observer_shader.SetShaderClassicPipeline(           "../Shaders/observer.vs",           "../Shaders/observer.fs" );
-  _blur_shader.SetShaderClassicPipeline(               "../Shaders/post_process.vs",       "../Shaders/blur.fs" );
-  _post_process_shader.SetShaderClassicPipeline(       "../Shaders/post_process.vs",       "../Shaders/post_process.fs" );
-  _blit_shader.SetShaderClassicPipeline(               "../Shaders/multisample_blit.vs",   "../Shaders/multisample_blit.fs" );
-  _cube_map_converter_shader.SetShaderClassicPipeline( "../Shaders/cube_map_converter.vs", "../Shaders/cube_map_converter.fs" );
-  _diffuse_irradiance_shader.SetShaderClassicPipeline( "../Shaders/cube_map_converter.vs", "../Shaders/diffuse_irradiance.fs" );
+  _forward_pbr_shader.SetShaderClassicPipeline(        "../Shaders/forward_pbr_lighting.vs",   "../Shaders/forward_pbr_lighting.fs" );
+  _skybox_shader.SetShaderClassicPipeline(             "../Shaders/skybox.vs",                 "../Shaders/skybox.fs" );
+  _flat_color_shader.SetShaderClassicPipeline(         "../Shaders/flat_color.vs",             "../Shaders/flat_color.fs" );
+  _observer_shader.SetShaderClassicPipeline(           "../Shaders/observer.vs",               "../Shaders/observer.fs" );
+  _blur_shader.SetShaderClassicPipeline(               "../Shaders/post_process.vs",           "../Shaders/blur.fs" );
+  _post_process_shader.SetShaderClassicPipeline(       "../Shaders/post_process.vs",           "../Shaders/post_process.fs" );
+  _blit_shader.SetShaderClassicPipeline(               "../Shaders/multisample_blit.vs",       "../Shaders/multisample_blit.fs" );
+  _cube_map_converter_shader.SetShaderClassicPipeline( "../Shaders/cube_map_converter.vs",     "../Shaders/cube_map_converter.fs" );
+  _diffuse_irradiance_shader.SetShaderClassicPipeline( "../Shaders/cube_map_converter.vs",     "../Shaders/diffuse_irradiance.fs" );
+  _geometry_pass_shader.SetShaderClassicPipeline(      "../Shaders/deferred_geometry_pass.vs", "../Shaders/deferred_geometry_pass.fs" );
+  _lighting_pass_shader.SetShaderClassicPipeline(      "../Shaders/deferred_lighting_pass.vs", "../Shaders/deferred_lighting_pass.fs" );
 
 
   // Set texture uniform location
   // ----------------------------
-  _pbr_shader.Use();
-  glUniform1i( glGetUniformLocation( _pbr_shader._program, "uTextureDiffuse1" ), 0 ) ;
-  glUniform1i( glGetUniformLocation( _pbr_shader._program, "uTextureNormal1" ), 1 );
-  glUniform1i( glGetUniformLocation( _pbr_shader._program, "uTextureHeight1" ), 2 ) ;
-  glUniform1i( glGetUniformLocation( _pbr_shader._program, "uTextureAO1" ), 3 );
-  glUniform1i( glGetUniformLocation( _pbr_shader._program, "uTextureRoughness1" ), 4 );
-  glUniform1i( glGetUniformLocation( _pbr_shader._program, "uTextureMetalness1" ), 5 );
-  glUniform1i( glGetUniformLocation( _pbr_shader._program, "uTextureSpecular1" ), 6 );
+  _forward_pbr_shader.Use();
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureDiffuse1" ), 0 ) ;
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureNormal1" ), 1 );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureHeight1" ), 2 ) ;
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureAO1" ), 3 );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureRoughness1" ), 4 );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureMetalness1" ), 5 );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureSpecular1" ), 6 );
 
-  glUniform1i( glGetUniformLocation( _pbr_shader._program, "uIrradianceCubeMap" ), 9 ); 
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIrradianceCubeMap" ), 9 ); 
+  glUseProgram( 0 );
+
+  _geometry_pass_shader.Use();
+  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureDiffuse1" ), 0 ) ;
+  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureNormal1" ), 1 );
+  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureHeight1" ), 2 ) ;
+  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureAO1" ), 3 );
+  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureRoughness1" ), 4 );
+  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureMetalness1" ), 5 );
+  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureSpecular1" ), 6 );
+  glUseProgram( 0 );
+
+  _lighting_pass_shader.Use();
+  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uGbufferPosition" ), 0 ) ;
+  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uGbufferNormal" ), 1 );
+  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uGbufferAlbedo" ), 2 ) ;
+  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uGbufferRougnessMetalnessAO" ), 3 );
   glUseProgram( 0 );
 
   _skybox_shader.Use();
@@ -873,7 +883,7 @@ void Scene::ShadersInitialization()
   glUseProgram( 0 );
 }
 
-void Scene::LoadModels()
+void Scene::ModelsLoading()
 { 
   Model::SetToolbox( _window->_toolbox );
   // Table model loading
@@ -882,15 +892,50 @@ void Scene::LoadModels()
   _table_model->Print_info_model();
 }
 
+void Scene::DeferredBuffersInitialization()
+{
+
+  // G buffer initialization
+  // -----------------------
+  glGenFramebuffers( 1, &_g_buffer_FBO );
+  glBindFramebuffer( GL_FRAMEBUFFER, _g_buffer_FBO );
+
+  GLuint texture_id;
+  for( unsigned int i = 0; i < 4; i++ )
+  {
+    glGenTextures( 1, &texture_id );
+    glBindTexture( GL_TEXTURE_2D, texture_id );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, _window->_width, _window->_height, 0, GL_RGB, GL_FLOAT, NULL );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture_id, 0 );
+    _g_buffer_textures.push_back( texture_id );
+  }
+
+  unsigned int attachments[ 4 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+  glDrawBuffers( 4, attachments );
+
+  glGenRenderbuffers( 1, &_g_buffer_RBO );
+  glBindRenderbuffer( GL_RENDERBUFFER, _g_buffer_RBO );
+  glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, _window->_width, _window->_height );
+  glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _g_buffer_RBO );
+    
+  if( glCheckFramebufferStatus( GL_FRAMEBUFFER ) != GL_FRAMEBUFFER_COMPLETE )
+  {
+    std::cout << "ERROR : G-buffer's FBO not complete" << std::endl;
+  }
+    
+  glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+}
+
 void Scene::SceneForwardRendering( bool iIsFinalFBO )
 {
 
   // Matrices setting
   // ----------------
-  glm::mat4 projectionM, Msend, viewMatrix, Msend2, projectionM2, projectionM3;
+  glm::mat4 projectionM, Msend, viewMatrix;
 
   projectionM = glm::perspective( 45.0f, ( float )_window->_width / ( float )_window->_height, _camera->_near, _camera->_far );
-  projectionM3 = glm::perspective( 45.0f, ( float )_window->_width / ( float )_window->_height, -_camera->_near, -_camera->_far );
   viewMatrix = glm::lookAt( _camera->_position, _camera->_position + _camera->_front, _camera->_up ); 
 
   glm::mat4 lightProjection, lightView, light_space_matrix, skybox_light_space_matrix;
@@ -965,20 +1010,13 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
 
   // Draw ground1
   // ------------
-  _pbr_shader.Use();
+  _forward_pbr_shader.Use();
 
   Msend = glm::mat4();
 
   Msend = glm::translate( Msend, _ground1->_position );
   Msend = glm::rotate( Msend, _ground1->_angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
   Msend = glm::scale( Msend, _ground1->_scale ); 
-
-  projectionM2[ 0 ] = glm::vec4( ( float )( _window->_width / 2.0 ), 0.0, 0.0, ( float )( _window->_width / 2.0 ) );
-  projectionM2[ 1 ] = glm::vec4( 0.0, ( float )( _window->_height / 2.0 ), 0.0, ( float )( _window->_height / 2.0 ) );
-  projectionM2[ 2 ] = glm::vec4( 0.0, 0.0, 1.0, 0.0 );
-  projectionM2[ 3 ] = glm::vec4( 0.0, 0.0, 0.0, 1.0 );
-
-  projectionM2 = glm::transpose( projectionM2 );
 
   glActiveTexture( GL_TEXTURE0 );
   glBindTexture( GL_TEXTURE_2D, _tex_albedo_ground );  
@@ -996,28 +1034,28 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
   glActiveTexture( GL_TEXTURE9 );
   glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_maps[ _current_env ] /*envCubemap*/ ); // bind les 6 textures du cube map 
 
-  glUniformMatrix4fv( glGetUniformLocation( _pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( viewMatrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( _pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( Msend ) );
-  glUniformMatrix4fv( glGetUniformLocation( _pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projectionM ) );
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( viewMatrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( Msend ) );
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projectionM ) );
 
-  glUniform1i( glGetUniformLocation( _pbr_shader._program, "uLightCount" ), _lights.size() );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
 
   for( int i = 0; i < _lights.size(); i++ )
   {
     string temp = to_string( i );
-    glUniform3fv( glGetUniformLocation( _pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
-    glUniform3fv( glGetUniformLocation( _pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
-    glUniform1f(  glGetUniformLocation( _pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+    glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
   }
 
-  glUniform1i( glGetUniformLocation( _pbr_shader._program, "uBloom" ), _ground1->_bloom );
-  glUniform1f( glGetUniformLocation( _pbr_shader._program, "uBloomBrightness" ), _ground1->_bloom_brightness );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _ground1->_bloom );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _ground1->_bloom_brightness );
 
-  glUniform3fv( glGetUniformLocation( _pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+  glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
-  glUniform1f( glGetUniformLocation( _pbr_shader._program, "uAlpha" ), _ground1->_alpha );
-  glUniform1f( glGetUniformLocation( _pbr_shader._program, "uID" ), _ground1->_id );    
-  glUniform1f( glGetUniformLocation( _pbr_shader._program, "uCubeMapFaceNum" ), -1.0 );     
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _ground1->_alpha );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ground1->_id );    
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uCubeMapFaceNum" ), -1.0 );     
 
   glBindVertexArray( _groundVAO );
   glDrawArrays( GL_TRIANGLES, 0, 6 );
@@ -1027,7 +1065,7 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
 
   // Draw tables
   // -----------
-  _pbr_shader.Use();
+  _forward_pbr_shader.Use();
 
   for( int i = 0; i < _tables.size(); i++ )
   {
@@ -1040,30 +1078,30 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
     glActiveTexture( GL_TEXTURE9 );
     glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_maps[ _current_env ] ); 
 
-    glUniformMatrix4fv( glGetUniformLocation( _pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( viewMatrix ) );
-    glUniformMatrix4fv( glGetUniformLocation( _pbr_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( Msend ) );
-    glUniformMatrix4fv( glGetUniformLocation( _pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projectionM ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( viewMatrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( Msend ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projectionM ) );
 
-    glUniform1i( glGetUniformLocation( _pbr_shader._program, "uLightCount" ), _lights.size() );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
 
     for( int i = 0; i < _lights.size(); i++ )
     {
       string temp = to_string( i );
-      glUniform3fv( glGetUniformLocation( _pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
-      glUniform3fv( glGetUniformLocation( _pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
-      glUniform1f(  glGetUniformLocation( _pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
     }
 
-    glUniform1i( glGetUniformLocation( _pbr_shader._program, "uBloom" ), _tables[ i ]._bloom );
-    glUniform1f( glGetUniformLocation( _pbr_shader._program, "uBloomBrightness" ), _tables[ i ]._bloom_brightness );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _tables[ i ]._bloom );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _tables[ i ]._bloom_brightness );
 
-    glUniform3fv( glGetUniformLocation( _pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
-    glUniform1f( glGetUniformLocation( _pbr_shader._program, "uAlpha" ), _tables[ i ]._alpha );
-    glUniform1f( glGetUniformLocation( _pbr_shader._program, "uID" ), _tables[ i ]._id );    
-    glUniform1f( glGetUniformLocation( _pbr_shader._program, "uCubeMapFaceNum" ), -1.0 ); 
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _tables[ i ]._alpha );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _tables[ i ]._id );    
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uCubeMapFaceNum" ), -1.0 ); 
 
-    _table_model->Draw( _pbr_shader );
+    _table_model->Draw( _forward_pbr_shader );
   } 
   glUseProgram( 0 );
 
@@ -1106,8 +1144,121 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
   glUseProgram( 0 );
 }
 
+void Scene::DeferredGeometryPass()
+{ 
+
+  // Matrices setting
+  // ----------------
+  glm::mat4 projection_matrix, view_matrix, model_matrix;
+  projection_matrix = glm::perspective( 45.0f, ( float )_window->_width / ( float )_window->_height, _camera->_near, _camera->_far );
+  view_matrix = glm::lookAt( _camera->_position, _camera->_position + _camera->_front, _camera->_up ); 
+
+
+  // Bind G buffer
+  glBindFramebuffer( GL_FRAMEBUFFER, _g_buffer_FBO );
+  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+
+  // Draw ground1
+  // ------------
+  _geometry_pass_shader.Use();
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, _ground1->_position );
+  model_matrix = glm::rotate( model_matrix, _ground1->_angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
+  model_matrix = glm::scale( model_matrix, _ground1->_scale ); 
+
+  glActiveTexture( GL_TEXTURE0 );
+  glBindTexture( GL_TEXTURE_2D, _tex_albedo_ground );  
+  glActiveTexture( GL_TEXTURE1 );
+  glBindTexture( GL_TEXTURE_2D, _tex_normal_ground ); 
+  glActiveTexture( GL_TEXTURE3 );
+  glBindTexture( GL_TEXTURE_2D, _tex_AO_ground ); 
+  glActiveTexture( GL_TEXTURE4 );
+  glBindTexture( GL_TEXTURE_2D, _tex_roughness_ground ); 
+  glActiveTexture( GL_TEXTURE5 );
+  glBindTexture( GL_TEXTURE_2D, _tex_metalness_ground ); 
+
+  glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( view_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projection_matrix ) );
+
+  glBindVertexArray( _groundVAO );
+  glDrawArrays( GL_TRIANGLES, 0, 6 );
+  glBindVertexArray( 0 );
+  glUseProgram( 0 );
+
+
+  // Draw tables
+  // -----------
+  _geometry_pass_shader.Use();
+
+  for( int i = 0; i < _tables.size(); i++ )
+  {
+    model_matrix = glm::mat4();
+    model_matrix = glm::translate( model_matrix, _tables[ i ]._position );
+    model_matrix = glm::rotate( model_matrix, _tables[ i ]._angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
+    model_matrix = glm::scale( model_matrix, _tables[ i ]._scale ); 
+
+    glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projection_matrix ) );
+
+    _table_model->Draw( _geometry_pass_shader );
+  } 
+  glUseProgram( 0 );
+
+  // Unbinding    
+  glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+  glBindVertexArray( 0 );
+}
+
+void Scene::DeferredLightingPass()
+{   
+  // Bind correct FBO
+  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
+  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+  _lighting_pass_shader.Use();   
+  glActiveTexture( GL_TEXTURE0 );
+  glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 0 ] );  
+  glActiveTexture( GL_TEXTURE1 );
+  glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 1 ] ); 
+  glActiveTexture( GL_TEXTURE3 );
+  glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 2 ] ); 
+  glActiveTexture( GL_TEXTURE4 );
+  glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 3 ] ); 
+
+  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uLightCount" ), _lights.size() );
+
+  for( int i = 0; i < _lights.size(); i++ )
+  {
+    string temp = to_string( i );
+    glUniform3fv( glGetUniformLocation( _lighting_pass_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+    glUniform3fv( glGetUniformLocation( _lighting_pass_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+    glUniform1f(  glGetUniformLocation( _lighting_pass_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+  }
+
+  glUniform3fv( glGetUniformLocation( _lighting_pass_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+  
+  _window->_toolbox->RenderQuad();
+  
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);     
+  glBindVertexArray( 0 );
+  glUseProgram( 0 );
+}
+
 void Scene::SceneDeferredRendering()
 {
+
+  // Perform the deffered geometry pass
+  // ----------------------------------
+  DeferredGeometryPass();
+
+
+  // Perform the deffered lighting pass
+  // ----------------------------------
+  DeferredLightingPass();
 
 }
 

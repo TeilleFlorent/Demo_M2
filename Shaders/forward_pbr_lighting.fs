@@ -56,9 +56,6 @@ in vec3 oNormal;
 in vec3 oFragPos;
 in vec3 oViewSpaceFragPos;
 in vec4 oClipSpacePosition;
-in vec3 oTangentLightPos[ MAX_NB_LIGHTS ];
-in vec3 oTangentViewPos;
-in vec3 oTangentFragPos;
 flat in vec3 oTBN[ 3 ];
 
 
@@ -136,18 +133,18 @@ vec3 FresnelSchlickRoughness( float iCosTheta,
   return iF0 + ( max( vec3( 1.0 - iRoughness), iF0 ) - iF0 ) * pow( 1.0 - iCosTheta, 5.0 );
 }   
 
-vec3 ReflectanceEquationCalculation( vec2 iUV,
-                                     vec3 iViewDir,
-                                     vec3 iNormal,
-                                     vec3 iF0,
-                                     float iMaxNormalDotViewDir,
+vec3 ReflectanceEquationCalculation( vec2     iUV,
+                                     vec3     iViewDir,
+                                     vec3     iNormal,
+                                     vec3     iF0,
+                                     float    iMaxNormalDotViewDir,
                                      Material iMaterial )
 { 
 
   // Pre calculation optimisation
   // ----------------------------
   float IV_max_dot_N_V = 4 * iMaxNormalDotViewDir; 
-  vec3 albedo_by_PI   = iMaterial._albedo / PI;
+  vec3 albedo_by_PI    = iMaterial._albedo / PI;
 
 
   // Compute equation to each scene light
@@ -160,7 +157,7 @@ vec3 ReflectanceEquationCalculation( vec2 iUV,
     // ----------------------------
     
     // Get light -> frag distance
-    float distance = length( oTangentLightPos[ i ] - oTangentFragPos );
+    float distance = length( uLightPos[ i ] - oFragPos );
 
     // Get attenuation value
     float attenuation = 1.0 / ( distance * distance );
@@ -173,7 +170,7 @@ vec3 ReflectanceEquationCalculation( vec2 iUV,
     // -------------------------------
     
     // Get light direction
-    vec3 light_dir = normalize( oTangentLightPos[ i ] - oTangentFragPos );
+    vec3 light_dir = normalize( uLightPos[ i ] - oFragPos );
    
     // Get halfway vector
     vec3 halfway = normalize( iViewDir + light_dir );
@@ -230,9 +227,10 @@ vec3 IndirectIrradianceCalculation( float iMaxNormalDotViewDir,
   return ambient;
 }
 
-vec3 LightingCalculation( vec3 iNormal,
-                          vec3 iViewDir,  
-                          vec2 iUV )
+vec3 PBRLightingCalculation( vec3 iNormal,
+                             vec3 iViewDir,  
+                             vec2 iUV,
+                             mat3 iTBN )
 {
   // Get material inputs data
   Material material;
@@ -241,12 +239,6 @@ vec3 LightingCalculation( vec3 iNormal,
   material._metalness = texture( uTextureMetalness1, iUV ).r;
   material._roughness = texture( uTextureRoughness1, iUV ).r;
   material._ao        = texture( uTextureAO1, iUV ).r;
-
-  // Get TBN matrix
-  mat3 TBN;
-  TBN[ 0 ] = oTBN[ 0 ];
-  TBN[ 1 ] = oTBN[ 1 ];
-  TBN[ 2 ] = oTBN[ 2 ];
 
   // Get surface base reflectivity value
   vec3 F0 = vec3( 0.04 ); 
@@ -276,13 +268,13 @@ vec3 LightingCalculation( vec3 iNormal,
                                                     material,
                                                     F0,
                                                     iNormal,
-                                                    TBN );
+                                                    iTBN );
   
 
   // Return fragment final PBR lighting 
   // ----------------------------------
   
-  return diffuse_IBL + lights_reflectance;
+  return /*diffuse_IBL +*/ lights_reflectance;
 }
 
 
@@ -292,32 +284,28 @@ void main()
 {
   vec3 PBR_lighting_result;
   vec2 final_UV;
-  vec3 final_view_dir, old_view_dir;
+  vec3 view_dir;
 
-  // Get initial normal
-  //vec3 norm = normalize( oNormal );
+  // Get TBN matrix
+  mat3 TBN;
+  TBN[ 0 ] = oTBN[ 0 ];
+  TBN[ 1 ] = oTBN[ 1 ];
+  TBN[ 2 ] = oTBN[ 2 ];
 
-  // Get initial view direction
-  final_view_dir = normalize( uViewPos - oFragPos );
-  old_view_dir = final_view_dir;
-
-  // Get initial UV
-  final_UV = oUV;
-
-  // Get correct view direction
-  final_view_dir = normalize( oTangentViewPos - oTangentFragPos );
+  // Get view direction
+  view_dir = normalize( uViewPos - oFragPos );
 
   // Normal mapping calculation
-  vec3 norm = NormalMappingCalculation( final_UV );
+  vec3 norm = normalize( NormalMappingCalculation( oUV ) * TBN );
   
   // PBR lighting calculation 
-  PBR_lighting_result = LightingCalculation( norm,
-                                             final_view_dir,  
-                                             final_UV );
-  float final_alpha = uAlpha;
+  PBR_lighting_result = PBRLightingCalculation( norm,
+                                                view_dir,  
+                                                oUV,
+                                                TBN );
 
   // Main out color
-  FragColor = vec4( PBR_lighting_result, final_alpha );
+  FragColor = vec4( PBR_lighting_result, uAlpha );
 
   // Second out color => draw only brightest fragments
   vec3 bright_color = vec3( 0.0, 0.0, 0.0 );
@@ -329,5 +317,5 @@ void main()
       bright_color = PBR_lighting_result;
     }
   }
-  FragColorBrightness = vec4( bright_color, final_alpha );
+  FragColorBrightness = vec4( bright_color, uAlpha );
 }
