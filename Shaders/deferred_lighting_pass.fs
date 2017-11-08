@@ -3,14 +3,6 @@
 #define MAX_NB_LIGHTS 25
 #define PI 3.14159265358979323846264338
 
-struct Material
-{    
-  vec3 _albedo;
-  float _metalness;
-  float _roughness;
-  float _ao; 
-};
-
 
 //******************************************************************************
 //**********  Fragment shader inputs/ouputs  ***********************************
@@ -25,10 +17,12 @@ layout ( location = 1 ) out vec4 FragColorBrightness;
 
 // Fragment input uniforms
 // -----------------------
-uniform sampler2D uGbufferPosition;
-uniform sampler2D uGbufferNormal;
-uniform sampler2D uGbufferAlbedo;
-uniform sampler2D uGbufferRougnessMetalnessAO;
+uniform sampler2D   uGbufferPositionAndBloom;
+uniform sampler2D   uGbufferNormalAndBloomBrightness;
+uniform sampler2D   uGbufferAlbedo;
+uniform sampler2D   uGbufferRougnessMetalnessAO;
+uniform samplerCube uIrradianceCubeMap;
+
 
 uniform int   uLightCount;
 uniform vec3  uLightPos[ MAX_NB_LIGHTS ];
@@ -104,18 +98,20 @@ vec3 FresnelSchlickRoughness( float iCosTheta,
   return iF0 + ( max( vec3( 1.0 - iRoughness), iF0 ) - iF0 ) * pow( 1.0 - iCosTheta, 5.0 );
 }
 
-vec3 ReflectanceEquationCalculation( vec3     iFragPos,
-                                     vec3     iViewDir,
-                                     vec3     iNormal,
-                                     vec3     iF0,
-                                     float    iMaxNormalDotViewDir,
-                                     Material iMaterial )
+vec3 ReflectanceEquationCalculation( vec3  iFragPos,
+                                     vec3  iViewDir,
+                                     vec3  iNormal,
+                                     vec3  iF0,
+                                     float iMaxNormalDotViewDir,
+                                     vec3  iAlbedo,
+                                     float iRoughness,
+                                     float iMetalness )
 { 
 
   // Pre calculation optimisation
   // ----------------------------
   float IV_max_dot_N_V = 4 * iMaxNormalDotViewDir; 
-  vec3 albedo_by_PI    = iMaterial._albedo / PI;
+  vec3 albedo_by_PI    = iAlbedo / PI;
 
 
   // Compute equation to each scene light
@@ -147,9 +143,9 @@ vec3 ReflectanceEquationCalculation( vec3     iFragPos,
     vec3 halfway = normalize( iViewDir + light_dir );
 
     // Specular BRDF calculation
-    float NDF = DistributionGGX( iNormal, halfway, iMaterial._roughness );   
+    float NDF = DistributionGGX( iNormal, halfway, iRoughness );   
     vec3 F    = FresnelSchlick( max( dot( halfway, iViewDir ), 0.0 ), iF0 );
-    float G   = GeometrySmith( iNormal, iViewDir, light_dir, iMaterial._roughness );      
+    float G   = GeometrySmith( iNormal, iViewDir, light_dir, iRoughness );      
     vec3 nominator      = NDF * F * G; 
     float denominator   = ( IV_max_dot_N_V * max( dot( iNormal, light_dir ) , 0.0 ) ) + 0.001; // 0.001 to prevent divide by zero.
     vec3 light_specular = nominator / denominator;
@@ -165,7 +161,7 @@ vec3 ReflectanceEquationCalculation( vec3     iFragPos,
     vec3 kD = vec3( 1.0 ) - kS;
     
     // Decrease diffuse by the metalness, pure metal have no diffuse light
-    kD *= 1.0 - iMaterial._metalness;   
+    kD *= 1.0 - iMetalness;   
 
 
     // Get NdotL value
@@ -176,73 +172,75 @@ vec3 ReflectanceEquationCalculation( vec3     iFragPos,
     // Final light influence
     // ---------------------
     Lo += ( ( kD * ( albedo_by_PI ) ) + light_specular ) * light_radiance * normal_dot_light_dir;  // already multiplied the specular by the Fresnel ( kS )
-    
   }   
 
   return Lo;
 }
 
-vec3 PBRLightingCalculation()
+vec3 IndirectIrradianceCalculation( float iMaxNormalDotViewDir,
+                                    vec3  iF0,
+                                    vec3  iNormal,
+                                    vec3  iAlbedo,
+                                    vec3  iRoughnessMetalnessAO )
 {
-  // Get G-buffer data
-  vec3 normal = texture( uGbufferNormal, oUV ).rgb;
-  if( normal == vec3( 0.0 ) )
-  {
-    discard;
-  }
-  vec3 frag_pos = texture( uGbufferPosition, oUV ).rgb;
+  vec3 kS = FresnelSchlickRoughness( iMaxNormalDotViewDir, iF0, iRoughnessMetalnessAO.r );
+  vec3 kD = 1.0 - kS;
+  kD *= ( 1.0 - iRoughnessMetalnessAO.g );   
+  vec3 irradiance = texture( uIrradianceCubeMap, iNormal ).rgb;
+  vec3 diffuse = irradiance * iAlbedo;
+  vec3 ambient = ( kD * diffuse ) * iRoughnessMetalnessAO.b; 
+
+  return ambient;
+}
+
+vec3 PBRLightingCalculation( vec3 iFragPos,
+                             vec3 iNormal )
+{ 
+  // Get Albedo from G-buffer
+  vec3 albedo = texture( uGbufferAlbedo, oUV ).rgb;
+
+  // Get roughness and metalness and AO data from G-buffer
   vec3 roughness_metalness_AO = texture( uGbufferRougnessMetalnessAO, oUV ).rgb;
-
-  // Get material inputs data
-  Material material;
-  material._albedo    = texture( uGbufferAlbedo, oUV ).rgb;
-  material._roughness = roughness_metalness_AO.r;
-  material._metalness = roughness_metalness_AO.g;
-  material._ao        = roughness_metalness_AO.b;
-
-  // Get TBN matrix
-  /*mat3 TBN;
-  TBN[ 0 ] = oTBN[ 0 ];
-  TBN[ 1 ] = oTBN[ 1 ];
-  TBN[ 2 ] = oTBN[ 2 ];*/
-
+  
   // Get camera view direction vector
-  vec3 view_dir = normalize( uViewPos - frag_pos );
+  vec3 view_dir = normalize( uViewPos - iFragPos );
 
   // Get surface base reflectivity value
   vec3 F0 = vec3( 0.04 ); 
-  F0 = mix( F0, material._albedo, material._metalness );  
+  F0 = mix( F0, albedo, roughness_metalness_AO.g );  
 
   // Pre calcul max_dot_N_V
-  float max_dot_N_V = max( dot( normal, view_dir ), 0.0 );
+  float max_dot_N_V = max( dot( iNormal, view_dir ), 0.0 );
 
   
   // BRDF calculation part
   // ---------------------
   
   // Compute reflectance equation calculation to each scene light
-  vec3 lights_reflectance = ReflectanceEquationCalculation( frag_pos,
+  vec3 lights_reflectance = ReflectanceEquationCalculation( iFragPos,
                                                             view_dir,
-                                                            normal,
+                                                            iNormal,
                                                             F0,
                                                             max_dot_N_V,
-                                                            material );
+                                                            albedo,
+                                                            roughness_metalness_AO.r,
+                                                            roughness_metalness_AO.g );
 
 
   // IBL calculation part
   // --------------------
    
   // Compute indirect irradiance
-  /*vec3 diffuse_IBL = IndirectIrradianceCalculation( max_dot_N_V,
-                                                    material,
+  vec3 diffuse_IBL = IndirectIrradianceCalculation( max_dot_N_V,
                                                     F0,
                                                     iNormal,
-                                                    TBN );*/
+                                                    albedo,
+                                                    roughness_metalness_AO );
   
 
   // Return fragment final PBR lighting 
   // ----------------------------------
-  return /*diffuse_IBL +*/ lights_reflectance;
+  return diffuse_IBL + lights_reflectance;
 }
 
 
@@ -250,23 +248,37 @@ vec3 PBRLightingCalculation()
 // ----
 void main()
 { 
+ 
+  // Get frag normal from G-buffer => discard if it's not a deferred render fragment
+  vec4 normal_and_bloombrightness = texture( uGbufferNormalAndBloomBrightness, oUV );
+  if( normal_and_bloombrightness.rgb == vec3( 0.0 ) )
+  {
+    discard;
+  }
+
+  // Get frag position from G-buffer
+  vec4 frag_pos_and_bloom = texture( uGbufferPositionAndBloom, oUV );
+
   // PBR lighting calculation 
-  vec3 PBR_lighting_result = PBRLightingCalculation(); 
+  vec3 PBR_lighting_result = PBRLightingCalculation( frag_pos_and_bloom.rgb,
+                                                     normal_and_bloombrightness.rgb ); 
+
 
   // Main out color
+  // --------------
   FragColor = vec4( PBR_lighting_result, 1.0 );
-  //FragColor = vec4( vec3( 1.0, 0.0, 0.0 ), 1.0 );
 
 
   // Second out color => draw only brightest fragments
-  vec3 bright_color = vec3( 0.0, 0.0, 1.0 );
-  /*if( uBloom )
+  // -------------------------------------------------
+  vec3 bright_color = vec3( 0.0, 0.0, 0.0 );
+  if( frag_pos_and_bloom.a == 1.0 )
   {
     float brightness = dot( PBR_lighting_result, vec3( 0.2126, 0.7152, 0.0722 ) );
-    if( brightness > uBloomBrightness )
+    if( brightness > normal_and_bloombrightness.a )
     {
       bright_color = PBR_lighting_result;
     }
-  }*/
+  }
   FragColorBrightness = vec4( bright_color, 1.0 );
 }

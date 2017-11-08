@@ -50,7 +50,8 @@ class Scene
 
     void SceneForwardRendering( bool iIsFinalFBO );
 
-    void DeferredGeometryPass();
+    void DeferredGeometryPass( glm::mat4 * iProjectionMatrix,
+                               glm::mat4 * iViewMatrix );
 
     void DeferredLightingPass();
 

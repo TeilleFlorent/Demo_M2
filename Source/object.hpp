@@ -27,7 +27,7 @@ class Object
             bool      iGenerateShadow,
             float     iShadowDarkness,
             bool      iNormalMapping,
-            bool      iBloom,
+            float     iBloom,
             float     iBloomBrightness );
 
 
@@ -44,7 +44,7 @@ class Object
     bool      _generate_shadow;
     float     _shadow_darkness;
     bool      _normal_mapping;
-    bool      _bloom;
+    float     _bloom;
     float     _bloom_brightness;
 };
 

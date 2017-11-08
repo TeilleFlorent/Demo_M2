@@ -35,7 +35,6 @@ uniform vec3 uLightPos[ MAX_NB_LIGHTS ];
 
 // Vertex outputs to fragment shader	
 // ---------------------------------
-out vec3 oNormal;
 out vec2 oUV;
 out vec3 oFragPos;
 out vec3 oViewSpaceFragPos;
@@ -74,8 +73,6 @@ void main()
 	oViewSpaceFragPos = vec3( uViewMatrix * uModelMatrix * vec4( _position, 1.0f ) );
 	
 	oUV = _uv;
-
-	oNormal = N;  
 
 	oTBN[ 0 ] = TBN[ 0 ];
 	oTBN[ 1 ] = TBN[ 1 ];

@@ -24,7 +24,6 @@ uniform mat4 uViewMatrix;
 
 // Vertex outputs to fragment shader	
 // ---------------------------------
-out vec3 oNormal;
 out vec2 oUV;
 out vec3 oFragPos;
 flat out vec3 oTBN[ 3 ];

@@ -16,7 +16,6 @@ layout ( location = 1 ) in vec2 _uv;
 // ---------------------
 
 
-
 // Vertex outputs to fragment shader	
 // ---------------------------------
 out vec2 oUV;

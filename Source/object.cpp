@@ -15,7 +15,7 @@ Object::Object( int       iID,
                 bool      iGenerateShadow,
                 float     iShadowDarkness,
                 bool      iNormalMapping,
-                bool      iBloom,
+                float     iBloom,
                 float     iBloomBrightness )
 {
   _id               = iID;

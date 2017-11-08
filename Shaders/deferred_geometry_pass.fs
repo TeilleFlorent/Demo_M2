@@ -8,10 +8,10 @@
 
 // Fragment color output(s)
 // ------------------------
-layout( location = 0 ) out vec3 FragColorPosition;
-layout( location = 1 ) out vec3 FragColorNormal;
-layout( location = 2 ) out vec3 FragColorAlbedo;
-layout( location = 3 ) out vec3 FragColorRougnessMetalnessAO;
+layout( location = 0 ) out vec4 PositionAndBloom;
+layout( location = 1 ) out vec4 NormalAndBloomBrightness;
+layout( location = 2 ) out vec3 Albedo;
+layout( location = 3 ) out vec3 RougnessAndMetalnessAndAO;
 
 
 // Fragment input uniforms
@@ -24,11 +24,13 @@ uniform sampler2D uTextureAO1;
 uniform sampler2D uTextureRoughness1; 
 uniform sampler2D uTextureMetalness1;
 
+uniform float uBloom;
+uniform float uBloomBrightness;
+
 
 // Fragment inputs from vertex shader 
 // ----------------------------------
 in vec2 oUV;
-in vec3 oNormal;
 in vec3 oFragPos;
 flat in vec3 oTBN[ 3 ];
 
@@ -64,21 +66,26 @@ void main()
   // ----------------
   
   // Draw G buffer position
-  FragColorPosition = oFragPos;
+  PositionAndBloom.rgb = oFragPos;
+
+  // Draw Bloom bool info
+  PositionAndBloom.a = uBloom;
 
   // Draw G buffer normal
-  FragColorNormal = NormalMappingCalculation( oUV );
+  NormalAndBloomBrightness.rgb = NormalMappingCalculation( oUV );
 
+  // Draw BloomBrightness info
+  NormalAndBloomBrightness.a = uBloomBrightness;
+  
   // Draw G buffer albedo
-  FragColorAlbedo = pow( texture( uTextureDiffuse1, oUV ).rgb, vec3( 2.2 ) );
-  //FragColorAlbedo = pow( vec3( 1.0, 1.0, 1.0 ), vec3( 2.2 ) );
+  Albedo = pow( texture( uTextureDiffuse1, oUV ).rgb, vec3( 2.2 ) );
 
   // Draw G buffer roughness
-  FragColorRougnessMetalnessAO.r = texture( uTextureRoughness1, oUV ).r;
+  RougnessAndMetalnessAndAO.r = texture( uTextureRoughness1, oUV ).r;
 
   // Draw G buffer metalness
-  FragColorRougnessMetalnessAO.g = texture( uTextureMetalness1, oUV ).r;   
+  RougnessAndMetalnessAndAO.g = texture( uTextureMetalness1, oUV ).r;   
 
   // Draw G buffer AO
-  FragColorRougnessMetalnessAO.b = texture( uTextureAO1, oUV ).r;
+  RougnessAndMetalnessAndAO.b = texture( uTextureAO1, oUV ).r;
 }

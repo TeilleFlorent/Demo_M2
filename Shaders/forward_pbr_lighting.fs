@@ -33,7 +33,7 @@ uniform float uLightIntensity[ MAX_NB_LIGHTS ];
 uniform vec3 uViewPos;
 
 uniform float uShadowDarkness;
-uniform bool  uBloom;
+uniform float uBloom;
 uniform float uBloomBrightness;
 
 uniform float uAlpha;
@@ -52,7 +52,6 @@ uniform samplerCube uIrradianceCubeMap;
 // Fragment inputs from vertex shader 
 // ----------------------------------
 in vec2 oUV;
-in vec3 oNormal;
 in vec3 oFragPos;
 in vec3 oViewSpaceFragPos;
 in vec4 oClipSpacePosition;
@@ -214,13 +213,12 @@ vec3 ReflectanceEquationCalculation( vec2     iUV,
 vec3 IndirectIrradianceCalculation( float iMaxNormalDotViewDir,
                                     Material iMaterial,
                                     vec3 iF0,
-                                    vec3 iNormal,
-                                    mat3 iTBN )
+                                    vec3 iNormal )
 {
   vec3 kS = FresnelSchlickRoughness( iMaxNormalDotViewDir, iF0, iMaterial._roughness );
   vec3 kD = 1.0 - kS;
   kD *= ( 1.0 - iMaterial._metalness );   
-  vec3 irradiance = texture( uIrradianceCubeMap, normalize( iNormal * iTBN ) ).rgb;
+  vec3 irradiance = texture( uIrradianceCubeMap, iNormal ).rgb;
   vec3 diffuse = irradiance * iMaterial._albedo;
   vec3 ambient = ( kD * diffuse ) * iMaterial._ao; 
 
@@ -229,8 +227,7 @@ vec3 IndirectIrradianceCalculation( float iMaxNormalDotViewDir,
 
 vec3 PBRLightingCalculation( vec3 iNormal,
                              vec3 iViewDir,  
-                             vec2 iUV,
-                             mat3 iTBN )
+                             vec2 iUV )
 {
   // Get material inputs data
   Material material;
@@ -267,14 +264,13 @@ vec3 PBRLightingCalculation( vec3 iNormal,
   vec3 diffuse_IBL = IndirectIrradianceCalculation( max_dot_N_V,
                                                     material,
                                                     F0,
-                                                    iNormal,
-                                                    iTBN );
+                                                    iNormal );
   
 
   // Return fragment final PBR lighting 
   // ----------------------------------
   
-  return /*diffuse_IBL +*/ lights_reflectance;
+  return diffuse_IBL + lights_reflectance;
 }
 
 
@@ -301,15 +297,14 @@ void main()
   // PBR lighting calculation 
   PBR_lighting_result = PBRLightingCalculation( norm,
                                                 view_dir,  
-                                                oUV,
-                                                TBN );
+                                                oUV );
 
   // Main out color
   FragColor = vec4( PBR_lighting_result, uAlpha );
 
   // Second out color => draw only brightest fragments
   vec3 bright_color = vec3( 0.0, 0.0, 0.0 );
-  if( uBloom )
+  if( uBloom == 1.0 )
   {
     float brightness = dot( PBR_lighting_result, vec3( 0.2126, 0.7152, 0.0722 ) );
     if( brightness > uBloomBrightness )

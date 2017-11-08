@@ -17,7 +17,7 @@ Scene::Scene( Window * iParentWindow )
   
   // Init bloom param
   _exposure         = 1.0;
-  _bloom            = false;
+  _bloom            = true;
   _bloom_downsample = 0.5;
 
   // Init multi sample param
@@ -46,7 +46,6 @@ Scene::Scene( Window * iParentWindow )
   _tex_AO_ground        = 0;
   _tex_roughness_ground = 0;
   _tex_metalness_ground = 0;
-
 
   // Get pointer on the scene window
   _window = iParentWindow;
@@ -604,9 +603,9 @@ void Scene::LightsInitialization()
   
   Light::SetLightsMultiplier( 100.0 );
 
-  for( int i = 0; i < 10; i++ )
+  for( int i = 0; i < 20; i++ )
   {
-    _lights.push_back( Light ( glm::vec3( -5.0 + ( i * 1.0 ), 0.5, 0 ),
+    _lights.push_back( Light ( glm::vec3( -5.0 + ( i * 0.5 ), 2.5, 0 ),
                                glm::vec3( 1.0, 1.0, 1.0 ),
                                0.1 ) );    
   }
@@ -624,21 +623,21 @@ void Scene::ObjectsInitialization()
 
   // Tables object initialization
   // ----------------------------
-  for( int i = 0; i < 3; i++ )
+  for( int i = 0; i < 20; i++ )
   { 
 
-    switch( i )
+    switch( i % 3 )
     {
       case 0:
-        position = glm::vec3( -1.5, 1.0, 2.0 );
+        position = glm::vec3( -1.5, 1.0, 2.0 - ( i * 0.25 ) );
         break;
       
       case 1:
-        position = glm::vec3( 0.0, 1.0, 2.0 );
+        position = glm::vec3( 0.0, 1.0, 2.0 - ( i * 0.25 ) );
         break;
 
       case 2:
-        position = glm::vec3( 1.5, 1.0, 2.0 );
+        position = glm::vec3( 1.5, 1.0, 2.0 - ( i * 0.25 ) );
         break;
     }
 
@@ -855,10 +854,11 @@ void Scene::ShadersInitialization()
   glUseProgram( 0 );
 
   _lighting_pass_shader.Use();
-  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uGbufferPosition" ), 0 ) ;
-  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uGbufferNormal" ), 1 );
+  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uGbufferPositionAndBloom" ), 0 ) ;
+  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uGbufferNormalAndBloomBrightness" ), 1 );
   glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uGbufferAlbedo" ), 2 ) ;
   glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uGbufferRougnessMetalnessAO" ), 3 );
+  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uIrradianceCubeMap" ), 4 ); 
   glUseProgram( 0 );
 
   _skybox_shader.Use();
@@ -901,16 +901,42 @@ void Scene::DeferredBuffersInitialization()
   glBindFramebuffer( GL_FRAMEBUFFER, _g_buffer_FBO );
 
   GLuint texture_id;
-  for( unsigned int i = 0; i < 4; i++ )
-  {
-    glGenTextures( 1, &texture_id );
-    glBindTexture( GL_TEXTURE_2D, texture_id );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, _window->_width, _window->_height, 0, GL_RGB, GL_FLOAT, NULL );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture_id, 0 );
-    _g_buffer_textures.push_back( texture_id );
-  }
+
+  // Position buffer && Bloom bool
+  glGenTextures( 1, &texture_id );
+  glBindTexture( GL_TEXTURE_2D, texture_id );
+  glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA16F, _window->_width, _window->_height, 0, GL_RGBA, GL_FLOAT, NULL );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+  glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture_id, 0 );
+  _g_buffer_textures.push_back( texture_id );
+
+  // Normal buffer && BloomBrightness
+  glGenTextures( 1, &texture_id );
+  glBindTexture( GL_TEXTURE_2D, texture_id );
+  glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA16F, _window->_width, _window->_height, 0, GL_RGBA, GL_FLOAT, NULL );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+  glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, texture_id, 0 );
+  _g_buffer_textures.push_back( texture_id );
+
+  // Albedo buffer
+  glGenTextures( 1, &texture_id );
+  glBindTexture( GL_TEXTURE_2D, texture_id );
+  glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, _window->_width, _window->_height, 0, GL_RGB, GL_FLOAT, NULL );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+  glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, texture_id, 0 );
+  _g_buffer_textures.push_back( texture_id );
+
+  // Roughness && Metalness && AO
+  glGenTextures( 1, &texture_id );
+  glBindTexture( GL_TEXTURE_2D, texture_id );
+  glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, _window->_width, _window->_height, 0, GL_RGB, GL_FLOAT, NULL );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+  glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, texture_id, 0 );
+  _g_buffer_textures.push_back( texture_id );
 
   unsigned int attachments[ 4 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
   glDrawBuffers( 4, attachments );
@@ -933,10 +959,10 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
 
   // Matrices setting
   // ----------------
-  glm::mat4 projectionM, Msend, viewMatrix;
+  glm::mat4 projection_matrix, model_matrix, view_matrix;
 
-  projectionM = glm::perspective( 45.0f, ( float )_window->_width / ( float )_window->_height, _camera->_near, _camera->_far );
-  viewMatrix = glm::lookAt( _camera->_position, _camera->_position + _camera->_front, _camera->_up ); 
+  projection_matrix = glm::perspective( 45.0f, ( float )_window->_width / ( float )_window->_height, _camera->_near, _camera->_far );
+  view_matrix = glm::lookAt( _camera->_position, _camera->_position + _camera->_front, _camera->_up ); 
 
   glm::mat4 lightProjection, lightView, light_space_matrix, skybox_light_space_matrix;
 
@@ -945,13 +971,7 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
   // -------------------------------
   if( iIsFinalFBO )
   {
-    if( _multi_sample )
-    {
-      glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO /*final_hdr_FBO*/ );
-    }
-    else{
-      glBindFramebuffer( GL_FRAMEBUFFER, /*final_hdr_FBO*/ _window->_toolbox->_temp_hdr_FBO );
-    }
+    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
   }
 
@@ -960,12 +980,12 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
   // -----------
   glDepthMask( GL_FALSE ); // desactivé juste pour draw la skybox
   _skybox_shader.Use();   
-  glm::mat4 SkyboxViewMatrix = glm::mat4( glm::mat3( viewMatrix ) );  // Remove any translation component of the view matrix
+  glm::mat4 Skyboxview_matrix = glm::mat4( glm::mat3( view_matrix ) );  // Remove any translation component of the view matrix
 
-  Msend = glm::mat4( 1.0f );
-  glUniformMatrix4fv( glGetUniformLocation( _skybox_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projectionM ) );
-  glUniformMatrix4fv( glGetUniformLocation( _skybox_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( SkyboxViewMatrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( _skybox_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( Msend ) );
+  model_matrix = glm::mat4( 1.0f );
+  glUniformMatrix4fv( glGetUniformLocation( _skybox_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projection_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _skybox_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( Skyboxview_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _skybox_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
   glUniform1f( glGetUniformLocation( _skybox_shader._program, "uAlpha" ), 1.0 );
 
   glUniform1i( glGetUniformLocation( _skybox_shader._program, "uBloom" ), false );
@@ -990,13 +1010,13 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
 
   for( int i = 0; i < _lights.size(); i++ )
   {
-    Msend= glm::mat4();
-    Msend = glm::translate( Msend, _lights[ i ]._position );
-    Msend = glm::scale( Msend, glm::vec3( 0.06f ) ); 
+    model_matrix= glm::mat4();
+    model_matrix = glm::translate( model_matrix, _lights[ i ]._position );
+    model_matrix = glm::scale( model_matrix, glm::vec3( 0.06f ) ); 
     glm::vec3 lampColor = _lights[ i ]._color * _lights[ i ]._intensity;
-    glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uViewMatrix" ) , 1, GL_FALSE, glm::value_ptr( viewMatrix ) );
-    glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( Msend ) );
-    glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projectionM ) );
+    glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uViewMatrix" ) , 1, GL_FALSE, glm::value_ptr( view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projection_matrix ) );
     glUniform3f( glGetUniformLocation( _flat_color_shader._program, "uColor" ), lampColor.x, lampColor.y, lampColor.z );
 
     glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), true );
@@ -1012,11 +1032,11 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
   // ------------
   _forward_pbr_shader.Use();
 
-  Msend = glm::mat4();
+  model_matrix = glm::mat4();
 
-  Msend = glm::translate( Msend, _ground1->_position );
-  Msend = glm::rotate( Msend, _ground1->_angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
-  Msend = glm::scale( Msend, _ground1->_scale ); 
+  model_matrix = glm::translate( model_matrix, _ground1->_position );
+  model_matrix = glm::rotate( model_matrix, _ground1->_angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
+  model_matrix = glm::scale( model_matrix, _ground1->_scale ); 
 
   glActiveTexture( GL_TEXTURE0 );
   glBindTexture( GL_TEXTURE_2D, _tex_albedo_ground );  
@@ -1032,11 +1052,11 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
   glBindTexture( GL_TEXTURE_2D, _tex_metalness_ground ); 
 
   glActiveTexture( GL_TEXTURE9 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_maps[ _current_env ] /*envCubemap*/ ); // bind les 6 textures du cube map 
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_maps[ _current_env ] ); // bind les 6 textures du cube map 
 
-  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( viewMatrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( Msend ) );
-  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projectionM ) );
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( view_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projection_matrix ) );
 
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
 
@@ -1048,7 +1068,7 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
     glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
   }
 
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _ground1->_bloom );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _ground1->_bloom );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _ground1->_bloom_brightness );
 
   glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
@@ -1069,18 +1089,18 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
 
   for( int i = 0; i < _tables.size(); i++ )
   {
-    Msend = glm::mat4();
+    model_matrix = glm::mat4();
 
-    Msend = glm::translate( Msend, _tables[ i ]._position );
-    Msend = glm::rotate( Msend, _tables[ i ]._angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
-    Msend = glm::scale( Msend, _tables[ i ]._scale ); 
+    model_matrix = glm::translate( model_matrix, _tables[ i ]._position );
+    model_matrix = glm::rotate( model_matrix, _tables[ i ]._angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
+    model_matrix = glm::scale( model_matrix, _tables[ i ]._scale ); 
 
     glActiveTexture( GL_TEXTURE9 );
     glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_maps[ _current_env ] ); 
 
-    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( viewMatrix ) );
-    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( Msend ) );
-    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projectionM ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projection_matrix ) );
 
     glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
 
@@ -1092,7 +1112,7 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
       glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
     }
 
-    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _tables[ i ]._bloom );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _tables[ i ]._bloom );
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _tables[ i ]._bloom_brightness );
 
     glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
@@ -1144,17 +1164,15 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
   glUseProgram( 0 );
 }
 
-void Scene::DeferredGeometryPass()
+void Scene::DeferredGeometryPass( glm::mat4 * iProjectionMatrix,
+                                  glm::mat4 * iViewMatrix )
 { 
 
-  // Matrices setting
-  // ----------------
-  glm::mat4 projection_matrix, view_matrix, model_matrix;
-  projection_matrix = glm::perspective( 45.0f, ( float )_window->_width / ( float )_window->_height, _camera->_near, _camera->_far );
-  view_matrix = glm::lookAt( _camera->_position, _camera->_position + _camera->_front, _camera->_up ); 
+  glm::mat4 model_matrix;
 
 
   // Bind G buffer
+  // -------------
   glBindFramebuffer( GL_FRAMEBUFFER, _g_buffer_FBO );
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
@@ -1179,9 +1197,12 @@ void Scene::DeferredGeometryPass()
   glActiveTexture( GL_TEXTURE5 );
   glBindTexture( GL_TEXTURE_2D, _tex_metalness_ground ); 
 
-  glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( view_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( *iViewMatrix ) );
   glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projection_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( *iProjectionMatrix ) );
+
+  glUniform1f( glGetUniformLocation( _geometry_pass_shader._program, "uBloom" ), _ground1->_bloom );
+  glUniform1f( glGetUniformLocation( _geometry_pass_shader._program, "uBloomBrightness" ), _ground1->_bloom_brightness );
 
   glBindVertexArray( _groundVAO );
   glDrawArrays( GL_TRIANGLES, 0, 6 );
@@ -1200,9 +1221,12 @@ void Scene::DeferredGeometryPass()
     model_matrix = glm::rotate( model_matrix, _tables[ i ]._angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
     model_matrix = glm::scale( model_matrix, _tables[ i ]._scale ); 
 
-    glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( *iViewMatrix ) );
     glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-    glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projection_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( *iProjectionMatrix ) );
+
+    glUniform1f( glGetUniformLocation( _geometry_pass_shader._program, "uBloom" ), _tables[ i ]._bloom );
+    glUniform1f( glGetUniformLocation( _geometry_pass_shader._program, "uBloomBrightness" ), _tables[ i ]._bloom_brightness );
 
     _table_model->Draw( _geometry_pass_shader );
   } 
@@ -1217,17 +1241,18 @@ void Scene::DeferredLightingPass()
 {   
   // Bind correct FBO
   glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
-  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
   _lighting_pass_shader.Use();   
   glActiveTexture( GL_TEXTURE0 );
   glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 0 ] );  
   glActiveTexture( GL_TEXTURE1 );
   glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 1 ] ); 
-  glActiveTexture( GL_TEXTURE3 );
+  glActiveTexture( GL_TEXTURE2 );
   glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 2 ] ); 
+  glActiveTexture( GL_TEXTURE3 );
+  glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 3 ] );
   glActiveTexture( GL_TEXTURE4 );
-  glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 3 ] ); 
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_maps[ _current_env ] );
 
   glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uLightCount" ), _lights.size() );
 
@@ -1251,14 +1276,90 @@ void Scene::DeferredLightingPass()
 void Scene::SceneDeferredRendering()
 {
 
-  // Perform the deffered geometry pass
-  // ----------------------------------
-  DeferredGeometryPass();
+  // Matrices setting
+  glm::mat4 projection_matrix, view_matrix, model_matrix;
+  projection_matrix = glm::perspective( 45.0f, ( float )_window->_width / ( float )_window->_height, _camera->_near, _camera->_far );
+  view_matrix = glm::lookAt( _camera->_position, _camera->_position + _camera->_front, _camera->_up ); 
 
 
-  // Perform the deffered lighting pass
-  // ----------------------------------
+  // Deferred rendering G-buffer pass
+  // --------------------------------
+  DeferredGeometryPass( &projection_matrix,
+                        &view_matrix );
+  
+
+  // Bind and clear temp buffer
+  // --------------------------
+  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
+  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+
+  // Forward render skybox
+  // ---------------------
+  glDepthMask( GL_FALSE ); // desactivé juste pour draw la skybox
+  _skybox_shader.Use();   
+  glm::mat4 Skyboxview_matrix = glm::mat4( glm::mat3( view_matrix ) );  // Remove any translation component of the view matrix
+
+  model_matrix = glm::mat4( 1.0f );
+  glUniformMatrix4fv( glGetUniformLocation( _skybox_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projection_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _skybox_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( Skyboxview_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _skybox_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+  glUniform1f( glGetUniformLocation( _skybox_shader._program, "uAlpha" ), 1.0 );
+
+  glUniform1i( glGetUniformLocation( _skybox_shader._program, "uBloom" ), false );
+  glUniform1f( glGetUniformLocation( _skybox_shader._program, "uBloomBrightness" ), _ground1->_bloom_brightness );
+
+  glActiveTexture( GL_TEXTURE0 );
+  //glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_maps[ _current_env ] ); // bind les 6 textures du cube map 
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _env_cubemaps[ _current_env ] ); // bind les 6 textures du cube map 
+
+  glEnable( GL_BLEND );
+  _window->_toolbox->RenderCube();
+  glDisable( GL_BLEND );
+
+  glDepthMask( GL_TRUE ); 
+  glUseProgram( 0 );
+
+
+  // Deferred rendering lighting pass
+  // --------------------------------
   DeferredLightingPass();
+
+
+  // Get depth buffer information from the G-buffer FBO to the temp FBO
+  // ------------------------------------------------------------------
+  glBindFramebuffer( GL_READ_FRAMEBUFFER, _g_buffer_FBO );
+  glBindFramebuffer( GL_DRAW_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
+  glBlitFramebuffer( 0, 0, _window->_width, _window->_height, 0, 0, _window->_width, _window->_height, GL_DEPTH_BUFFER_BIT, GL_NEAREST );
+  
+
+  // Bind temp buffer
+  // ----------------
+  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
+
+
+  // Forward render lamps
+  // --------------------
+  _flat_color_shader.Use();
+  glBindVertexArray( _lampVAO );
+  for( int i = 0; i < _lights.size(); i++ )
+  {
+    model_matrix = glm::mat4();
+    model_matrix = glm::translate( model_matrix, _lights[ i ]._position );
+    model_matrix = glm::scale( model_matrix, glm::vec3( 0.06f ) ); 
+    glm::vec3 lamp_color = _lights[ i ]._color * _lights[ i ]._intensity;
+    glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uViewMatrix" ) , 1, GL_FALSE, glm::value_ptr( view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projection_matrix ) );
+    glUniform3f( glGetUniformLocation( _flat_color_shader._program, "uColor" ), lamp_color.x, lamp_color.y, lamp_color.z );
+
+    glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), true );
+    glUniform1f( glGetUniformLocation( _flat_color_shader._program, "uBloomBrightness" ), 1.0f );
+
+    glDrawArrays( GL_TRIANGLES, 0, _window->_toolbox->_sphere_vertices_count );
+  }
+  glBindVertexArray( 0 );
+  glUseProgram( 0 );
 
 }
 
