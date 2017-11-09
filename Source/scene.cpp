@@ -8,8 +8,8 @@
 
 Scene::Scene( Window * iParentWindow )
 { 
-  //_pipeline_type = FORWARD_RENDERING;
-  _pipeline_type = DEFERRED_RENDERING;
+  _pipeline_type = FORWARD_RENDERING;
+  //_pipeline_type = DEFERRED_RENDERING;
 
 
   // Scene effects settings
@@ -603,11 +603,14 @@ void Scene::LightsInitialization()
   
   Light::SetLightsMultiplier( 100.0 );
 
-  for( int i = 0; i < 20; i++ )
+  for( int row = 0; row < 5; row++ )
   {
-    _lights.push_back( Light ( glm::vec3( -5.0 + ( i * 0.5 ), 2.5, 0 ),
-                               glm::vec3( 1.0, 1.0, 1.0 ),
-                               0.1 ) );    
+    for( int column = 0; column < 5; column++ )
+    {
+      _lights.push_back( Light ( glm::vec3( -4.0 + ( row * 2.0 ), 0.3, -4.0 + ( column * 2.0 ) ),
+                                 glm::vec3( 1.0, 1.0, 1.0 ),
+                                 0.02 ) );    
+    }
   }
 
   for( int i = 0; i < _lights.size(); i++ )
@@ -1012,7 +1015,7 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
   {
     model_matrix= glm::mat4();
     model_matrix = glm::translate( model_matrix, _lights[ i ]._position );
-    model_matrix = glm::scale( model_matrix, glm::vec3( 0.06f ) ); 
+    model_matrix = glm::scale( model_matrix, glm::vec3( 0.04f ) ); 
     glm::vec3 lampColor = _lights[ i ]._color * _lights[ i ]._intensity;
     glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uViewMatrix" ) , 1, GL_FALSE, glm::value_ptr( view_matrix ) );
     glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
@@ -1346,7 +1349,7 @@ void Scene::SceneDeferredRendering()
   {
     model_matrix = glm::mat4();
     model_matrix = glm::translate( model_matrix, _lights[ i ]._position );
-    model_matrix = glm::scale( model_matrix, glm::vec3( 0.06f ) ); 
+    model_matrix = glm::scale( model_matrix, glm::vec3( 0.04f ) ); 
     glm::vec3 lamp_color = _lights[ i ]._color * _lights[ i ]._intensity;
     glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uViewMatrix" ) , 1, GL_FALSE, glm::value_ptr( view_matrix ) );
     glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
