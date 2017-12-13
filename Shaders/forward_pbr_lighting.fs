@@ -155,8 +155,11 @@ vec3 ReflectanceEquationCalculation( vec2     iUV,
     // Calculate per-light radiance
     // ----------------------------
     
+    // Get light direction
+    vec3 light_dir = uLightPos[ i ] - oFragPos;
+
     // Get light -> frag distance
-    float distance = length( uLightPos[ i ] - oFragPos );
+    float distance = length( light_dir );
 
     // Get attenuation value
     float attenuation = 1.0 / ( distance * distance );
@@ -169,7 +172,7 @@ vec3 ReflectanceEquationCalculation( vec2     iUV,
     // -------------------------------
     
     // Get light direction
-    vec3 light_dir = normalize( uLightPos[ i ] - oFragPos );
+    light_dir = normalize( light_dir );
    
     // Get halfway vector
     vec3 halfway = normalize( iViewDir + light_dir );

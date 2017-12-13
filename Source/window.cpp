@@ -175,14 +175,14 @@ void Window::ManageEvents( Camera * iCamera )
           case 'a' :
             for( int i = 0 ; i < _scene->_lights.size() ; i++ )
             {     
-              _scene->_lights[ i ]._position.z += 0.1;
+              _scene->_lights[ i ]._position.y += 0.1;
             }   
             break;
 
           case 'e' :
             for( int i = 0 ; i < _scene->_lights.size() ; i++ )
             {     
-              _scene->_lights[ i ]._position.z -= 0.1;
+              _scene->_lights[ i ]._position.y -= 0.1;
             }     
             break;
 

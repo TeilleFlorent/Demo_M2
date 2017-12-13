@@ -1,6 +1,6 @@
 #include "shader.hpp"
 #include "clock.hpp"
-#include "light.hpp"
+#include "point_light.hpp"
 #include "object.hpp"
 #include "classic_model.hpp"
 #include "camera.hpp"
@@ -53,7 +53,8 @@ class Scene
     void DeferredGeometryPass( glm::mat4 * iProjectionMatrix,
                                glm::mat4 * iViewMatrix );
 
-    void DeferredLightingPass();
+    void DeferredLightingPass( glm::mat4 * iProjectionMatrix,
+                               glm::mat4 * iViewMatrix );
 
     void SceneDeferredRendering();
 
@@ -106,8 +107,7 @@ class Scene
 
     // Deferred rendering data
     unsigned int _g_buffer_FBO;
-    unsigned int _g_buffer_RBO;
-    std::vector< unsigned int > _g_buffer_textures; // [ position, normal, color, roughness_metalness_AO ]
+    std::vector< unsigned int > _g_buffer_textures; // [ position, normal, color, roughness_metalness_AO, depth ]
 
     // Bloom param
     float _exposure;
@@ -132,8 +132,8 @@ class Scene
     // Camera
     Camera * _camera;
 
-    // Lights
-    std::vector < Light > _lights;
+    // Point Lights
+    std::vector < PointLight > _lights;
 
     // Scene's objects
     std::vector< Object > _tables;
@@ -141,6 +141,7 @@ class Scene
 
     // Models
     Model * _table_model;
+    Model * _volume_sphere;
 };
 
 #endif  // SCENE_H

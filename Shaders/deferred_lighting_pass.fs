@@ -28,6 +28,10 @@ uniform int   uLightCount;
 uniform vec3  uLightPos[ MAX_NB_LIGHTS ];
 uniform vec3  uLightColor[ MAX_NB_LIGHTS ];
 uniform float uLightIntensity[ MAX_NB_LIGHTS ];
+uniform float uLightAttenConstant[ MAX_NB_LIGHTS ];
+uniform float uLightAttenLinear[ MAX_NB_LIGHTS ];
+uniform float uLightAttenExp[ MAX_NB_LIGHTS ];
+
 
 uniform vec3 uViewPos;
 
@@ -123,12 +127,27 @@ vec3 ReflectanceEquationCalculation( vec3  iFragPos,
     // Calculate per-light radiance
     // ----------------------------
     
+    // Get light direction
+    vec3 light_dir = uLightPos[ i ] - iFragPos;
+
     // Get light -> frag distance
-    float distance = length( uLightPos[ i ] - iFragPos );
+    float distance = length( light_dir );
 
     // Get attenuation value
-    float attenuation = 1.0 / ( distance * distance );
+    //float attenuation = 1.0 / ( distance * distance );
     
+    // Classic attenuation curve
+    float attenuation = 1 / ( uLightAttenConstant[ i ]
+                          + ( uLightAttenLinear[ i ] * distance )
+                          + ( uLightAttenExp[ i ] * ( distance * distance ) ) );
+
+    // Smooth clamp to the distance max
+    attenuation *= ( -distance / 3.0 ) + 1.0;
+
+    //attenuation = max( 1.0, attenuation );
+    //float attenuation = ( -( 1.0 / 5.0 ) * distance ) + 1;
+
+
     // Get light radiance value
     vec3 light_radiance = ( uLightColor[ i ] * uLightIntensity[ i ] ) * attenuation;
 
@@ -136,8 +155,8 @@ vec3 ReflectanceEquationCalculation( vec3  iFragPos,
     // Cook-Torrance BRDF ( specular )
     // -------------------------------
     
-    // Get light direction
-    vec3 light_dir = normalize( uLightPos[ i ] - iFragPos );
+    // Normalize light direction
+    light_dir = normalize( light_dir );
    
     // Get halfway vector
     vec3 halfway = normalize( iViewDir + light_dir );
@@ -166,7 +185,8 @@ vec3 ReflectanceEquationCalculation( vec3  iFragPos,
 
     // Get NdotL value
     // ---------------
-    float normal_dot_light_dir = max( dot( iNormal, light_dir ), 0.0 );        
+    //float normal_dot_light_dir = max( dot( iNormal, light_dir ), 0.0 );        
+    float normal_dot_light_dir = clamp( dot( iNormal, light_dir ), 0.0, 1.0 );        
 
 
     // Final light influence
@@ -240,7 +260,7 @@ vec3 PBRLightingCalculation( vec3 iFragPos,
 
   // Return fragment final PBR lighting 
   // ----------------------------------
-  return diffuse_IBL + lights_reflectance;
+  return /*diffuse_IBL +*/ lights_reflectance;
 }
 
 

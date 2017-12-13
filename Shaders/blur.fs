@@ -34,7 +34,7 @@ void main()
   vec2 tex_offset = 1.0 / textureSize( uTexture1, 0 ); // gets size of single texel
   tex_offset *= uOffsetFactor;
 
-  vec3 color_result = texture(uTexture1, oUV).rgb * weight[0];
+  vec3 color_result = texture( uTexture1, oUV ).rgb * weight[0];
 
   if( uHorizontal == 1.0 )
   {

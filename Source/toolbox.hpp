@@ -89,7 +89,6 @@ class Toolbox
 
     // FBOs & RBOs
     GLuint _temp_hdr_FBO;
-    GLuint _temp_depht_RBO;
 
     GLuint _final_hdr_FBO;
     GLuint _final_depht_RBO;

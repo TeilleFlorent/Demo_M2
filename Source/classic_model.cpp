@@ -204,6 +204,7 @@ Mesh Model::ProcessMesh( aiMesh * iMesh,
   vector< Vertex > vertices;
   vector< GLuint > indices;
   vector< Texture > textures;
+  bool UV_warning = false;
 
 
   // Load Mesh vertices data
@@ -236,30 +237,41 @@ Mesh Model::ProcessMesh( aiMesh * iMesh,
     else
     {
       vertex._uv = glm::vec2( 0.0f, 0.0f );
-      printf( "\n\nERROR ProcessMesh() function -> There is no UV\n\n" );
+      UV_warning = true;
     }
 
     // Assimp tangent
-    vector.x = iMesh->mTangents[ i ].x;
+    /*vector.x = iMesh->mTangents[ i ].x;
     vector.y = iMesh->mTangents[ i ].y;
     vector.z = iMesh->mTangents[ i ].z;
-    //vertex.Tangent = vector; 
+    vertex.Tangent = vector; 
 
     // Assimp bi tangent
     vector.x = iMesh->mBitangents[ i ].x;
     vector.y = iMesh->mBitangents[ i ].y;
     vector.z = iMesh->mBitangents[ i ].z;
-    //vertex.BiTangent = vector; 
+    vertex.BiTangent = vector;*/ 
 
     // Add this vertex to the mesh
     vertices.push_back( vertex );
+  }
+
+  if( UV_warning )
+  {
+    std::cout << std::endl << "WARNING : Model \"" << _model_name << "\", Mesh " << iMeshNum << " does not have UVs" << std::endl
+                           << "--------------------------------------------------------" << std::endl;
   }
 
 
   // Manually calculate vertex tangent & bi tangent
   // ----------------------------------------------
   for( GLuint i = 0; i < vertices.size(); i += 3 )
-  {
+  { 
+    if( _model_id == 2 )
+    {
+      break;
+    }
+
     // Raccourcis pour les sommets
     glm::vec3 v0,v1,v2;
     v0 = vertices[ i ]._position;

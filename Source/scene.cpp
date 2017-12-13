@@ -8,8 +8,8 @@
 
 Scene::Scene( Window * iParentWindow )
 { 
-  _pipeline_type = FORWARD_RENDERING;
-  //_pipeline_type = DEFERRED_RENDERING;
+  //_pipeline_type = FORWARD_RENDERING;
+  _pipeline_type = DEFERRED_RENDERING;
 
 
   // Scene effects settings
@@ -151,8 +151,6 @@ void Scene::Quit()
 
   // Delete RBOs
   // -----------
-  if( _window->_toolbox->_temp_depht_RBO )
-    glDeleteRenderbuffers( 1, &_window->_toolbox->_temp_depht_RBO );
   if( _window->_toolbox->_final_depht_RBO )
     glDeleteRenderbuffers( 1, &_window->_toolbox->_final_depht_RBO );
   if( _window->_toolbox->_captureRBO )
@@ -308,7 +306,6 @@ void Scene::SceneDataInitialization()
   // Create temp color buffer
   // ------------------------
   glGenFramebuffers( 1, &_window->_toolbox->_temp_hdr_FBO );
-  glGenRenderbuffers( 1, &_window->_toolbox->_temp_depht_RBO );
   glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
   glGenTextures( 2, _window->_toolbox->_temp_tex_color_buffer );
 
@@ -324,13 +321,9 @@ void Scene::SceneDataInitialization()
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
       glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, _window->_toolbox->_temp_tex_color_buffer[ i ], 0 );
     }
-    glBindRenderbuffer( GL_RENDERBUFFER, _window->_toolbox->_temp_depht_RBO );
-    glRenderbufferStorageMultisample( GL_RENDERBUFFER, _nb_multi_sample, GL_DEPTH24_STENCIL8, _window->_width, _window->_height ); 
-    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _window->_toolbox->_temp_depht_RBO );
 
     GLuint attachments2[ 2 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
     glDrawBuffers( 2, attachments2 );
-    glBindRenderbuffer( GL_RENDERBUFFER, 0 );
     if( glCheckFramebufferStatus( GL_FRAMEBUFFER ) != GL_FRAMEBUFFER_COMPLETE )
     {
       std::cout << "Framebuffer not complete!" << std::endl;
@@ -349,13 +342,9 @@ void Scene::SceneDataInitialization()
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
       glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, _window->_toolbox->_temp_tex_color_buffer[ i ], 0 );
     }
-    glBindRenderbuffer( GL_RENDERBUFFER, _window->_toolbox->_temp_depht_RBO );
-    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, _window->_width, _window->_height );
 
-    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _window->_toolbox->_temp_depht_RBO );
     GLuint attachments2[ 2 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
     glDrawBuffers( 2, attachments2 );
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
     if( glCheckFramebufferStatus( GL_FRAMEBUFFER ) != GL_FRAMEBUFFER_COMPLETE )
     {
       std::cout << "Framebuffer not complete!" << std::endl;
@@ -601,21 +590,24 @@ void Scene::LightsInitialization()
 { 
   _lights.clear();
   
-  Light::SetLightsMultiplier( 100.0 );
+  PointLight::SetLightsMultiplier( 100.0 );
 
-  for( int row = 0; row < 5; row++ )
+  for( int row = 0; row < 1; row++ )
   {
-    for( int column = 0; column < 5; column++ )
+    for( int column = 0; column < 1; column++ )
     {
-      _lights.push_back( Light ( glm::vec3( -4.0 + ( row * 2.0 ), 0.3, -4.0 + ( column * 2.0 ) ),
-                                 glm::vec3( 1.0, 1.0, 1.0 ),
-                                 0.02 ) );    
+      _lights.push_back( PointLight( glm::vec3( -4.0 + ( row * 2.0 ), 0.3, -4.0 + ( column * 2.0 ) ),
+                                     glm::vec3( 1.0, 1.0, 1.0 ),
+                                     0.1,
+                                     1.0,
+                                     1.0,
+                                     2.5 ) );    
     }
   }
 
   for( int i = 0; i < _lights.size(); i++ )
   {
-    _lights[ i ]._intensity *= Light::GetLightsMultiplier();
+    _lights[ i ]._intensity *= PointLight::GetLightsMultiplier();
   }
 }
 
@@ -889,10 +881,16 @@ void Scene::ShadersInitialization()
 void Scene::ModelsLoading()
 { 
   Model::SetToolbox( _window->_toolbox );
+
   // Table model loading
   _table_model = new Model();
   _table_model->Load_Model( "../Models/cube/Rounded Cube.fbx", 0, "Table1" );
   _table_model->Print_info_model();
+
+  // Volume sphere model loading
+  _volume_sphere = new Model();
+  _volume_sphere->Load_Model( "../Models/volume_sphere/volume_sphere.obj", 2, "VolumeSphere" );
+  _volume_sphere->Print_info_model();  
 }
 
 void Scene::DeferredBuffersInitialization()
@@ -941,14 +939,16 @@ void Scene::DeferredBuffersInitialization()
   glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, texture_id, 0 );
   _g_buffer_textures.push_back( texture_id );
 
+  // Depth
+  glGenTextures( 1, &texture_id );
+  glBindTexture( GL_TEXTURE_2D, texture_id );
+  glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, _window->_width, _window->_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL );
+  glFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture_id, 0);
+
+  
   unsigned int attachments[ 4 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
   glDrawBuffers( 4, attachments );
 
-  glGenRenderbuffers( 1, &_g_buffer_RBO );
-  glBindRenderbuffer( GL_RENDERBUFFER, _g_buffer_RBO );
-  glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, _window->_width, _window->_height );
-  glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _g_buffer_RBO );
-    
   if( glCheckFramebufferStatus( GL_FRAMEBUFFER ) != GL_FRAMEBUFFER_COMPLETE )
   {
     std::cout << "ERROR : G-buffer's FBO not complete" << std::endl;
@@ -1170,13 +1170,20 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
 void Scene::DeferredGeometryPass( glm::mat4 * iProjectionMatrix,
                                   glm::mat4 * iViewMatrix )
 { 
-
+  
   glm::mat4 model_matrix;
+
+  // Update the depth buffer only during the geometry pass
+  glDepthMask( GL_TRUE );
+  glEnable( GL_DEPTH_TEST );
+  
+  // Disable blending while G-buffer generation
+  glDisable( GL_BLEND );
 
 
   // Bind G buffer
   // -------------
-  glBindFramebuffer( GL_FRAMEBUFFER, _g_buffer_FBO );
+  glBindFramebuffer( GL_DRAW_FRAMEBUFFER, _g_buffer_FBO );
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 
@@ -1238,12 +1245,23 @@ void Scene::DeferredGeometryPass( glm::mat4 * iProjectionMatrix,
   // Unbinding    
   glBindFramebuffer( GL_FRAMEBUFFER, 0 );
   glBindVertexArray( 0 );
+
+  // Don't need to modify the depth buffer after the geometry pass
+  glDepthMask( GL_FALSE );
+  glDisable( GL_DEPTH_TEST );
 }
 
-void Scene::DeferredLightingPass()
-{   
+void Scene::DeferredLightingPass( glm::mat4 * iProjectionMatrix,
+                                  glm::mat4 * iViewMatrix )
+{ 
+  // Enable blending for lighting's sum   
+  glEnable( GL_BLEND );
+  glBlendEquation( GL_FUNC_ADD );
+  glBlendFunc( GL_ONE, GL_ONE );
+
   // Bind correct FBO
-  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
+  glBindFramebuffer( GL_DRAW_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
+  glClear( GL_COLOR_BUFFER_BIT );
 
   _lighting_pass_shader.Use();   
   glActiveTexture( GL_TEXTURE0 );
@@ -1257,6 +1275,13 @@ void Scene::DeferredLightingPass()
   glActiveTexture( GL_TEXTURE4 );
   glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_maps[ _current_env ] );
 
+  // Set light volume sphere model matrix
+  glm::mat4 model_matrix;
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, _ground1->_position );
+  model_matrix = glm::rotate( model_matrix, _ground1->_angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
+  model_matrix = glm::scale( model_matrix, glm::vec3( 0.1 ) ); 
+
   glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uLightCount" ), _lights.size() );
 
   for( int i = 0; i < _lights.size(); i++ )
@@ -1265,6 +1290,9 @@ void Scene::DeferredLightingPass()
     glUniform3fv( glGetUniformLocation( _lighting_pass_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
     glUniform3fv( glGetUniformLocation( _lighting_pass_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
     glUniform1f(  glGetUniformLocation( _lighting_pass_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    glUniform1f(  glGetUniformLocation( _lighting_pass_shader._program, ( "uLightAttenConstant[" + temp + "]" ).c_str() ), _lights[ i ]._attenuation_constant );
+    glUniform1f(  glGetUniformLocation( _lighting_pass_shader._program, ( "uLightAttenLinear[" + temp + "]" ).c_str() ), _lights[ i ]._attenuation_linear );
+    glUniform1f(  glGetUniformLocation( _lighting_pass_shader._program, ( "uLightAttenExp[" + temp + "]" ).c_str() ), _lights[ i ]._attenuation_exp );
   }
 
   glUniform3fv( glGetUniformLocation( _lighting_pass_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
@@ -1293,11 +1321,11 @@ void Scene::SceneDeferredRendering()
 
   // Bind and clear temp buffer
   // --------------------------
-  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
-  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+  //glBindFramebuffer( GL_DRAW_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
+  //glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 
-  // Forward render skybox
+  /*// Forward render skybox
   // ---------------------
   glDepthMask( GL_FALSE ); // desactivé juste pour draw la skybox
   _skybox_shader.Use();   
@@ -1321,12 +1349,13 @@ void Scene::SceneDeferredRendering()
   glDisable( GL_BLEND );
 
   glDepthMask( GL_TRUE ); 
-  glUseProgram( 0 );
+  glUseProgram( 0 );*/
 
 
   // Deferred rendering lighting pass
   // --------------------------------
-  DeferredLightingPass();
+  DeferredLightingPass( &projection_matrix,
+                        &view_matrix );
 
 
   // Get depth buffer information from the G-buffer FBO to the temp FBO
@@ -1344,7 +1373,6 @@ void Scene::SceneDeferredRendering()
   // Forward render lamps
   // --------------------
   _flat_color_shader.Use();
-  glBindVertexArray( _lampVAO );
   for( int i = 0; i < _lights.size(); i++ )
   {
     model_matrix = glm::mat4();
@@ -1359,9 +1387,8 @@ void Scene::SceneDeferredRendering()
     glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), true );
     glUniform1f( glGetUniformLocation( _flat_color_shader._program, "uBloomBrightness" ), 1.0f );
 
-    glDrawArrays( GL_TRIANGLES, 0, _window->_toolbox->_sphere_vertices_count );
+    _volume_sphere->Draw( _flat_color_shader );
   }
-  glBindVertexArray( 0 );
   glUseProgram( 0 );
 
 }

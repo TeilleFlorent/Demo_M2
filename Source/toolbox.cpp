@@ -11,8 +11,8 @@ Toolbox::Toolbox( Window * iParentWindow )
   // Get pointer on the scene window
   _window = iParentWindow;
 
-  _sphere_longitude_count = 6;
-  _sphere_latitude_count = 6;
+  _sphere_longitude_count = 20;
+  _sphere_latitude_count = 20;
   _sphere_vertices_count = 0; 
   _hdr_image_manager = new HDRManager();  
 
