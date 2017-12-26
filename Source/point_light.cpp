@@ -10,16 +10,12 @@ float PointLight::_intensity_multiplier;
 PointLight::PointLight( glm::vec3 iPosition,
                         glm::vec3 iColor,
                         float     iIntensity,
-                        float     iAttenConstant,
-                        float     iAttenLinear,
-                        float     iAttenExp )
+                        float     iMaxLightingDistance )
 {
-  _position             = iPosition;
-  _color                = iColor;
-  _intensity            = iIntensity;
-  _attenuation_constant = iAttenConstant;
-  _attenuation_linear   = iAttenLinear;
-  _attenuation_exp      = iAttenExp;
+  _position              = iPosition;
+  _color                 = iColor;
+  _intensity             = iIntensity;
+  _max_lighting_distance = iMaxLightingDistance;
 }
 
 void PointLight::SetLightsMultiplier( float iMultiplier )
@@ -31,5 +27,3 @@ float PointLight::GetLightsMultiplier()
 {
   return _intensity_multiplier;
 }
-
-

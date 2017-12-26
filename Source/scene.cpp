@@ -30,6 +30,9 @@ Scene::Scene( Window * iParentWindow )
   _irradiance_sample_delta = 0.025;
   _current_env             = 2;
 
+  // Lights volume
+  _render_lights_volume = true;
+
 
   // Scene data initialization
   // -------------------------
@@ -596,12 +599,10 @@ void Scene::LightsInitialization()
   {
     for( int column = 0; column < 1; column++ )
     {
-      _lights.push_back( PointLight( glm::vec3( -4.0 + ( row * 2.0 ), 0.3, -4.0 + ( column * 2.0 ) ),
+      _lights.push_back( PointLight( glm::vec3( -4.0 + ( row * 2.0 ), 1.0, -4.0 + ( column * 2.0 ) ),
                                      glm::vec3( 1.0, 1.0, 1.0 ),
                                      0.1,
-                                     1.0,
-                                     1.0,
-                                     2.5 ) );    
+                                     3.0 ) );    
     }
   }
 
@@ -1178,7 +1179,7 @@ void Scene::DeferredGeometryPass( glm::mat4 * iProjectionMatrix,
   glEnable( GL_DEPTH_TEST );
   
   // Disable blending while G-buffer generation
-  glDisable( GL_BLEND );
+  //glDisable( GL_BLEND );
 
 
   // Bind G buffer
@@ -1247,21 +1248,21 @@ void Scene::DeferredGeometryPass( glm::mat4 * iProjectionMatrix,
   glBindVertexArray( 0 );
 
   // Don't need to modify the depth buffer after the geometry pass
-  glDepthMask( GL_FALSE );
-  glDisable( GL_DEPTH_TEST );
+  //glDepthMask( GL_FALSE );
+  //glDisable( GL_DEPTH_TEST );
 }
 
 void Scene::DeferredLightingPass( glm::mat4 * iProjectionMatrix,
                                   glm::mat4 * iViewMatrix )
 { 
   // Enable blending for lighting's sum   
-  glEnable( GL_BLEND );
-  glBlendEquation( GL_FUNC_ADD );
-  glBlendFunc( GL_ONE, GL_ONE );
+  //glEnable( GL_BLEND );
+  //glBlendEquation( GL_FUNC_ADD );
+  //glBlendFunc( GL_ONE, GL_ONE );
 
   // Bind correct FBO
   glBindFramebuffer( GL_DRAW_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
-  glClear( GL_COLOR_BUFFER_BIT );
+  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
   _lighting_pass_shader.Use();   
   glActiveTexture( GL_TEXTURE0 );
@@ -1276,11 +1277,12 @@ void Scene::DeferredLightingPass( glm::mat4 * iProjectionMatrix,
   glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_maps[ _current_env ] );
 
   // Set light volume sphere model matrix
-  glm::mat4 model_matrix;
+  /*glm::mat4 model_matrix;
   model_matrix = glm::mat4();
   model_matrix = glm::translate( model_matrix, _ground1->_position );
   model_matrix = glm::rotate( model_matrix, _ground1->_angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
   model_matrix = glm::scale( model_matrix, glm::vec3( 0.1 ) ); 
+  */
 
   glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uLightCount" ), _lights.size() );
 
@@ -1290,16 +1292,14 @@ void Scene::DeferredLightingPass( glm::mat4 * iProjectionMatrix,
     glUniform3fv( glGetUniformLocation( _lighting_pass_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
     glUniform3fv( glGetUniformLocation( _lighting_pass_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
     glUniform1f(  glGetUniformLocation( _lighting_pass_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
-    glUniform1f(  glGetUniformLocation( _lighting_pass_shader._program, ( "uLightAttenConstant[" + temp + "]" ).c_str() ), _lights[ i ]._attenuation_constant );
-    glUniform1f(  glGetUniformLocation( _lighting_pass_shader._program, ( "uLightAttenLinear[" + temp + "]" ).c_str() ), _lights[ i ]._attenuation_linear );
-    glUniform1f(  glGetUniformLocation( _lighting_pass_shader._program, ( "uLightAttenExp[" + temp + "]" ).c_str() ), _lights[ i ]._attenuation_exp );
+    glUniform1f(  glGetUniformLocation( _lighting_pass_shader._program, ( "uLightMaxDistance[" + temp + "]" ).c_str() ), _lights[ i ]._max_lighting_distance );
   }
 
   glUniform3fv( glGetUniformLocation( _lighting_pass_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
   
   _window->_toolbox->RenderQuad();
   
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);     
+  glBindFramebuffer( GL_FRAMEBUFFER, 0 );     
   glBindVertexArray( 0 );
   glUseProgram( 0 );
 }
@@ -1384,13 +1384,36 @@ void Scene::SceneDeferredRendering()
     glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projection_matrix ) );
     glUniform3f( glGetUniformLocation( _flat_color_shader._program, "uColor" ), lamp_color.x, lamp_color.y, lamp_color.z );
 
-    glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), true );
+    glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), false );
     glUniform1f( glGetUniformLocation( _flat_color_shader._program, "uBloomBrightness" ), 1.0f );
 
     _volume_sphere->Draw( _flat_color_shader );
   }
   glUseProgram( 0 );
 
+
+  // Forward render lights volume
+  // ----------------------------
+  if( _render_lights_volume )
+  {
+    _flat_color_shader.Use();
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, _lights[ i ]._position );
+      model_matrix = glm::scale( model_matrix, glm::vec3( _lights[ i ]._max_lighting_distance * 0.5f ) ); 
+      glm::vec3 sphere_color = glm::vec3( 0.0, 0.0, 1.0 ) * _lights[ i ]._intensity;
+      glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uViewMatrix" ) , 1, GL_FALSE, glm::value_ptr( view_matrix ) );
+      glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+      glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( projection_matrix ) );
+      glUniform3f( glGetUniformLocation( _flat_color_shader._program, "uColor" ), sphere_color.x, sphere_color.y, sphere_color.z );
+
+      glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), false );
+
+      _volume_sphere->Draw( _flat_color_shader );
+    }
+    glUseProgram( 0 );
+  }
 }
 
 void Scene::BlurProcess()

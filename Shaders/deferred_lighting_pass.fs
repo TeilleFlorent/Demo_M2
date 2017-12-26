@@ -23,15 +23,11 @@ uniform sampler2D   uGbufferAlbedo;
 uniform sampler2D   uGbufferRougnessMetalnessAO;
 uniform samplerCube uIrradianceCubeMap;
 
-
 uniform int   uLightCount;
 uniform vec3  uLightPos[ MAX_NB_LIGHTS ];
 uniform vec3  uLightColor[ MAX_NB_LIGHTS ];
 uniform float uLightIntensity[ MAX_NB_LIGHTS ];
-uniform float uLightAttenConstant[ MAX_NB_LIGHTS ];
-uniform float uLightAttenLinear[ MAX_NB_LIGHTS ];
-uniform float uLightAttenExp[ MAX_NB_LIGHTS ];
-
+uniform float uLightMaxDistance[ MAX_NB_LIGHTS ];
 
 uniform vec3 uViewPos;
 
@@ -134,23 +130,10 @@ vec3 ReflectanceEquationCalculation( vec3  iFragPos,
     float distance = length( light_dir );
 
     // Get attenuation value
-    //float attenuation = 1.0 / ( distance * distance );
-    
-    // Classic attenuation curve
-    float attenuation = 1 / ( uLightAttenConstant[ i ]
-                          + ( uLightAttenLinear[ i ] * distance )
-                          + ( uLightAttenExp[ i ] * ( distance * distance ) ) );
-
-    // Smooth clamp to the distance max
-    attenuation *= ( -distance / 3.0 ) + 1.0;
-
-    //attenuation = max( 1.0, attenuation );
-    //float attenuation = ( -( 1.0 / 5.0 ) * distance ) + 1;
-
-
-    // Get light radiance value
+    float attenuation = 1.0 / ( distance * distance );
+    attenuation *= ( -distance / uLightMaxDistance[ i ] ) + 1.0;
     vec3 light_radiance = ( uLightColor[ i ] * uLightIntensity[ i ] ) * attenuation;
-
+    
 
     // Cook-Torrance BRDF ( specular )
     // -------------------------------

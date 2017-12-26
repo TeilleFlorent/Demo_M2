@@ -22,13 +22,13 @@ class PointLight
     PointLight( glm::vec3 iPosition,
                 glm::vec3 iColor,
                 float     iIntensity,
-                float     iAttenConstant,
-                float     iAttenLinear,
-                float     iAttenExp );
+                float     iMaxLightingDistance );
 
     static void SetLightsMultiplier( float iMultiplier );
 
     static float GetLightsMultiplier();
+
+    void UpdateBoundingSphereScale();
 
 
     // PointLight class members
@@ -37,9 +37,7 @@ class PointLight
     glm::vec3 _position;  
     glm::vec3 _color;
     float     _intensity;
-    float     _attenuation_constant;
-    float     _attenuation_linear;
-    float     _attenuation_exp;
+    float     _max_lighting_distance;
 
 
   private:

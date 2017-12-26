@@ -134,7 +134,8 @@ class Scene
 
     // Point Lights
     std::vector < PointLight > _lights;
-
+    bool _render_lights_volume;
+    
     // Scene's objects
     std::vector< Object > _tables;
     Object * _ground1;
