@@ -43,7 +43,7 @@ void Shader::SetShaderClassicPipeline( const GLchar * iVertexPath,
 
   const GLchar * vShaderCode = vertexCode.c_str();
   const GLchar * fShaderCode = fragmentCode.c_str();
-  GLuint vertex, fragment;
+  unsigned int vertex, fragment;
   GLint success;
   GLchar infoLog[ 512 ];
 
@@ -120,7 +120,7 @@ void Shader::SetShaderGeometryPipeline( const GLchar * iVertexPath,
   const GLchar * vShaderCode = vertexCode.c_str();
   const GLchar * gShaderCode = geoCode.c_str();
   const GLchar * fShaderCode = fragmentCode.c_str();
-  GLuint vertex, geo, fragment;
+  unsigned int vertex, geo, fragment;
   GLint success;
   GLchar infoLog[ 512 ];
   

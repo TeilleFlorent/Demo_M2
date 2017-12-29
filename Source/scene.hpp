@@ -83,12 +83,12 @@ class Scene
     Shader _lighting_pass_shader;
 
     // VAOs
-    GLuint _lampVAO;
-    GLuint _groundVAO;
+    unsigned int _lampVAO;
+    unsigned int _groundVAO;
 
     // VBOs
-    GLuint _lampVBO;
-    GLuint _groundVBO;
+    unsigned int _lampVBO;
+    unsigned int _groundVBO;
 
     // Textures
     std::vector< unsigned int > _hdr_textures;
@@ -98,15 +98,16 @@ class Scene
    
     std::vector< const GLchar * > _faces; // data skybox cube map texture
 
-    GLuint _tex_albedo_ground;
-    GLuint _tex_normal_ground;
-    GLuint _tex_height_ground;
-    GLuint _tex_AO_ground;
-    GLuint _tex_roughness_ground;
-    GLuint _tex_metalness_ground;
+    unsigned int _tex_albedo_ground;
+    unsigned int _tex_normal_ground;
+    unsigned int _tex_height_ground;
+    unsigned int _tex_AO_ground;
+    unsigned int _tex_roughness_ground;
+    unsigned int _tex_metalness_ground;
 
     // Deferred rendering data
     unsigned int _g_buffer_FBO;
+    unsigned int _g_buffer_RBO;
     std::vector< unsigned int > _g_buffer_textures; // [ position, normal, color, roughness_metalness_AO, depth ]
 
     // Bloom param
@@ -135,7 +136,7 @@ class Scene
     // Point Lights
     std::vector < PointLight > _lights;
     bool _render_lights_volume;
-    
+
     // Scene's objects
     std::vector< Object > _tables;
     Object * _ground1;

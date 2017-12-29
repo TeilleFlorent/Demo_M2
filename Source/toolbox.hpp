@@ -44,10 +44,10 @@ class Toolbox
 
     void PrintFPS();
 
-    GLuint LoadCubeMap( std::vector< const GLchar * > iPaths );
+    unsigned int LoadCubeMap( std::vector< const char * > iPaths );
 
-    GLfloat * BuildSphere( int iLongitudes,
-                           int iLatitudes );
+    float * BuildSphere( int iLongitudes,
+                         int iLatitudes );
 
     float RandFloatRange( float iMin,
                           float iMax );
@@ -81,26 +81,26 @@ class Toolbox
     HDRManager * _hdr_image_manager;
 
     // VAO a VBO
-    GLuint _quadVAO;
-    GLuint _quadVBO;
+    unsigned int _quadVAO;
+    unsigned int _quadVBO;
 
-    GLuint _cubeVAO;
-    GLuint _cubeVBO;
+    unsigned int _cubeVAO;
+    unsigned int _cubeVBO;
 
     // FBOs & RBOs
-    GLuint _temp_hdr_FBO;
+    unsigned int _temp_hdr_FBO;
+    unsigned int _temp_depth_RBO;
 
-    GLuint _final_hdr_FBO;
-    GLuint _final_depht_RBO;
+    unsigned int _final_hdr_FBO;
 
     unsigned int _captureFBO;
     unsigned int _captureRBO;
-    GLuint _pingpong_FBO[ 2 ];
+    unsigned int _pingpong_FBO[ 2 ];
 
     // Textures
-    GLuint _pingpong_color_buffers[ 2 ];
-    GLuint _temp_tex_color_buffer[ 2 ];
-    GLuint _final_tex_color_buffer[ 2 ];
+    unsigned int _pingpong_color_buffers[ 2 ];
+    unsigned int _temp_tex_color_buffer[ 2 ];
+    unsigned int _final_tex_color_buffer[ 2 ];
 
     // Textures resolution
     float _depth_map_res_seed;

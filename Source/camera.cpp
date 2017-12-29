@@ -7,14 +7,14 @@
 
 Camera::Camera()
 {
-  _position = glm::vec3( -0.667734, 6.05773, -4.84049 );
-  _front    = glm::vec3( 0.0784175, -0.848048, 0.524086 );
+  _position = glm::vec3( -7.02172, 2.42351, -6.27063 );
+  _front    = glm::vec3( 0.724498, -0.409127, 0.554724 );
   _up       = glm::vec3( 0.0f, 1.0f,  0.0f );     
     
   _near       = 0.01;
   _far        = 100.0;
-  _yaw        = 81.4901;
-  _pitch      = -58;
+  _yaw        = 37.44;
+  _pitch      = -24.0;
 
   _move_speed = 3.0;
 

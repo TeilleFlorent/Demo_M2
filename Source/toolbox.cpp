@@ -22,8 +22,8 @@ Toolbox::Toolbox( Window * iParentWindow )
   _cubeVAO     = 0;
   _cubeVBO     = 0;
 
-  _depth_map_res_seed     = /*2048.0*/ 1024.0;
-  _reflection_cubeMap_res = /*2048.0*/ 512;
+  _depth_map_res_seed     = 1024.0;
+  _reflection_cubeMap_res = 512;
   _tex_VL_res_seed        = 2048.0;
 }
 
@@ -65,9 +65,9 @@ void Toolbox::PrintFPS()
   }
 }
 
-GLuint Toolbox::LoadCubeMap( std::vector< const GLchar * > iPaths )
+unsigned int Toolbox::LoadCubeMap( std::vector< const GLchar * > iPaths )
 {
-  GLuint textureID;
+  unsigned int textureID;
   SDL_Surface * t = NULL;
 
   glGenTextures( 1, &textureID );
@@ -75,7 +75,7 @@ GLuint Toolbox::LoadCubeMap( std::vector< const GLchar * > iPaths )
 
   glBindTexture( GL_TEXTURE_CUBE_MAP, textureID );
 
-  for( GLuint i = 0; i < iPaths.size(); i++ )
+  for( unsigned int i = 0; i < iPaths.size(); i++ )
   {
     t = IMG_Load( iPaths[ i ] );
     glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels );
@@ -334,7 +334,7 @@ void Toolbox::RenderObserver()
   glViewport( 0, 0, _window->_width, _window->_height );
   _window->_scene->_observer_shader.Use();
   glActiveTexture( GL_TEXTURE0 );
-  //glBindTexture( GL_TEXTURE_2D, _window->_scene->_g_buffer_textures[ 2 ] );
+  //glBindTexture( GL_TEXTURE_2D, _window->_scene->_g_buffer_textures[ 3 ] );
   glBindTexture( GL_TEXTURE_2D, _temp_tex_color_buffer[ 0 ] );
   //glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[ 1 ] /*final_tex_color_buffer[0]*/ /*pingpongColorbuffers[0]*/ /*tex_depth_ssr*/ );
   

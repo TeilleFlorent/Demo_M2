@@ -51,9 +51,9 @@ class Texture
 
   public:
   
-    GLuint _id;
-    string _type;
-    string _path;
+    unsigned int _id;
+    std::string  _type;
+    std::string  _path;
 };
 
 
@@ -86,7 +86,7 @@ class Mesh
 
   private:
   
-    GLuint _VAO, _VBO, _EBO;
+    unsigned int _VAO, _VBO, _EBO;
 
     void SetupMesh();
     
@@ -127,7 +127,7 @@ class Model
 
     vector< Texture > LoadModelTextures( int iMeshNum );
     
-    GLuint TextureFromFile( string iTexturePath );
+    unsigned int TextureFromFile( string iTexturePath );
 
     static void SetToolbox( Toolbox * iToolbox );
 

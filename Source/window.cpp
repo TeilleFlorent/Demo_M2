@@ -111,9 +111,11 @@ SDL_Window * Window::InitSDLWindow( int iWidth,
 
 void Window::InitGL()
 {
-  glClearColor( 1.0f, 0.0f, 0.0f, 1.0f );
+  glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
   glEnable( GL_DEPTH_TEST );
   glDepthFunc( GL_LESS ); 
+  
+  glDisable( GL_BLEND );
 
   Resize();
 
@@ -173,17 +175,11 @@ void Window::ManageEvents( Camera * iCamera )
             break;
 
           case 'a' :
-            for( int i = 0 ; i < _scene->_lights.size() ; i++ )
-            {     
-              _scene->_lights[ i ]._position.y += 0.1;
-            }   
+            _scene->_lights[ 1 ]._position.z += 0.1;
             break;
 
           case 'e' :
-            for( int i = 0 ; i < _scene->_lights.size() ; i++ )
-            {     
-              _scene->_lights[ i ]._position.y -= 0.1;
-            }     
+            _scene->_lights[ 1 ]._position.z -= 0.1;
             break;
 
           case 'r' :
@@ -222,6 +218,13 @@ void Window::ManageEvents( Camera * iCamera )
               _scene->_exposure += 0.01;
             std::cout << std::endl << "Exposure value : " << _scene->_exposure << std::endl
                                    << "----------------" << std::endl;
+            break;
+
+          case SDLK_F6 :
+            _scene->_render_lights_volume = ( _scene->_render_lights_volume == true ) ? false : true;
+            temp = ( ( _scene->_render_lights_volume == true ) ? "Render light volume : On" : "Render light volume : Off" );
+            std::cout << std::endl << temp << std::endl
+                                   << "---------------------" << std::endl;
             break;
 
           default:

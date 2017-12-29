@@ -7,7 +7,7 @@
 //******************************************************************************
 
 Mesh::Mesh( vector< Vertex > iVertices,
-            vector< GLuint > iIndices,
+            vector< unsigned int > iIndices,
             vector< Texture > iTextures )
 {
   this->_vertices = iVertices;
@@ -20,18 +20,18 @@ void Mesh::Draw( Shader iShader,
                  int iID ) 
 {
   // var pour bind la bonne tex
-  GLuint diffuseNr = 1;
-  GLuint specularNr = 1;
-  GLuint normalNr = 1;
-  GLuint heightNr = 1;
-  GLuint AONr = 1;
-  GLuint roughnessNr = 1;
-  GLuint metalnessNr = 1;
+  unsigned int diffuseNr = 1;
+  unsigned int specularNr = 1;
+  unsigned int normalNr = 1;
+  unsigned int heightNr = 1;
+  unsigned int AONr = 1;
+  unsigned int roughnessNr = 1;
+  unsigned int metalnessNr = 1;
 
 
   // Mesh corresponding texture binding
   // ----------------------------------
-  for( GLuint i = 0; i < this->_textures.size(); i++ )
+  for( unsigned int i = 0; i < this->_textures.size(); i++ )
   {
     glActiveTexture( GL_TEXTURE0 + i ); // active la texture qu'il faut
 
@@ -75,7 +75,7 @@ void Mesh::Draw( Shader iShader,
 
 
   // Unbind all used textures
-  for( GLuint i = 0; i < this->_textures.size(); i++ )
+  for( unsigned int i = 0; i < this->_textures.size(); i++ )
   {
     glActiveTexture( GL_TEXTURE0 + i );
     glBindTexture( GL_TEXTURE_2D, 0 );
@@ -94,7 +94,7 @@ void Mesh::SetupMesh()
   glBufferData( GL_ARRAY_BUFFER, this->_vertices.size() * sizeof(Vertex), &this->_vertices[ 0 ], GL_STATIC_DRAW );  
 
   glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, this->_EBO );
-  glBufferData( GL_ELEMENT_ARRAY_BUFFER, this->_indices.size() * sizeof( GLuint ), &this->_indices[ 0 ], GL_STATIC_DRAW );
+  glBufferData( GL_ELEMENT_ARRAY_BUFFER, this->_indices.size() * sizeof( unsigned int ), &this->_indices[ 0 ], GL_STATIC_DRAW );
 
   // Vertex Positions
   glEnableVertexAttribArray( 0 );   
@@ -132,7 +132,7 @@ Model::Model()
 
 void Model::Draw( Shader iShader )
 {
-  for( GLuint i = 0; i < this->_meshes.size(); i++ )
+  for( unsigned int i = 0; i < this->_meshes.size(); i++ )
   {
     this->_meshes[ i ].Draw( iShader, this->_model_id );
   }
@@ -186,13 +186,13 @@ void Model::LoadModel( string iPath )
 void Model::ProcessNode( aiNode * iNode,
                          int iMeshNum )
 {
-  for( GLuint i = 0; i < iNode->mNumMeshes; i++ )
+  for( unsigned int i = 0; i < iNode->mNumMeshes; i++ )
   {
     aiMesh * mesh = _scene->mMeshes[ iNode->mMeshes[ i ] ]; 
     this->_meshes.push_back( this->ProcessMesh( mesh, iMeshNum) );  
   }
    
-  for( GLuint i = 0; i < iNode->mNumChildren; i++ )
+  for( unsigned int i = 0; i < iNode->mNumChildren; i++ )
   {
     this->ProcessNode( iNode->mChildren[ i ], i );
   }
@@ -202,14 +202,14 @@ Mesh Model::ProcessMesh( aiMesh * iMesh,
                          int iMeshNum )
 {
   vector< Vertex > vertices;
-  vector< GLuint > indices;
+  vector< unsigned int > indices;
   vector< Texture > textures;
   bool UV_warning = false;
 
 
   // Load Mesh vertices data
   // -----------------------
-  for( GLuint i = 0; i < iMesh->mNumVertices; i++ )
+  for( unsigned int i = 0; i < iMesh->mNumVertices; i++ )
   {
     Vertex vertex;
     glm::vec3 vector; 
@@ -265,7 +265,7 @@ Mesh Model::ProcessMesh( aiMesh * iMesh,
 
   // Manually calculate vertex tangent & bi tangent
   // ----------------------------------------------
-  for( GLuint i = 0; i < vertices.size(); i += 3 )
+  for( unsigned int i = 0; i < vertices.size(); i += 3 )
   { 
     if( _model_id == 2 )
     {
@@ -309,10 +309,10 @@ Mesh Model::ProcessMesh( aiMesh * iMesh,
 
   // Get mesh indices
   // ----------------
-  for( GLuint i = 0; i < iMesh->mNumFaces; i++ )
+  for( unsigned int i = 0; i < iMesh->mNumFaces; i++ )
   {
     aiFace face = iMesh->mFaces[ i ];
-    for( GLuint j = 0; j < face.mNumIndices; j++ )
+    for( unsigned int j = 0; j < face.mNumIndices; j++ )
     {
       indices.push_back( face.mIndices[ j ] );
     }
@@ -405,7 +405,7 @@ vector< Texture > Model::LoadModelTextures( int iMeshNum )
 
 }
 
-GLuint Model::TextureFromFile( string iTexturePath )
+unsigned int Model::TextureFromFile( string iTexturePath )
 {
 
   // Check loaded texture vector and for not load two times the same texture file
@@ -426,7 +426,7 @@ GLuint Model::TextureFromFile( string iTexturePath )
 
   SDL_Surface * t = NULL;
 
-  GLuint textureID;
+  unsigned int textureID;
   glGenTextures( 1, &textureID );
   t = IMG_Load( iTexturePath.c_str() );
 

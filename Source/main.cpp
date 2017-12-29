@@ -37,9 +37,9 @@ void Loop()
     window->ManageEvents( camera );
 
     clock->TimeUpdate();
-    
+        
     camera->CameraUpdate( clock->GetDeltaTime() );
-
+    
     window->Draw();
 
     window->_toolbox->PrintFPS();

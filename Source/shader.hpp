@@ -23,14 +23,14 @@ class Shader
 
     void Use();
 
-    void SetShaderClassicPipeline( const GLchar * iVertexPath,
-                                   const GLchar * iFragmentPath );
+    void SetShaderClassicPipeline( const char * iVertexPath,
+                                   const char * iFragmentPath );
     
-    void SetShaderGeometryPipeline( const GLchar * iVertexPath,
-                                    const GLchar * iGeometryPath,
-                                    const GLchar * iFragmentPath );
+    void SetShaderGeometryPipeline( const char * iVertexPath,
+                                    const char * iGeometryPath,
+                                    const char * iFragmentPath );
     
-    GLuint _program;
+    unsigned int _program;
     
 };
 

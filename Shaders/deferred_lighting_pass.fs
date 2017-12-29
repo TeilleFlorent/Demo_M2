@@ -132,7 +132,7 @@ vec3 ReflectanceEquationCalculation( vec3  iFragPos,
     // Get attenuation value
     float attenuation = 1.0 / ( distance * distance );
     attenuation *= ( -distance / uLightMaxDistance[ i ] ) + 1.0;
-    vec3 light_radiance = ( uLightColor[ i ] * uLightIntensity[ i ] ) * attenuation;
+    vec3 light_radiance = ( uLightColor[ i ] * uLightIntensity[ i ] ) * ( max( attenuation, 0.0 ) );
     
 
     // Cook-Torrance BRDF ( specular )
