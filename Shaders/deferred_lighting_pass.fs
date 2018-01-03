@@ -1,6 +1,5 @@
 #version 330 
 
-#define MAX_NB_LIGHTS 25
 #define PI 3.14159265358979323846264338
 
 
@@ -23,18 +22,13 @@ uniform sampler2D   uGbufferAlbedo;
 uniform sampler2D   uGbufferRougnessMetalnessAO;
 uniform samplerCube uIrradianceCubeMap;
 
-uniform int   uLightCount;
-uniform vec3  uLightPos[ MAX_NB_LIGHTS ];
-uniform vec3  uLightColor[ MAX_NB_LIGHTS ];
-uniform float uLightIntensity[ MAX_NB_LIGHTS ];
-uniform float uLightMaxDistance[ MAX_NB_LIGHTS ];
+uniform vec3  uViewPos;
+uniform vec3  uLightPos;
+uniform vec3  uLightColor;
+uniform float uLightIntensity;
+uniform float uLightMaxDistance;
 
-uniform vec3 uViewPos;
-
-
-// Fragment inputs from vertex shader 
-// ----------------------------------
-in vec2 oUV;
+uniform vec2 uScreenSize;
 
 
 //******************************************************************************
@@ -114,70 +108,60 @@ vec3 ReflectanceEquationCalculation( vec3  iFragPos,
   vec3 albedo_by_PI    = iAlbedo / PI;
 
 
-  // Compute equation to each scene light
-  // ------------------------------------
-  vec3 Lo = vec3( 0.0 );
-  for( int i = 0; i < uLightCount; i++ ) 
-  {
+  // Calculate per-light radiance
+  // ----------------------------
+  
+  // Get light direction
+  vec3 light_dir = uLightPos - iFragPos;
 
-    // Calculate per-light radiance
-    // ----------------------------
-    
-    // Get light direction
-    vec3 light_dir = uLightPos[ i ] - iFragPos;
+  // Get light -> frag distance
+  float distance = length( light_dir );
 
-    // Get light -> frag distance
-    float distance = length( light_dir );
+  // Get attenuation value
+  float attenuation = 1.0 / ( distance * distance );
+  attenuation *= ( -distance / uLightMaxDistance ) + 1.0;
+  vec3 light_radiance = ( uLightColor * uLightIntensity ) * ( max( attenuation, 0.0 ) );
+  
 
-    // Get attenuation value
-    float attenuation = 1.0 / ( distance * distance );
-    attenuation *= ( -distance / uLightMaxDistance[ i ] ) + 1.0;
-    vec3 light_radiance = ( uLightColor[ i ] * uLightIntensity[ i ] ) * ( max( attenuation, 0.0 ) );
-    
+  // Cook-Torrance BRDF ( specular )
+  // -------------------------------
+  
+  // Normalize light direction
+  light_dir = normalize( light_dir );
+ 
+  // Get halfway vector
+  vec3 halfway = normalize( iViewDir + light_dir );
 
-    // Cook-Torrance BRDF ( specular )
-    // -------------------------------
-    
-    // Normalize light direction
-    light_dir = normalize( light_dir );
-   
-    // Get halfway vector
-    vec3 halfway = normalize( iViewDir + light_dir );
+  // Specular BRDF calculation
+  float NDF = DistributionGGX( iNormal, halfway, iRoughness );   
+  vec3 F    = FresnelSchlick( max( dot( halfway, iViewDir ), 0.0 ), iF0 );
+  float G   = GeometrySmith( iNormal, iViewDir, light_dir, iRoughness );      
+  vec3 nominator      = NDF * F * G; 
+  float denominator   = ( IV_max_dot_N_V * max( dot( iNormal, light_dir ) , 0.0 ) ) + 0.001; // 0.001 to prevent divide by zero.
+  vec3 light_specular = nominator / denominator;
+      
 
-    // Specular BRDF calculation
-    float NDF = DistributionGGX( iNormal, halfway, iRoughness );   
-    vec3 F    = FresnelSchlick( max( dot( halfway, iViewDir ), 0.0 ), iF0 );
-    float G   = GeometrySmith( iNormal, iViewDir, light_dir, iRoughness );      
-    vec3 nominator      = NDF * F * G; 
-    float denominator   = ( IV_max_dot_N_V * max( dot( iNormal, light_dir ) , 0.0 ) ) + 0.001; // 0.001 to prevent divide by zero.
-    vec3 light_specular = nominator / denominator;
-        
-
-    // Get kS value
-    // ------------
-    vec3 kS = F;
+  // Get kS value
+  // ------------
+  vec3 kS = F;
 
 
-    // Get kD, with energy conservation
-    // --------------------------------
-    vec3 kD = vec3( 1.0 ) - kS;
-    
-    // Decrease diffuse by the metalness, pure metal have no diffuse light
-    kD *= 1.0 - iMetalness;   
+  // Get kD, with energy conservation
+  // --------------------------------
+  vec3 kD = vec3( 1.0 ) - kS;
+  
+  // Decrease diffuse by the metalness, pure metal have no diffuse light
+  kD *= ( 1.0 - iMetalness );   
 
 
-    // Get NdotL value
-    // ---------------
-    //float normal_dot_light_dir = max( dot( iNormal, light_dir ), 0.0 );        
-    float normal_dot_light_dir = clamp( dot( iNormal, light_dir ), 0.0, 1.0 );        
+  // Get NdotL value
+  // ---------------
+  float normal_dot_light_dir = clamp( dot( iNormal, light_dir ), 0.0, 1.0 );        
 
 
-    // Final light influence
-    // ---------------------
-    Lo += ( ( kD * ( albedo_by_PI ) ) + light_specular ) * light_radiance * normal_dot_light_dir;  // already multiplied the specular by the Fresnel ( kS )
-  }   
-
-  return Lo;
+  // Final light influence
+  // ---------------------
+  return ( ( kD * ( albedo_by_PI ) ) + light_specular ) * light_radiance * normal_dot_light_dir;  // already multiplied the specular by the Fresnel ( kS )
 }
 
 vec3 IndirectIrradianceCalculation( float iMaxNormalDotViewDir,
@@ -197,13 +181,14 @@ vec3 IndirectIrradianceCalculation( float iMaxNormalDotViewDir,
 }
 
 vec3 PBRLightingCalculation( vec3 iFragPos,
-                             vec3 iNormal )
+                             vec3 iNormal,
+                             vec2 iScreenSpaceUV )
 { 
   // Get Albedo from G-buffer
-  vec3 albedo = texture( uGbufferAlbedo, oUV ).rgb;
+  vec3 albedo = texture( uGbufferAlbedo, iScreenSpaceUV ).rgb;
 
   // Get roughness and metalness and AO data from G-buffer
-  vec3 roughness_metalness_AO = texture( uGbufferRougnessMetalnessAO, oUV ).rgb;
+  vec3 roughness_metalness_AO = texture( uGbufferRougnessMetalnessAO, iScreenSpaceUV ).rgb;
   
   // Get camera view direction vector
   vec3 view_dir = normalize( uViewPos - iFragPos );
@@ -247,24 +232,26 @@ vec3 PBRLightingCalculation( vec3 iFragPos,
 }
 
 
-// Main
-// ----
+// Main function
+// -------------
 void main()
 { 
- 
+  vec2 screen_space_UV = gl_FragCoord.xy / uScreenSize;
+
   // Get frag normal from G-buffer => discard if it's not a deferred render fragment
-  vec4 normal_and_bloombrightness = texture( uGbufferNormalAndBloomBrightness, oUV );
+  vec4 normal_and_bloombrightness = texture( uGbufferNormalAndBloomBrightness, screen_space_UV );
   if( normal_and_bloombrightness.rgb == vec3( 0.0 ) )
   {
     discard;
   }
 
   // Get frag position from G-buffer
-  vec4 frag_pos_and_bloom = texture( uGbufferPositionAndBloom, oUV );
+  vec4 frag_pos_and_bloom = texture( uGbufferPositionAndBloom, screen_space_UV );
 
   // PBR lighting calculation 
   vec3 PBR_lighting_result = PBRLightingCalculation( frag_pos_and_bloom.rgb,
-                                                     normal_and_bloombrightness.rgb ); 
+                                                     normal_and_bloombrightness.rgb,
+                                                     screen_space_UV ); 
 
 
   // Main out color

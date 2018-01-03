@@ -9,16 +9,13 @@
 // Vertex input attributes
 // -----------------------
 layout ( location = 0 ) in vec3 _position;
-layout ( location = 1 ) in vec2 _uv;
 
 
 // Vertex input uniforms
 // ---------------------
-
-
-// Vertex outputs to fragment shader	
-// ---------------------------------
-out vec2 oUV;
+uniform mat4 uModelMatrix;
+uniform mat4 uProjectionMatrix;
+uniform mat4 uViewMatrix;
 
 
 //******************************************************************************
@@ -27,7 +24,9 @@ out vec2 oUV;
 
 void main()
 {	
-	oUV = _uv;
-	gl_Position = vec4( _position, 1.0 );
+
+	// Vertex position calculation
+	// ---------------------------
+	gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4( _position, 1.0 );
 }
 

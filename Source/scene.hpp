@@ -48,7 +48,7 @@ class Scene
 
     void DeferredBuffersInitialization();
 
-    void SceneForwardRendering( bool iIsFinalFBO );
+    void SceneForwardRendering();
 
     void DeferredGeometryPass( glm::mat4 * iProjectionMatrix,
                                glm::mat4 * iViewMatrix );
@@ -76,11 +76,12 @@ class Scene
     Shader _observer_shader;
     Shader _blur_shader;
     Shader _post_process_shader;
-    Shader _blit_shader;
+    Shader _MS_blit_shader;
     Shader _cube_map_converter_shader;
     Shader _diffuse_irradiance_shader;
     Shader _geometry_pass_shader;
     Shader _lighting_pass_shader;
+    Shader _empty_shader;
 
     // VAOs
     unsigned int _lampVAO;
@@ -107,13 +108,14 @@ class Scene
 
     // Deferred rendering data
     unsigned int _g_buffer_FBO;
-    unsigned int _g_buffer_RBO;
-    std::vector< unsigned int > _g_buffer_textures; // [ position, normal, color, roughness_metalness_AO, depth ]
+    std::vector< unsigned int > _g_buffer_textures; // [ position, normal, color, roughness_metalness_AO, depth, lighting, brightest ]
 
     // Bloom param
     float _exposure;
     bool  _bloom;
     float _bloom_downsample;
+    int   _blur_pass_count;
+    float _blur_offset_factor;
 
     // Multi sample param
     bool _multi_sample;

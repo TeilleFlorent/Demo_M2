@@ -63,5 +63,5 @@ void main()
   //result = vec3(linearDepth(temp));
 
   FragColor = vec4( color_result, 1.0 );
-  //FragColor = vec4( vec3( color_result.b ), 1.0 );
+  //FragColor = vec4( vec3( color_result.r ), 1.0 );
 }

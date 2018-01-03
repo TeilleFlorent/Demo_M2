@@ -201,7 +201,7 @@ vec3 ReflectanceEquationCalculation( vec2     iUV,
 
     // Get NdotL value
     // ---------------
-    float normal_dot_light_dir = max( dot( iNormal, light_dir ), 0.0 );        
+    float normal_dot_light_dir = clamp( dot( iNormal, light_dir ), 0.0, 1.0 );        
 
 
     // Final light influence
@@ -273,7 +273,7 @@ vec3 PBRLightingCalculation( vec3 iNormal,
   // Return fragment final PBR lighting 
   // ----------------------------------
   
-  return diffuse_IBL + lights_reflectance;
+  return /*diffuse_IBL +*/ lights_reflectance;
 }
 
 

@@ -8,17 +8,21 @@
 
 Scene::Scene( Window * iParentWindow )
 { 
-  //_pipeline_type = FORWARD_RENDERING;
-  _pipeline_type = DEFERRED_RENDERING;
+  _pipeline_type = FORWARD_RENDERING;
+  //_pipeline_type = DEFERRED_RENDERING;
 
 
   // Scene effects settings
   // ----------------------
   
+  // Frame exposure
+  _exposure           = 1.0;
+
   // Init bloom param
-  _exposure         = 1.0;
-  _bloom            = true;
-  _bloom_downsample = 0.5;
+  _bloom              = true;
+  _bloom_downsample   = 0.5;
+  _blur_pass_count    = 6;
+  _blur_offset_factor = 1.2;
 
   // Init multi sample param
   _multi_sample    = false;
@@ -146,8 +150,6 @@ void Scene::Quit()
     glDeleteFramebuffers( 1, &_window->_toolbox->_temp_hdr_FBO );
   if( _window->_toolbox->_final_hdr_FBO )
     glDeleteFramebuffers( 1, &_window->_toolbox->_final_hdr_FBO );
-  if( _window->_toolbox->_temp_hdr_FBO )
-    glDeleteFramebuffers( 1, &_window->_toolbox->_temp_hdr_FBO );
   if( _window->_toolbox->_captureFBO )
     glDeleteFramebuffers( 1, &_window->_toolbox->_captureFBO );
 
@@ -308,60 +310,63 @@ void Scene::SceneDataInitialization()
 
   // Create temp color buffer
   // ------------------------
-  glGenFramebuffers( 1, &_window->_toolbox->_temp_hdr_FBO );
-  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
-  glGenTextures( 2, _window->_toolbox->_temp_tex_color_buffer );
+  if( _pipeline_type == FORWARD_RENDERING )
+  {
+    glGenFramebuffers( 1, &_window->_toolbox->_temp_hdr_FBO );
+    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
+    glGenTextures( 2, _window->_toolbox->_temp_tex_color_buffer );
 
-  if( _multi_sample )
-  { 
-    // texture setting
-    for( unsigned int i = 0; i < 2; i++ ) 
-    {
-      glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, _window->_toolbox->_temp_tex_color_buffer[ i ] );
-      glTexImage2DMultisample( GL_TEXTURE_2D_MULTISAMPLE, _nb_multi_sample , GL_RGB16F, _window->_width, _window->_height, GL_TRUE );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );  
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-      glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, _window->_toolbox->_temp_tex_color_buffer[ i ], 0 );
-    }
+    if( _multi_sample )
+    { 
+      // texture setting
+      for( unsigned int i = 0; i < 2; i++ ) 
+      {
+        glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, _window->_toolbox->_temp_tex_color_buffer[ i ] );
+        glTexImage2DMultisample( GL_TEXTURE_2D_MULTISAMPLE, _nb_multi_sample , GL_RGB16F, _window->_width, _window->_height, GL_TRUE );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );  
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, _window->_toolbox->_temp_tex_color_buffer[ i ], 0 );
+      }
 
-    unsigned int attachments2[ 2 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-    glDrawBuffers( 2, attachments2 );
-    if( glCheckFramebufferStatus( GL_FRAMEBUFFER ) != GL_FRAMEBUFFER_COMPLETE )
-    {
-      std::cout << "Framebuffer not complete!" << std::endl;
+      unsigned int attachments2[ 2 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+      glDrawBuffers( 2, attachments2 );
+      if( glCheckFramebufferStatus( GL_FRAMEBUFFER ) != GL_FRAMEBUFFER_COMPLETE )
+      {
+        std::cout << "Framebuffer not complete!" << std::endl;
+      }
+      glBindFramebuffer( GL_FRAMEBUFFER, 0 );
     }
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-  }
-  else
-  { 
-    // texture setting
-    for( unsigned int i = 0; i < 2; i++ ) 
-    {
-      glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_temp_tex_color_buffer[ i ] );
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, _window->_width, _window->_height, 0, GL_RGB, GL_FLOAT, NULL );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );  
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-      glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, _window->_toolbox->_temp_tex_color_buffer[ i ], 0 );
-    }
-    unsigned int attachments2[ 2 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-    glDrawBuffers( 2, attachments2 );
-    
-    // RBO link
-    glGenRenderbuffers( 1, &_window->_toolbox->_temp_depth_RBO );
-    glBindRenderbuffer( GL_RENDERBUFFER, _window->_toolbox->_temp_depth_RBO );
-    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, _window->_width, _window->_height );
-    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _window->_toolbox->_temp_depth_RBO );
-    glBindRenderbuffer( GL_RENDERBUFFER, 0 );
+    else
+    { 
+      // texture setting
+      for( unsigned int i = 0; i < 2; i++ ) 
+      {
+        glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_temp_tex_color_buffer[ i ] );
+        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, _window->_width, _window->_height, 0, GL_RGB, GL_FLOAT, NULL );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );  
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, _window->_toolbox->_temp_tex_color_buffer[ i ], 0 );
+      }
+      unsigned int attachments2[ 2 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+      glDrawBuffers( 2, attachments2 );
+      
+      // RBO link
+      glGenRenderbuffers( 1, &_window->_toolbox->_temp_depth_RBO );
+      glBindRenderbuffer( GL_RENDERBUFFER, _window->_toolbox->_temp_depth_RBO );
+      glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, _window->_width, _window->_height );
+      glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _window->_toolbox->_temp_depth_RBO );
+      glBindRenderbuffer( GL_RENDERBUFFER, 0 );
 
-    if( glCheckFramebufferStatus( GL_FRAMEBUFFER ) != GL_FRAMEBUFFER_COMPLETE )
-    {
-      std::cout << "Framebuffer not complete!" << std::endl;
+      if( glCheckFramebufferStatus( GL_FRAMEBUFFER ) != GL_FRAMEBUFFER_COMPLETE )
+      {
+        std::cout << "Framebuffer not complete!" << std::endl;
+      }
+      glBindFramebuffer( GL_FRAMEBUFFER, 0 );    
     }
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );    
   }
 
 
@@ -604,14 +609,14 @@ void Scene::LightsInitialization()
   {
     for( int column = 0; column < 5; column++ )
     {
-      _lights.push_back( PointLight( glm::vec3( -4.0 + ( row * 2.0 ), 0.3, -4.0 + ( column * 2.0 ) ),
+      _lights.push_back( PointLight( glm::vec3( -4.0 + ( row * 2.0 ), 0.5, -4.0 + ( column * 2.0 ) ),
                                      glm::vec3( 1.0, 1.0, 1.0 ),
                                      0.1,
                                      3.0 ) );    
     }
   }
 
-  for( int i = 0; i < _lights.size(); i++ )
+  for( unsigned int i = 0; i < _lights.size(); i++ )
   {
     _lights[ i ]._intensity *= PointLight::GetLightsMultiplier();
   }
@@ -823,11 +828,12 @@ void Scene::ShadersInitialization()
   _observer_shader.SetShaderClassicPipeline(           "../Shaders/observer.vs",               "../Shaders/observer.fs" );
   _blur_shader.SetShaderClassicPipeline(               "../Shaders/post_process.vs",           "../Shaders/blur.fs" );
   _post_process_shader.SetShaderClassicPipeline(       "../Shaders/post_process.vs",           "../Shaders/post_process.fs" );
-  _blit_shader.SetShaderClassicPipeline(               "../Shaders/multisample_blit.vs",       "../Shaders/multisample_blit.fs" );
+  _MS_blit_shader.SetShaderClassicPipeline(            "../Shaders/multisample_blit.vs",       "../Shaders/multisample_blit.fs" );
   _cube_map_converter_shader.SetShaderClassicPipeline( "../Shaders/cube_map_converter.vs",     "../Shaders/cube_map_converter.fs" );
   _diffuse_irradiance_shader.SetShaderClassicPipeline( "../Shaders/cube_map_converter.vs",     "../Shaders/diffuse_irradiance.fs" );
   _geometry_pass_shader.SetShaderClassicPipeline(      "../Shaders/deferred_geometry_pass.vs", "../Shaders/deferred_geometry_pass.fs" );
   _lighting_pass_shader.SetShaderClassicPipeline(      "../Shaders/deferred_lighting_pass.vs", "../Shaders/deferred_lighting_pass.fs" );
+  _empty_shader.SetShaderClassicPipeline(              "../Shaders/flat_color.vs",             "../Shaders/empty.fs" );
 
 
   // Set texture uniform location
@@ -870,8 +876,8 @@ void Scene::ShadersInitialization()
   glUniform1i( glGetUniformLocation( _observer_shader._program, "uTexture1" ), 0 );
   glUseProgram( 0 );
 
-  _blit_shader.Use();
-  glUniform1i( glGetUniformLocation( _blit_shader._program, "uTexture1" ), 0 );
+  _MS_blit_shader.Use();
+  glUniform1i( glGetUniformLocation( _MS_blit_shader._program, "uTexture1" ), 0 );
   glUseProgram( 0 );
 
   _blur_shader.Use();
@@ -945,27 +951,37 @@ void Scene::DeferredBuffersInitialization()
   glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, texture_id, 0 );
   _g_buffer_textures.push_back( texture_id );
 
-  unsigned int attachments[ 4 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-  glDrawBuffers( 4, attachments );
+  // Depth
+  glGenTextures( 1, &texture_id );
+  glBindTexture( GL_TEXTURE_2D, texture_id );
+  glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH32F_STENCIL8, _window->_width, _window->_height, 0, GL_DEPTH_STENCIL, GL_FLOAT_32_UNSIGNED_INT_24_8_REV, NULL );
+  glFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, texture_id, 0 );
+  _g_buffer_textures.push_back( texture_id ); 
+
+  // Lighting && brightest texture
+  for( unsigned int i = 0; i < 2; i++ ) 
+  {
+    glGenTextures( 1, &texture_id );
+    glBindTexture( GL_TEXTURE_2D, texture_id );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, _window->_width, _window->_height, 0, GL_RGB, GL_FLOAT, NULL );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );  
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4 + i, GL_TEXTURE_2D, texture_id, 0 );
+    _g_buffer_textures.push_back( texture_id );
+  }
 
   if( glCheckFramebufferStatus( GL_FRAMEBUFFER ) != GL_FRAMEBUFFER_COMPLETE )
   {
     std::cout << "ERROR : G-buffer's FBO not complete" << std::endl;
   }
 
-  // Create FBO's render buffer
-  glGenRenderbuffers( 1, &_g_buffer_RBO );
-  glBindRenderbuffer( GL_RENDERBUFFER, _g_buffer_RBO );
-  glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, _window->_width, _window->_height );
-  glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _g_buffer_RBO );
-  glBindRenderbuffer( GL_RENDERBUFFER, 0 );
-
-
   glBindTexture( GL_TEXTURE_2D, 0 );
   glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 }
 
-void Scene::SceneForwardRendering( bool iIsFinalFBO )
+void Scene::SceneForwardRendering()
 {
 
   // Matrices setting
@@ -980,16 +996,13 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
 
   // Bind correct buffer for drawing
   // -------------------------------
-  if( iIsFinalFBO )
-  {
-    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-  }
+  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
+  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 
   // Draw skybox
   // -----------
-  glDepthMask( GL_FALSE ); // desactivé juste pour draw la skybox
+  /*glDepthMask( GL_FALSE ); // desactivé juste pour draw la skybox
   _skybox_shader.Use();   
   glm::mat4 Skyboxview_matrix = glm::mat4( glm::mat3( view_matrix ) );  // Remove any translation component of the view matrix
 
@@ -1011,7 +1024,7 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
   glDisable( GL_BLEND );
 
   glDepthMask( GL_TRUE );  // réactivé pour draw le reste
-  glUseProgram( 0 );
+  glUseProgram( 0 ); */
 
 
   // Draw lamps
@@ -1033,7 +1046,7 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
     glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), true );
     glUniform1f( glGetUniformLocation( _flat_color_shader._program, "uBloomBrightness" ), 1.0f );
 
-    glDrawArrays( GL_TRIANGLES, 0, _window->_toolbox->_sphere_vertices_count );
+    _volume_sphere->Draw( _flat_color_shader );
   }
   glBindVertexArray( 0 );
   glUseProgram( 0 );
@@ -1145,7 +1158,7 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
   // --------------------------------------------
   if( _multi_sample )
   {
-    _blit_shader.Use();
+    _MS_blit_shader.Use();
 
     // Bind classic texture where we want to render
     glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_final_hdr_FBO );
@@ -1155,7 +1168,7 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
     // Send multi sample texture we need to convert into classic texture
     glActiveTexture( GL_TEXTURE0) ;
     glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, _window->_toolbox->_temp_tex_color_buffer[ 0 ] );
-    glUniform1i( glGetUniformLocation( _blit_shader._program, "uSampleCount" ), _nb_multi_sample );    
+    glUniform1i( glGetUniformLocation( _MS_blit_shader._program, "uSampleCount" ), _nb_multi_sample );    
     _window->_toolbox->RenderQuad();
 
     // Same convert with brightness texture ( bloom )
@@ -1165,7 +1178,7 @@ void Scene::SceneForwardRendering( bool iIsFinalFBO )
 
     glActiveTexture( GL_TEXTURE0 );
     glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, _window->_toolbox->_temp_tex_color_buffer[ 1 ] );
-    glUniform1i( glGetUniformLocation( _blit_shader._program, "uSampleCount" ), _nb_multi_sample );
+    glUniform1i( glGetUniformLocation( _MS_blit_shader._program, "uSampleCount" ), _nb_multi_sample );
     _window->_toolbox->RenderQuad();
   }
  
@@ -1181,10 +1194,22 @@ void Scene::DeferredGeometryPass( glm::mat4 * iProjectionMatrix,
   glm::mat4 model_matrix;
 
 
-  // Bind G buffer
-  // -------------
-  glBindFramebuffer( GL_DRAW_FRAMEBUFFER, _g_buffer_FBO );
+  // Bind and clear G-buffer textures
+  // --------------------------------
+  unsigned int attachments[ 4 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+  glDrawBuffers( 4, attachments );
+
+  // Only the geometry pass updates the depth buffer
+  glDepthMask( GL_TRUE );
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+  // Use depth test while drawing G-buffer textures
+  glEnable( GL_DEPTH_TEST );
+
+  glEnable( GL_CULL_FACE );
+  glCullFace( GL_BACK );
+
+  glDisable( GL_BLEND );
 
 
   // Draw ground1
@@ -1243,64 +1268,132 @@ void Scene::DeferredGeometryPass( glm::mat4 * iProjectionMatrix,
   glBindVertexArray( 0 );
   glUseProgram( 0 );
 
-  // Unbinding    
-  glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+  // Only the geometry pass modify the depth buffer, then disable after it
+  glDepthMask( GL_FALSE );
 }
 
 void Scene::DeferredLightingPass( glm::mat4 * iProjectionMatrix,
                                   glm::mat4 * iViewMatrix )
 { 
-  // Bind correct FBO
-  glBindFramebuffer( GL_DRAW_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
-  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+  float screen_size[ 2 ] = { ( float )_window->_width, ( float )_window->_height };
+  glm::mat4 model_matrix;
 
-  _lighting_pass_shader.Use();   
-  glActiveTexture( GL_TEXTURE0 );
-  glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 0 ] );  
-  glActiveTexture( GL_TEXTURE1 );
-  glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 1 ] ); 
-  glActiveTexture( GL_TEXTURE2 );
-  glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 2 ] ); 
-  glActiveTexture( GL_TEXTURE3 );
-  glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 3 ] );
-  glActiveTexture( GL_TEXTURE4 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_maps[ _current_env ] );
-
-  // Set light volume sphere model matrix
-  /*glm::mat4 model_matrix;
-  model_matrix = glm::mat4();
-  model_matrix = glm::translate( model_matrix, _ground1->_position );
-  model_matrix = glm::rotate( model_matrix, _ground1->_angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
-  model_matrix = glm::scale( model_matrix, glm::vec3( 0.1 ) ); 
-  */
-
-  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uLightCount" ), _lights.size() );
+  // Enable stencil test for stencil pass and lighting pass
+  glEnable( GL_STENCIL_TEST );
 
   for( int i = 0; i < _lights.size(); i++ )
   {
-    string temp = to_string( i );
-    glUniform3fv( glGetUniformLocation( _lighting_pass_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
-    glUniform3fv( glGetUniformLocation( _lighting_pass_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
-    glUniform1f(  glGetUniformLocation( _lighting_pass_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
-    glUniform1f(  glGetUniformLocation( _lighting_pass_shader._program, ( "uLightMaxDistance[" + temp + "]" ).c_str() ), _lights[ i ]._max_lighting_distance );
+    
+    // Stencil pass
+    // ------------
+    _empty_shader.Use();   
+
+    // Don't draw anything during the stencil pass, juste modify the stencil buffer
+    glDrawBuffer( GL_NONE );
+    
+    // Need depth test enable to perform stencil buffer modification     
+    glEnable( GL_DEPTH_TEST );
+
+    // Need both volume sphere faces to perform stencil buffer modification
+    glDisable( GL_CULL_FACE );
+
+    glClear( GL_STENCIL_BUFFER_BIT );
+
+    // Set stencil operation correctly
+    glStencilFunc( GL_ALWAYS, 0, 0 );
+    glStencilOpSeparate( GL_BACK, GL_KEEP, GL_INCR_WRAP, GL_KEEP );
+    glStencilOpSeparate( GL_FRONT, GL_KEEP, GL_DECR_WRAP, GL_KEEP );
+
+    // Set correct model matrix
+    model_matrix = glm::mat4();
+    model_matrix = glm::translate( model_matrix, _lights[ i ]._position );
+    model_matrix = glm::scale( model_matrix, glm::vec3( _lights[ i ]._max_lighting_distance ) ); 
+
+    // Uniforms
+    glUniformMatrix4fv( glGetUniformLocation( _empty_shader._program, "uViewMatrix" ) , 1, GL_FALSE, glm::value_ptr( *iViewMatrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _empty_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _empty_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( *iProjectionMatrix ) );
+
+    _volume_sphere->Draw( _empty_shader );
+    glBindVertexArray( 0 );
+    
+    glUseProgram( 0 );
+
+
+    // Lighting pass
+    // -------------
+
+    // Bind the rendered frames
+    unsigned int attachments[ 2 ] = { GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5 };
+    glDrawBuffers( 2, attachments );
+ 
+    _lighting_pass_shader.Use();   
+
+    // Bind lighting input texture
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 0 ] );  
+    glActiveTexture( GL_TEXTURE1 );
+    glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 1 ] ); 
+    glActiveTexture( GL_TEXTURE2 );
+    glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE3 );
+    glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 3 ] );
+    glActiveTexture( GL_TEXTURE4 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_maps[ _current_env ] );
+
+    // Set stencil test to pass only for the stencil values calculated before, when not equal 0 
+    glStencilFunc( GL_NOTEQUAL, 0, 0xFF );
+
+    // Don't need depth test anymore at this point
+    glDisable( GL_DEPTH_TEST );
+
+    // Set additional blending for all point light result
+    glEnable( GL_BLEND );
+    glBlendEquation( GL_FUNC_ADD );
+    glBlendFunc( GL_ONE, GL_ONE );
+
+    // Front face culling to still calculate lighting when camera is inside the volume sphere
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_FRONT );
+
+    glUniformMatrix4fv( glGetUniformLocation( _lighting_pass_shader._program, "uViewMatrix" ) , 1, GL_FALSE, glm::value_ptr( *iViewMatrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _lighting_pass_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _lighting_pass_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( *iProjectionMatrix ) );
+
+    glUniform3fv( glGetUniformLocation( _lighting_pass_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+    glUniform3fv( glGetUniformLocation( _lighting_pass_shader._program, "uLightPos" ), 1, &_lights[ i ]._position[ 0 ] );
+    glUniform3fv( glGetUniformLocation( _lighting_pass_shader._program, "uLightColor" ), 1, &_lights[ i ]._color[ 0 ] );
+    glUniform1f(  glGetUniformLocation( _lighting_pass_shader._program, "uLightIntensity" ), _lights[ i ]._intensity );
+    glUniform1f(  glGetUniformLocation( _lighting_pass_shader._program, "uLightMaxDistance" ), _lights[ i ]._max_lighting_distance );
+    glUniform2fv( glGetUniformLocation( _lighting_pass_shader._program, "uScreenSize" ), 1, screen_size );
+
+    _volume_sphere->Draw( _lighting_pass_shader );
+    glBindVertexArray( 0 );
+
+    glUseProgram( 0 );
+
+    glDisable( GL_BLEND );
   }
+  // Disable stencil test
+  glDisable( GL_STENCIL_TEST );
 
-  glUniform3fv( glGetUniformLocation( _lighting_pass_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
-  
-  _window->_toolbox->RenderQuad();
-  glBindVertexArray( 0 );
-  glUseProgram( 0 );
-
-  glBindFramebuffer( GL_FRAMEBUFFER, 0 );     
+  glCullFace( GL_BACK );
+  glDisable( GL_BLEND );
 }
 
 void Scene::SceneDeferredRendering()
 {
 
-  // Matrices setting
+  // Projection and view matrices setting
   glm::mat4 projection_matrix, view_matrix, model_matrix;
   projection_matrix = glm::perspective( 45.0f, ( float )_window->_width / ( float )_window->_height, _camera->_near, _camera->_far );
   view_matrix = glm::lookAt( _camera->_position, _camera->_position + _camera->_front, _camera->_up ); 
+
+  // Bind and clear the rendered frames
+  glBindFramebuffer( GL_DRAW_FRAMEBUFFER, _g_buffer_FBO );
+  unsigned int attachments[ 2 ] = { GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5 };
+  glDrawBuffers( 2, attachments );
+  glClear( GL_COLOR_BUFFER_BIT );
 
 
   // Deferred rendering G-buffer pass
@@ -1315,21 +1408,11 @@ void Scene::SceneDeferredRendering()
                         &view_matrix );
 
 
-  // Get depth buffer information from the G-buffer FBO to the temp FBO
-  // ------------------------------------------------------------------
-  glBindFramebuffer( GL_READ_FRAMEBUFFER, _g_buffer_FBO );
-  glBindFramebuffer( GL_DRAW_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
-  glBlitFramebuffer( 0, 0, _window->_width, _window->_height, 0, 0, _window->_width, _window->_height, GL_DEPTH_BUFFER_BIT, GL_NEAREST );
-  glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
-
-  // Bind temp buffer
-  // ----------------
-  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
-
-
   // Forward render lamps sphere
   // ---------------------------
+  glEnable( GL_DEPTH_TEST );
+  glDepthMask( GL_FALSE );
+
   _flat_color_shader.Use();
   for( int i = 0; i < _lights.size(); i++ )
   {
@@ -1348,7 +1431,7 @@ void Scene::SceneDeferredRendering()
     _volume_sphere->Draw( _flat_color_shader );
   }
   glUseProgram( 0 );
-
+  
 
   // Forward render lights volume
   // ----------------------------
@@ -1383,7 +1466,7 @@ void Scene::BlurProcess()
 
   bool first_ite = true;
   int horizontal = 1; 
-  unsigned int amount = 6;
+  unsigned int amount = _blur_pass_count;
   _blur_shader.Use();
   
   for( unsigned int i = 0; i < amount; i++ )
@@ -1408,13 +1491,20 @@ void Scene::BlurProcess()
         glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_final_tex_color_buffer[ 1 ] );    
       }
       else
-      {
-        glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_temp_tex_color_buffer[ 1 ] ); 
+      { 
+        if( _pipeline_type == FORWARD_RENDERING )
+        {
+          glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_temp_tex_color_buffer[ 1 ] ); 
+        }
+        else
+        {
+          glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 6 ] ); 
+        }
       }
     }
 
     glUniform1f( glGetUniformLocation( _blur_shader._program, "uHorizontal" ), horizontal );
-    glUniform1f( glGetUniformLocation( _blur_shader._program, "uOffsetFactor" ), 1.2 );
+    glUniform1f( glGetUniformLocation( _blur_shader._program, "uOffsetFactor" ), _blur_offset_factor );
     _window->_toolbox->RenderQuad();
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );     
   }
@@ -1437,7 +1527,14 @@ void Scene::PostProcess()
   }
   else
   {
-    glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_temp_tex_color_buffer[ 0 ] );
+    if( _pipeline_type == FORWARD_RENDERING )
+    {
+      glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_temp_tex_color_buffer[ 0 ] );
+    }
+    else
+    {
+      glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 5 ] );
+    }
   }
 
   if( _bloom )

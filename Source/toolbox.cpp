@@ -330,12 +330,19 @@ void Toolbox::RenderCube()
 
 void Toolbox::RenderObserver()
 {
+  glEnable( GL_DEPTH_TEST );
+  glDepthMask( GL_TRUE );
+
+  // Set GL buffer 0
+  glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
   // Draw observer
   glViewport( 0, 0, _window->_width, _window->_height );
   _window->_scene->_observer_shader.Use();
   glActiveTexture( GL_TEXTURE0 );
-  //glBindTexture( GL_TEXTURE_2D, _window->_scene->_g_buffer_textures[ 3 ] );
-  glBindTexture( GL_TEXTURE_2D, _temp_tex_color_buffer[ 0 ] );
+  glBindTexture( GL_TEXTURE_2D, _window->_scene->_g_buffer_textures[ 5 ] );
+  //glBindTexture( GL_TEXTURE_2D, _temp_tex_color_buffer[ 0 ] );
   //glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[ 1 ] /*final_tex_color_buffer[0]*/ /*pingpongColorbuffers[0]*/ /*tex_depth_ssr*/ );
   
   glUniform1f( glGetUniformLocation( _window->_scene->_observer_shader._program, "uCameraNear" ), _window->_scene->_camera->_near );
@@ -344,4 +351,7 @@ void Toolbox::RenderObserver()
   RenderQuad();
   glBindVertexArray( 0 );
   glUseProgram( 0 );
+
+  glDepthMask( GL_FALSE );
+  glDisable( GL_DEPTH_TEST );
 }

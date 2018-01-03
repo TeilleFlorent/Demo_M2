@@ -112,10 +112,9 @@ SDL_Window * Window::InitSDLWindow( int iWidth,
 void Window::InitGL()
 {
   glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
+
   glEnable( GL_DEPTH_TEST );
   glDepthFunc( GL_LESS ); 
-  
-  glDisable( GL_BLEND );
 
   Resize();
 
@@ -175,11 +174,9 @@ void Window::ManageEvents( Camera * iCamera )
             break;
 
           case 'a' :
-            _scene->_lights[ 1 ]._position.z += 0.1;
             break;
 
           case 'e' :
-            _scene->_lights[ 1 ]._position.z -= 0.1;
             break;
 
           case 'r' :
@@ -218,13 +215,6 @@ void Window::ManageEvents( Camera * iCamera )
               _scene->_exposure += 0.01;
             std::cout << std::endl << "Exposure value : " << _scene->_exposure << std::endl
                                    << "----------------" << std::endl;
-            break;
-
-          case SDLK_F6 :
-            _scene->_render_lights_volume = ( _scene->_render_lights_volume == true ) ? false : true;
-            temp = ( ( _scene->_render_lights_volume == true ) ? "Render light volume : On" : "Render light volume : Off" );
-            std::cout << std::endl << temp << std::endl
-                                   << "---------------------" << std::endl;
             break;
 
           default:
@@ -283,11 +273,9 @@ void Window::Draw()
   // Frame drawing
   // ------------- 
   
-  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); 
-
   // Render scene
   glViewport( 0, 0, _width, _height );
-  _scene->_pipeline_type == FORWARD_RENDERING ? _scene->SceneForwardRendering( true ) : _scene->SceneDeferredRendering();  
+  _scene->_pipeline_type == FORWARD_RENDERING ? _scene->SceneForwardRendering() : _scene->SceneDeferredRendering();  
 
   //_toolbox->RenderObserver();
 
