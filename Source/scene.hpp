@@ -84,11 +84,9 @@ class Scene
     Shader _empty_shader;
 
     // VAOs
-    unsigned int _lampVAO;
     unsigned int _groundVAO;
 
     // VBOs
-    unsigned int _lampVBO;
     unsigned int _groundVBO;
 
     // Textures
@@ -113,7 +111,7 @@ class Scene
     // Bloom param
     float _exposure;
     bool  _bloom;
-    float _bloom_downsample;
+    float _blur_downsample;
     int   _blur_pass_count;
     float _blur_offset_factor;
 
@@ -145,7 +143,7 @@ class Scene
 
     // Models
     Model * _table_model;
-    Model * _volume_sphere;
+    Model * _sphere_model;
 };
 
 #endif  // SCENE_H

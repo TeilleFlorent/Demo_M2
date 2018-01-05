@@ -61,7 +61,7 @@ void Camera::MouseFrontUpdate()
   float xoffset = ( float )x;
   float yoffset = ( float )y * -1.0; // Reversed since y-coordinates go from bottom to left
 
-  float sensitivity = 0.05;
+  float sensitivity = 0.12;
   xoffset *= sensitivity;
   yoffset *= sensitivity;
 

@@ -11,9 +11,6 @@ Toolbox::Toolbox( Window * iParentWindow )
   // Get pointer on the scene window
   _window = iParentWindow;
 
-  _sphere_longitude_count = 20;
-  _sphere_latitude_count = 20;
-  _sphere_vertices_count = 0; 
   _hdr_image_manager = new HDRManager();  
 
   _quadVAO     = 0;
@@ -44,11 +41,8 @@ void Toolbox::Quit()
   if( _cubeVBO )
     glDeleteBuffers( 1, &_cubeVBO );
  
-  if( _pingpong_FBO[ 0 ] )
-    glDeleteFramebuffers( 1, &_pingpong_FBO[ 0 ] );
-  if( _pingpong_FBO[ 1 ] )
-    glDeleteFramebuffers( 1, &_pingpong_FBO[ 1 ] );
-
+  if( _pingpong_FBO )
+    glDeleteFramebuffers( 1, &_pingpong_FBO );
 }
 
 void Toolbox::PrintFPS()
@@ -330,9 +324,6 @@ void Toolbox::RenderCube()
 
 void Toolbox::RenderObserver()
 {
-  glEnable( GL_DEPTH_TEST );
-  glDepthMask( GL_TRUE );
-
   // Set GL buffer 0
   glBindFramebuffer( GL_FRAMEBUFFER, 0 );
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -341,8 +332,8 @@ void Toolbox::RenderObserver()
   glViewport( 0, 0, _window->_width, _window->_height );
   _window->_scene->_observer_shader.Use();
   glActiveTexture( GL_TEXTURE0 );
-  glBindTexture( GL_TEXTURE_2D, _window->_scene->_g_buffer_textures[ 5 ] );
-  //glBindTexture( GL_TEXTURE_2D, _temp_tex_color_buffer[ 0 ] );
+  //glBindTexture( GL_TEXTURE_2D, _window->_scene->_g_buffer_textures[ 5 ] );
+  glBindTexture( GL_TEXTURE_2D, _pingpong_color_buffers[ 0 ] );
   //glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[ 1 ] /*final_tex_color_buffer[0]*/ /*pingpongColorbuffers[0]*/ /*tex_depth_ssr*/ );
   
   glUniform1f( glGetUniformLocation( _window->_scene->_observer_shader._program, "uCameraNear" ), _window->_scene->_camera->_near );
@@ -351,7 +342,58 @@ void Toolbox::RenderObserver()
   RenderQuad();
   glBindVertexArray( 0 );
   glUseProgram( 0 );
+}
 
-  glDepthMask( GL_FALSE );
-  glDisable( GL_DEPTH_TEST );
+void Toolbox::SetFboTexture( unsigned int iTextureID,
+                             GLenum       iFormat,
+                             int          iWidth,
+                             int          iHeight,
+                             GLenum       iAttachment )
+{
+  glBindTexture( GL_TEXTURE_2D, iTextureID );
+  glTexImage2D( GL_TEXTURE_2D, 0, iFormat, iWidth, iHeight, 0, GL_RGB, GL_FLOAT, NULL );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );  
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+  glFramebufferTexture2D( GL_FRAMEBUFFER, iAttachment, GL_TEXTURE_2D, iTextureID, 0 );
+}
+
+void Toolbox::SetFboMultiSampleTexture( unsigned int iTextureID,
+                                        int          iSampleCount,
+                                        GLenum       iFormat,
+                                        int          iWidth,
+                                        int          iHeight,
+                                        GLenum       iAttachment )
+{
+  glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, iTextureID );
+  glTexImage2DMultisample( GL_TEXTURE_2D_MULTISAMPLE, iSampleCount ,iFormat, iWidth, iHeight, GL_TRUE );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );  
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+  glFramebufferTexture2D( GL_FRAMEBUFFER, iAttachment, GL_TEXTURE_2D_MULTISAMPLE, iTextureID, 0 );
+}
+
+void Toolbox::LinkRbo( unsigned int iRboID,
+                       int iWidth,
+                       int iHeight )
+{
+  glGenRenderbuffers( 1, &iRboID );
+  glBindRenderbuffer( GL_RENDERBUFFER, iRboID );
+  glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, iWidth, iHeight );
+  glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, iRboID );
+  glBindRenderbuffer( GL_RENDERBUFFER, 0 );    
+}
+
+void Toolbox::LinkMultiSampleRbo( unsigned int iRboID,
+                                  int          iSampleCount, 
+                                  int          iWidth,
+                                  int          iHeight )
+{
+  glGenRenderbuffers( 1, &iRboID );
+  glBindRenderbuffer( GL_RENDERBUFFER, iRboID );
+  glRenderbufferStorageMultisample( GL_RENDERBUFFER, iSampleCount, GL_DEPTH24_STENCIL8, iWidth, iHeight ); 
+  glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, iRboID );
+  glBindRenderbuffer( GL_RENDERBUFFER, 0 );
 }

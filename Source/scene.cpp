@@ -20,12 +20,12 @@ Scene::Scene( Window * iParentWindow )
 
   // Init bloom param
   _bloom              = true;
-  _bloom_downsample   = 0.5;
+  _blur_downsample   = 0.5;
   _blur_pass_count    = 6;
-  _blur_offset_factor = 1.2;
+  _blur_offset_factor = 0.5;
 
   // Init multi sample param
-  _multi_sample    = false;
+  _multi_sample    = true;
   _nb_multi_sample = 2;
 
   // Init IBL param
@@ -40,9 +40,6 @@ Scene::Scene( Window * iParentWindow )
 
   // Scene data initialization
   // -------------------------
-
-  _lampVAO   = 0;
-  _lampVBO   = 0;
 
   _groundVAO = 0;
   _groundVBO = 0;
@@ -130,16 +127,12 @@ void Scene::Quit()
 
   // Delete VAOs
   // -----------
-  if( _lampVAO )
-    glDeleteVertexArrays( 1, &_lampVAO );
   if( _groundVAO )
     glDeleteVertexArrays( 1, &_groundVAO );
   
 
   // Delete VBOs
   // -----------
-  if( _lampVBO )
-    glDeleteBuffers( 1, &_lampVBO );
   if( _groundVBO )
     glDeleteBuffers( 1, &_groundVBO );
 
@@ -188,12 +181,6 @@ void Scene::SceneDataInitialization()
     0.0f, 1.0f, 1.0f, 1.0f     
   };
 
-  // Create Sphere geometry
-  GLfloat * dataLamp = _window->_toolbox->BuildSphere( _window->_toolbox->_sphere_longitude_count,
-                                                       _window->_toolbox->_sphere_latitude_count );
-  _window->_toolbox->_sphere_vertices_count = ( 6 * 3 * _window->_toolbox->_sphere_longitude_count * _window->_toolbox->_sphere_latitude_count );
-
-
   // Skybox texture
   _faces.push_back( "../Skybox/s1/front.png" );
   _faces.push_back( "../Skybox/s1/back.png" );
@@ -201,21 +188,6 @@ void Scene::SceneDataInitialization()
   _faces.push_back( "../Skybox/s1/bottom.png" );
   _faces.push_back( "../Skybox/s1/right.png" );
   _faces.push_back( "../Skybox/s1/left.png" );
-
-
-  // Create lamp VAO
-  // ---------------
-  glGenVertexArrays( 1, &_lampVAO );
-  glBindVertexArray( _lampVAO);
-  glEnableVertexAttribArray( 0 );
-  glEnableVertexAttribArray( 1  );
-  glGenBuffers( 1, &_lampVBO );
-  glBindBuffer( GL_ARRAY_BUFFER, _lampVBO );
-  glBufferData( GL_ARRAY_BUFFER,( ( 6 * 6 * _window->_toolbox->_sphere_longitude_count * _window->_toolbox->_sphere_latitude_count ) ) * ( sizeof( float ) ), dataLamp, GL_STATIC_DRAW );
-  glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 6 * ( sizeof( float ) ), ( const void * )0 );
-  glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 6 * ( sizeof( float ) ), /*3*(sizeof(float))*/( const void * )0 );
-  glBindBuffer( GL_ARRAY_BUFFER, 0 );
-  glBindVertexArray( 0 );
 
 
   // Create ground VAO
@@ -318,101 +290,91 @@ void Scene::SceneDataInitialization()
 
     if( _multi_sample )
     { 
-      // texture setting
+      // Multi sample textures setting
       for( unsigned int i = 0; i < 2; i++ ) 
       {
-        glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, _window->_toolbox->_temp_tex_color_buffer[ i ] );
-        glTexImage2DMultisample( GL_TEXTURE_2D_MULTISAMPLE, _nb_multi_sample , GL_RGB16F, _window->_width, _window->_height, GL_TRUE );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );  
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, _window->_toolbox->_temp_tex_color_buffer[ i ], 0 );
+        _window->_toolbox->SetFboMultiSampleTexture( _window->_toolbox->_temp_tex_color_buffer[ i ],
+                                                     _nb_multi_sample,
+                                                     GL_RGB16F,
+                                                     _window->_width,
+                                                     _window->_height,
+                                                     GL_COLOR_ATTACHMENT0 + i );
       }
-
       unsigned int attachments2[ 2 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
       glDrawBuffers( 2, attachments2 );
-      if( glCheckFramebufferStatus( GL_FRAMEBUFFER ) != GL_FRAMEBUFFER_COMPLETE )
-      {
-        std::cout << "Framebuffer not complete!" << std::endl;
-      }
-      glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+
+      // Multi sample RBO link
+      _window->_toolbox->LinkMultiSampleRbo( _window->_toolbox->_temp_depth_RBO,
+                                             _nb_multi_sample, 
+                                             _window->_width,
+                                             _window->_height );
     }
     else
     { 
-      // texture setting
+      // Textures setting
       for( unsigned int i = 0; i < 2; i++ ) 
       {
-        glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_temp_tex_color_buffer[ i ] );
-        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, _window->_width, _window->_height, 0, GL_RGB, GL_FLOAT, NULL );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );  
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, _window->_toolbox->_temp_tex_color_buffer[ i ], 0 );
+        _window->_toolbox->SetFboTexture( _window->_toolbox->_temp_tex_color_buffer[ i ],
+                                          GL_RGB16F,
+                                          _window->_width,
+                                          _window->_height,
+                                          GL_COLOR_ATTACHMENT0 + i );
       }
       unsigned int attachments2[ 2 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
       glDrawBuffers( 2, attachments2 );
       
       // RBO link
-      glGenRenderbuffers( 1, &_window->_toolbox->_temp_depth_RBO );
-      glBindRenderbuffer( GL_RENDERBUFFER, _window->_toolbox->_temp_depth_RBO );
-      glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, _window->_width, _window->_height );
-      glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _window->_toolbox->_temp_depth_RBO );
-      glBindRenderbuffer( GL_RENDERBUFFER, 0 );
-
-      if( glCheckFramebufferStatus( GL_FRAMEBUFFER ) != GL_FRAMEBUFFER_COMPLETE )
-      {
-        std::cout << "Framebuffer not complete!" << std::endl;
-      }
-      glBindFramebuffer( GL_FRAMEBUFFER, 0 );    
+      _window->_toolbox->LinkRbo( _window->_toolbox->_temp_depth_RBO,
+                                  _window->_width,
+                                  _window->_height );
     }
-  }
-
-
-  // Create final color buffer
-  // -------------------------
-  glGenFramebuffers( 1, &_window->_toolbox->_final_hdr_FBO );
-  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_final_hdr_FBO );
-  glGenTextures( 2, _window->_toolbox->_final_tex_color_buffer );
-
-  for( unsigned int i = 0; i < 2; i++ ) 
-  {
-    glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_final_tex_color_buffer[ i ] );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, _window->_width, _window->_height, 0, GL_RGB, GL_FLOAT, NULL );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR ); 
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );  
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, _window->_toolbox->_final_tex_color_buffer[ i ], 0 );
-  }
-
-  if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
-  {
-    std::cout << "Framebuffer not complete!" << std::endl;
-  }
-  glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-  glBindTexture( GL_TEXTURE_2D, 0 );
-
-
-  // Create pingpong buffer
-  // ----------------------
-  glGenFramebuffers( 2, _window->_toolbox->_pingpong_FBO );
-  glGenTextures( 2, _window->_toolbox->_pingpong_color_buffers );
-  for( unsigned int i = 0; i < 2; i++ )
-  {
-    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_pingpong_FBO[ i ] );
-    glBindTexture( GL_TEXTURE_2D, _window->_toolbox->_pingpong_color_buffers[ i ] );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, _window->_width * _bloom_downsample, _window->_height * _bloom_downsample, 0, GL_RGB, GL_FLOAT, NULL );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR ); 
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE ); 
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _window->_toolbox->_pingpong_color_buffers[ i ], 0 );
     if( glCheckFramebufferStatus( GL_FRAMEBUFFER ) != GL_FRAMEBUFFER_COMPLETE )
     {
       std::cout << "Framebuffer not complete!" << std::endl;
     }
+    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+
+
+    // Create final color buffer
+    // -------------------------
+    glGenFramebuffers( 1, &_window->_toolbox->_final_hdr_FBO );
+    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_final_hdr_FBO );
+    glGenTextures( 2, _window->_toolbox->_final_tex_color_buffer );
+
+    for( unsigned int i = 0; i < 2; i++ ) 
+    {
+      _window->_toolbox->SetFboTexture( _window->_toolbox->_final_tex_color_buffer[ i ],
+                                        GL_RGB16F,
+                                        _window->_width,
+                                        _window->_height,
+                                        GL_COLOR_ATTACHMENT0 + i );
+    }
+
+    if( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
+    {
+      std::cout << "Framebuffer not complete!" << std::endl;
+    }
+    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+    glBindTexture( GL_TEXTURE_2D, 0 );
+  }
+
+  
+  // Create pingpong buffer
+  // ----------------------
+  glGenFramebuffers( 1, &_window->_toolbox->_pingpong_FBO );
+  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_pingpong_FBO );
+  glGenTextures( 2, _window->_toolbox->_pingpong_color_buffers );
+  for( unsigned int i = 0; i < 2; i++ )
+  {
+    _window->_toolbox->SetFboTexture( _window->_toolbox->_pingpong_color_buffers[ i ],
+                                      GL_RGB16F,
+                                      _window->_width * _blur_downsample,
+                                      _window->_height * _blur_downsample,
+                                      GL_COLOR_ATTACHMENT0 + i );
+  }
+  if( glCheckFramebufferStatus( GL_FRAMEBUFFER ) != GL_FRAMEBUFFER_COMPLETE )
+  {
+    std::cout << "Framebuffer not complete!" << std::endl;
   }
   glBindFramebuffer( GL_FRAMEBUFFER, 0 );
   glBindTexture( GL_TEXTURE_2D, 0 );
@@ -611,7 +573,7 @@ void Scene::LightsInitialization()
     {
       _lights.push_back( PointLight( glm::vec3( -4.0 + ( row * 2.0 ), 0.5, -4.0 + ( column * 2.0 ) ),
                                      glm::vec3( 1.0, 1.0, 1.0 ),
-                                     0.1,
+                                     0.05,
                                      3.0 ) );    
     }
   }
@@ -900,9 +862,9 @@ void Scene::ModelsLoading()
   _table_model->Print_info_model();
 
   // Volume sphere model loading
-  _volume_sphere = new Model();
-  _volume_sphere->Load_Model( "../Models/volume_sphere/volume_sphere.obj", 2, "VolumeSphere" );
-  _volume_sphere->Print_info_model();  
+  _sphere_model = new Model();
+  _sphere_model->Load_Model( "../Models/volume_sphere/volume_sphere.obj", 2, "VolumeSphere" );
+  _sphere_model->Print_info_model();  
 }
 
 void Scene::DeferredBuffersInitialization()
@@ -1030,7 +992,6 @@ void Scene::SceneForwardRendering()
   // Draw lamps
   // ----------
   _flat_color_shader.Use();
-  glBindVertexArray( _lampVAO );
 
   for( int i = 0; i < _lights.size(); i++ )
   {
@@ -1046,7 +1007,7 @@ void Scene::SceneForwardRendering()
     glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), true );
     glUniform1f( glGetUniformLocation( _flat_color_shader._program, "uBloomBrightness" ), 1.0f );
 
-    _volume_sphere->Draw( _flat_color_shader );
+    _sphere_model->Draw( _flat_color_shader );
   }
   glBindVertexArray( 0 );
   glUseProgram( 0 );
@@ -1158,34 +1119,33 @@ void Scene::SceneForwardRendering()
   // --------------------------------------------
   if( _multi_sample )
   {
+    // Bind and clear normal texture where we need to blit
+    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_final_hdr_FBO );
+    unsigned int attachments2[ 2 ] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+    glDrawBuffers( 2, attachments2 );
+    glClear( GL_COLOR_BUFFER_BIT );
+
+    // Convert multi sample texture into normal texture
     _MS_blit_shader.Use();
 
-    // Bind classic texture where we want to render
-    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_final_hdr_FBO );
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _window->_toolbox->_final_tex_color_buffer[ 0 ], 0 );
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-    // Send multi sample texture we need to convert into classic texture
-    glActiveTexture( GL_TEXTURE0) ;
+    glDrawBuffer( GL_COLOR_ATTACHMENT0 );
+    
+    glActiveTexture( GL_TEXTURE0 );
     glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, _window->_toolbox->_temp_tex_color_buffer[ 0 ] );
     glUniform1i( glGetUniformLocation( _MS_blit_shader._program, "uSampleCount" ), _nb_multi_sample );    
     _window->_toolbox->RenderQuad();
 
     // Same convert with brightness texture ( bloom )
-    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_final_hdr_FBO );
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _window->_toolbox->_final_tex_color_buffer[ 1 ], 0 );
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
+    glDrawBuffer( GL_COLOR_ATTACHMENT1 );
+    
     glActiveTexture( GL_TEXTURE0 );
     glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, _window->_toolbox->_temp_tex_color_buffer[ 1 ] );
     glUniform1i( glGetUniformLocation( _MS_blit_shader._program, "uSampleCount" ), _nb_multi_sample );
     _window->_toolbox->RenderQuad();
+
+    glUseProgram( 0 );
+    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
   }
- 
-  // Unbinding    
-  glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-  glBindVertexArray( 0 );
-  glUseProgram( 0 );
 }
 
 void Scene::DeferredGeometryPass( glm::mat4 * iProjectionMatrix,
@@ -1314,7 +1274,7 @@ void Scene::DeferredLightingPass( glm::mat4 * iProjectionMatrix,
     glUniformMatrix4fv( glGetUniformLocation( _empty_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
     glUniformMatrix4fv( glGetUniformLocation( _empty_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( *iProjectionMatrix ) );
 
-    _volume_sphere->Draw( _empty_shader );
+    _sphere_model->Draw( _empty_shader );
     glBindVertexArray( 0 );
     
     glUseProgram( 0 );
@@ -1367,7 +1327,7 @@ void Scene::DeferredLightingPass( glm::mat4 * iProjectionMatrix,
     glUniform1f(  glGetUniformLocation( _lighting_pass_shader._program, "uLightMaxDistance" ), _lights[ i ]._max_lighting_distance );
     glUniform2fv( glGetUniformLocation( _lighting_pass_shader._program, "uScreenSize" ), 1, screen_size );
 
-    _volume_sphere->Draw( _lighting_pass_shader );
+    _sphere_model->Draw( _lighting_pass_shader );
     glBindVertexArray( 0 );
 
     glUseProgram( 0 );
@@ -1428,7 +1388,7 @@ void Scene::SceneDeferredRendering()
     glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), true );
     glUniform1f( glGetUniformLocation( _flat_color_shader._program, "uBloomBrightness" ), 1.0f );
 
-    _volume_sphere->Draw( _flat_color_shader );
+    _sphere_model->Draw( _flat_color_shader );
   }
   glUseProgram( 0 );
   
@@ -1451,7 +1411,7 @@ void Scene::SceneDeferredRendering()
 
       glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), false );
 
-      _volume_sphere->Draw( _flat_color_shader );
+      _sphere_model->Draw( _flat_color_shader );
     }
     glUseProgram( 0 );
   }
@@ -1462,17 +1422,16 @@ void Scene::SceneDeferredRendering()
 
 void Scene::BlurProcess()
 { 
-  glBindFramebuffer( GL_FRAMEBUFFER, 0 );   
-
   bool first_ite = true;
   int horizontal = 1; 
-  unsigned int amount = _blur_pass_count;
+
+  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_pingpong_FBO ); 
   _blur_shader.Use();
   
-  for( unsigned int i = 0; i < amount; i++ )
+  for( unsigned int i = 0; i < _blur_pass_count; i++ )
   {
-    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_pingpong_FBO[ horizontal ] ); 
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    horizontal == 0 ? glDrawBuffer( GL_COLOR_ATTACHMENT0 ) : glDrawBuffer( GL_COLOR_ATTACHMENT1 ); 
+    glClear( GL_COLOR_BUFFER_BIT );
 
     horizontal = ( horizontal == 0 ) ? 1 : 0;
 
@@ -1506,10 +1465,10 @@ void Scene::BlurProcess()
     glUniform1f( glGetUniformLocation( _blur_shader._program, "uHorizontal" ), horizontal );
     glUniform1f( glGetUniformLocation( _blur_shader._program, "uOffsetFactor" ), _blur_offset_factor );
     _window->_toolbox->RenderQuad();
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );     
   }
 
   glUseProgram( 0 );
+  glBindFramebuffer( GL_FRAMEBUFFER, 0 );     
 }
 
 void Scene::PostProcess()

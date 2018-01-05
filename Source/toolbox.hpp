@@ -66,17 +66,34 @@ class Toolbox
 
     void RenderObserver();
 
+    void SetFboTexture( unsigned int iTextureID,
+                        GLenum       iFormat,
+                        int          iWidth,
+                        int          iHeight,
+                        GLenum       iAttachment );
+
+    void SetFboMultiSampleTexture( unsigned int iTextureID,
+                                   int          iSampleCount,
+                                   GLenum       iFormat,
+                                   int          iWidth,
+                                   int          iHeight,
+                                   GLenum       iAttachment );
+
+    void LinkRbo( unsigned int iRboID,
+                  int          iWidth,
+                  int          iHeight );
+
+    void LinkMultiSampleRbo( unsigned int iRboID,
+                             int          iSampleCount, 
+                             int          iWidth,
+                             int          iHeight );
+
 
     // Toolbox class members
     // ---------------------
 
     // Pointer on the toolbox window
     Window * _window;
-
-    // Sphere param
-    int _sphere_longitude_count;
-    int _sphere_latitude_count;
-    int _sphere_vertices_count;
 
     HDRManager * _hdr_image_manager;
 
@@ -95,7 +112,7 @@ class Toolbox
 
     unsigned int _captureFBO;
     unsigned int _captureRBO;
-    unsigned int _pingpong_FBO[ 2 ];
+    unsigned int _pingpong_FBO;
 
     // Textures
     unsigned int _pingpong_color_buffers[ 2 ];
