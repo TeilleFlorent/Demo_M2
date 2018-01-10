@@ -104,7 +104,7 @@ void Mesh::SetupMesh()
   glEnableVertexAttribArray( 1 );   
   glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, sizeof( Vertex ), ( GLvoid* )offsetof( Vertex, _normal ) );
   
-  // Vertex Texture Coords
+  // Vertex UVs
   glEnableVertexAttribArray( 2 );   
   glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE, sizeof( Vertex ), ( GLvoid* )offsetof( Vertex, _uv ) );
   
@@ -240,17 +240,20 @@ Mesh Model::ProcessMesh( aiMesh * iMesh,
       UV_warning = true;
     }
 
-    // Assimp tangent
-    /*vector.x = iMesh->mTangents[ i ].x;
-    vector.y = iMesh->mTangents[ i ].y;
-    vector.z = iMesh->mTangents[ i ].z;
-    vertex.Tangent = vector; 
+    if( _model_id != 2 )
+    { 
+      // Assimp tangent
+      vector.x = iMesh->mTangents[ i ].x;
+      vector.y = iMesh->mTangents[ i ].y;
+      vector.z = iMesh->mTangents[ i ].z;
+      vertex._tangent = vector; 
 
-    // Assimp bi tangent
-    vector.x = iMesh->mBitangents[ i ].x;
-    vector.y = iMesh->mBitangents[ i ].y;
-    vector.z = iMesh->mBitangents[ i ].z;
-    vertex.BiTangent = vector;*/ 
+      // Assimp bi tangent
+      vector.x = iMesh->mBitangents[ i ].x;
+      vector.y = iMesh->mBitangents[ i ].y;
+      vector.z = iMesh->mBitangents[ i ].z;
+      vertex._bi_tangent = vector;
+    } 
 
     // Add this vertex to the mesh
     vertices.push_back( vertex );
@@ -265,7 +268,7 @@ Mesh Model::ProcessMesh( aiMesh * iMesh,
 
   // Manually calculate vertex tangent & bi tangent
   // ----------------------------------------------
-  for( unsigned int i = 0; i < vertices.size(); i += 3 )
+  /*for( unsigned int i = 0; i < vertices.size(); i += 3 )
   { 
     if( _model_id == 2 )
     {
@@ -303,8 +306,7 @@ Mesh Model::ProcessMesh( aiMesh * iMesh,
     vertices[ i ]._bi_tangent = bitangent; 
     vertices[ i + 1 ]._bi_tangent = bitangent;
     vertices[ i + 2 ]._bi_tangent = bitangent;
-
-  }
+  }*/
 
 
   // Get mesh indices

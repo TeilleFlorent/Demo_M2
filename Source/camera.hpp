@@ -3,6 +3,11 @@
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include "glm/gtx/string_cast.hpp"
+#include "glm/ext.hpp"
 
 #include <iostream>
 
@@ -24,7 +29,17 @@ class Camera
     // Camera functions
     // ---------------
 
-    Camera();
+    Camera( glm::vec3 iPosition,
+            glm::vec3 iFront,
+            glm::vec3 iUp,
+            float     iYaw,
+            float     iPitch,
+            float     iNear,
+            float     iFar,
+            float     iFov,
+            float     iWidth,
+            float     iHeight,
+            float     iMoveSpeed );
 
     void CameraUpdate( float iDeltaTime );
 
@@ -34,6 +49,10 @@ class Camera
 
     void PrintState();
 
+    void SetProjectionMatrix( glm::mat4 * iProjectionMatrix );
+
+    void UpdateViewMatrix();
+    
  
     // Camera class members
     // --------------------
@@ -46,6 +65,9 @@ class Camera
     float _far; 
     float _yaw; 
     float _pitch;
+
+    glm::mat4 _projection_matrix;
+    glm::mat4 _view_matrix;
 
     float _move_speed; 
 

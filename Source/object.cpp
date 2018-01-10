@@ -8,26 +8,26 @@
 Object::Object( int       iID,
                 glm::vec3 iPosition,
                 float     iAngle,
-                float     iAcca,
+                float     iAngleAcc,
                 glm::vec3 iScale,
                 float     iAlpha,
                 int       iShiniStr,
                 bool      iGenerateShadow,
+                bool      iReceivShadow,
                 float     iShadowDarkness,
-                bool      iNormalMapping,
                 float     iBloom,
                 float     iBloomBrightness )
 {
   _id               = iID;
   _position         = iPosition;
   _angle            = iAngle;
-  _acca             = iAcca;
+  _angle_acc        = iAngleAcc;
   _scale            = iScale;
   _alpha            = iAlpha;
   _shini_str        = iShiniStr;
   _generate_shadow  = iGenerateShadow;
+  _receiv_shadow    = iReceivShadow;
   _shadow_darkness  = iShadowDarkness;
-  _normal_mapping   = iNormalMapping;
   _bloom            = iBloom;
   _bloom_brightness = iBloomBrightness;
 }

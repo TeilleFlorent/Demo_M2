@@ -31,8 +31,9 @@ in vec3 oUV;
 
 void main()
 {    
-  vec3 result_color;
-  result_color = texture( uSkyboxTexture, oUV ).rgb;
+  //vec3 result_color = texture( uSkyboxTexture, oUV ).rgb;
+  vec3 result_color = textureLod( uSkyboxTexture, oUV, 0 ).rgb;
+
 
   // Main out color
   FragColor = vec4( result_color , uAlpha );

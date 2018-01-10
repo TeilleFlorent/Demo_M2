@@ -24,10 +24,7 @@ uniform int uLightCount;
 uniform mat4 uModelMatrix;
 uniform mat4 uProjectionMatrix;
 uniform mat4 uViewMatrix;
-uniform mat4 uLightSpaceMatrix;
-uniform mat4 uCubeMapViewMatrices[ 6 ];
 uniform float uID;
-uniform float uCubeMapFaceNum;
 
 uniform vec3 uViewPos;
 uniform vec3 uLightPos[ MAX_NB_LIGHTS ];
@@ -37,9 +34,7 @@ uniform vec3 uLightPos[ MAX_NB_LIGHTS ];
 // ---------------------------------
 out vec2 oUV;
 out vec3 oFragPos;
-out vec3 oViewSpaceFragPos;
-out vec4 oClipSpacePosition;
-flat out vec3 oTBN[ 3 ];
+out vec3 oTBN[ 3 ];
  
 
 //******************************************************************************
@@ -66,11 +61,7 @@ void main()
 
 	// Vertex outputs calculation
 	// --------------------------
-	oClipSpacePosition = clip_space_position; 
-
 	oFragPos = vec3( uModelMatrix * vec4( _position, 1.0f ) );
-	
-	oViewSpaceFragPos = vec3( uViewMatrix * uModelMatrix * vec4( _position, 1.0f ) );
 	
 	oUV = _uv;
 

@@ -28,6 +28,6 @@ out vec3 oWorldPos;
 
 void main()
 {
-  oWorldPos = _posisition;  
+  oWorldPos   = _posisition;  
   gl_Position = uProjectionMatrix * uViewMatrix * vec4( oWorldPos, 1.0 );
 }

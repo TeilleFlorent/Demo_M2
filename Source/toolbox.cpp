@@ -13,11 +13,11 @@ Toolbox::Toolbox( Window * iParentWindow )
 
   _hdr_image_manager = new HDRManager();  
 
-  _quadVAO     = 0;
-  _quadVBO     = 0;
+  _quad_VAO     = 0;
+  _quad_VBO     = 0;
 
-  _cubeVAO     = 0;
-  _cubeVBO     = 0;
+  _cube_VAO     = 0;
+  _cube_VBO     = 0;
 
   _depth_map_res_seed     = 1024.0;
   _reflection_cubeMap_res = 512;
@@ -28,18 +28,18 @@ void Toolbox::Quit()
 {
   // Delete VAOs
   // -----------
-  if( _quadVAO )
-    glDeleteVertexArrays( 1, &_quadVAO );
-  if( _cubeVAO )
-    glDeleteVertexArrays( 1, &_cubeVAO );  
+  if( _quad_VAO )
+    glDeleteVertexArrays( 1, &_quad_VAO );
+  if( _cube_VAO )
+    glDeleteVertexArrays( 1, &_cube_VAO );  
  
 
   // Delete VBOs
   // -----------
-  if( _quadVBO )
-    glDeleteBuffers( 1, &_quadVBO );
-  if( _cubeVBO )
-    glDeleteBuffers( 1, &_cubeVBO );
+  if( _quad_VBO )
+    glDeleteBuffers( 1, &_quad_VBO );
+  if( _cube_VBO )
+    glDeleteBuffers( 1, &_cube_VBO );
  
   if( _pingpong_FBO )
     glDeleteFramebuffers( 1, &_pingpong_FBO );
@@ -215,9 +215,9 @@ void Toolbox::LoadAudio()
 
 void Toolbox::RenderQuad()
 {
-  if( _quadVAO == 0 )
+  if( _quad_VAO == 0 )
   {
-    GLfloat quadVertices[] =
+    GLfloat quad_vertices[] =
     {
       // Positions        // UV
       -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
@@ -227,17 +227,17 @@ void Toolbox::RenderQuad()
     };
 
     // Setup plane VAO
-    glGenVertexArrays( 1, &_quadVAO );
-    glGenBuffers( 1, &_quadVBO );
-    glBindVertexArray( _quadVAO );
-    glBindBuffer( GL_ARRAY_BUFFER, _quadVBO );
-    glBufferData( GL_ARRAY_BUFFER, sizeof( quadVertices ), &quadVertices, GL_STATIC_DRAW );
+    glGenVertexArrays( 1, &_quad_VAO );
+    glGenBuffers( 1, &_quad_VBO );
+    glBindVertexArray( _quad_VAO );
+    glBindBuffer( GL_ARRAY_BUFFER, _quad_VBO );
+    glBufferData( GL_ARRAY_BUFFER, sizeof( quad_vertices ), &quad_vertices, GL_STATIC_DRAW );
     glEnableVertexAttribArray( 0 );
     glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof( GLfloat ), ( GLvoid* )0 );
     glEnableVertexAttribArray( 1 );
     glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof( GLfloat ), ( GLvoid* )( 3 * sizeof( GLfloat ) ) );
   }
-  glBindVertexArray( _quadVAO );
+  glBindVertexArray( _quad_VAO );
   glDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
   glBindVertexArray( 0 );
 }
@@ -247,7 +247,7 @@ void Toolbox::RenderCube()
 
   // Create cube VAO
   // ---------------
-  if( _cubeVAO == 0 )
+  if( _cube_VAO == 0 )
   {
     GLfloat vertices[] =
     {
@@ -300,11 +300,11 @@ void Toolbox::RenderCube()
       -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left        
     };
 
-    glGenVertexArrays( 1, &_cubeVAO );
-    glGenBuffers( 1, &_cubeVBO );
-    glBindBuffer( GL_ARRAY_BUFFER, _cubeVBO );
-    glBufferData( GL_ARRAY_BUFFER, sizeof( vertices ), vertices, GL_STATIC_DRAW);
-    glBindVertexArray( _cubeVAO );
+    glGenVertexArrays( 1, &_cube_VAO );
+    glGenBuffers( 1, &_cube_VBO );
+    glBindBuffer( GL_ARRAY_BUFFER, _cube_VBO );
+    glBufferData( GL_ARRAY_BUFFER, sizeof( vertices ), vertices, GL_STATIC_DRAW );
+    glBindVertexArray( _cube_VAO );
     glEnableVertexAttribArray( 0 );
     glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof( GLfloat ), ( GLvoid* )0 );
     glEnableVertexAttribArray( 1 );
@@ -317,7 +317,7 @@ void Toolbox::RenderCube()
 
   // Render Cube
   // -----------
-  glBindVertexArray( _cubeVAO );
+  glBindVertexArray( _cube_VAO );
   glDrawArrays( GL_TRIANGLES, 0, 36 );
   glBindVertexArray( 0 );
 }

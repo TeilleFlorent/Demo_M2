@@ -79,20 +79,22 @@ class Scene
     Shader _MS_blit_shader;
     Shader _cube_map_converter_shader;
     Shader _diffuse_irradiance_shader;
+    Shader _specular_pre_filter_shader;
     Shader _geometry_pass_shader;
     Shader _lighting_pass_shader;
     Shader _empty_shader;
 
     // VAOs
-    unsigned int _groundVAO;
+    unsigned int _ground_VAO;
 
     // VBOs
-    unsigned int _groundVBO;
+    unsigned int _ground_VBO;
 
     // Textures
     std::vector< unsigned int > _hdr_textures;
-    std::vector< unsigned int > _env_cubemaps;
-    std::vector< unsigned int > _irradiance_maps;   
+    std::vector< unsigned int > _env_cubeMaps;
+    std::vector< unsigned int > _irradiance_cubeMaps;
+    std::vector< unsigned int > _pre_filter_cubeMaps;   
     int _current_env;
    
     std::vector< const GLchar * > _faces; // data skybox cube map texture
@@ -120,8 +122,9 @@ class Scene
     int  _nb_multi_sample;
 
     // IBL param
-    int   _res_IBL_cubeMap;
+    int   _res_env_cubeMap;
     int   _res_irradiance_cubeMap;
+    int   _res_pre_filter_cubeMap;
     float _irradiance_sample_delta;
 
     // Pointer on the scene window

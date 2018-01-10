@@ -5,7 +5,7 @@
 
 struct Material
 {    
-  vec3 _albedo;
+  vec3  _albedo;
   float _metalness;
   float _roughness;
   float _ao; 
@@ -32,7 +32,6 @@ uniform float uLightIntensity[ MAX_NB_LIGHTS ];
 
 uniform vec3 uViewPos;
 
-uniform float uShadowDarkness;
 uniform float uBloom;
 uniform float uBloomBrightness;
 
@@ -40,12 +39,12 @@ uniform float uAlpha;
 uniform float uID;
 
 uniform sampler2D uTextureDiffuse1; 
-uniform sampler2D uTextureSpecular1;
 uniform sampler2D uTextureNormal1; 
 uniform sampler2D uTextureHeight1; 
 uniform sampler2D uTextureAO1; 
 uniform sampler2D uTextureRoughness1; 
 uniform sampler2D uTextureMetalness1; 
+uniform sampler2D uTextureSpecular1;
 uniform samplerCube uIrradianceCubeMap;
 
 
@@ -53,9 +52,7 @@ uniform samplerCube uIrradianceCubeMap;
 // ----------------------------------
 in vec2 oUV;
 in vec3 oFragPos;
-in vec3 oViewSpaceFragPos;
-in vec4 oClipSpacePosition;
-flat in vec3 oTBN[ 3 ];
+in vec3 oTBN[ 3 ];
 
 
 //******************************************************************************
@@ -199,8 +196,8 @@ vec3 ReflectanceEquationCalculation( vec2     iUV,
     kD *= 1.0 - iMaterial._metalness;   
 
 
-    // Get NdotL value
-    // ---------------
+    // Get Normal dot LightDir value
+    // -----------------------------
     float normal_dot_light_dir = clamp( dot( iNormal, light_dir ), 0.0, 1.0 );        
 
 
@@ -272,8 +269,7 @@ vec3 PBRLightingCalculation( vec3 iNormal,
 
   // Return fragment final PBR lighting 
   // ----------------------------------
-  
-  return /*diffuse_IBL +*/ lights_reflectance;
+  return diffuse_IBL + lights_reflectance;
 }
 
 
@@ -295,8 +291,8 @@ void main()
   view_dir = normalize( uViewPos - oFragPos );
 
   // Normal mapping calculation
-  vec3 norm = normalize( NormalMappingCalculation( oUV ) * TBN );
-  
+  vec3 norm = NormalMappingCalculation( oUV ) * TBN;
+
   // PBR lighting calculation 
   PBR_lighting_result = PBRLightingCalculation( norm,
                                                 view_dir,  

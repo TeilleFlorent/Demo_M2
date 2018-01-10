@@ -20,13 +20,13 @@ class Object
     Object( int       iID,
             glm::vec3 iPosition,
             float     iAngle,
-            float     iAcca,
+            float     iAngleAcc,
             glm::vec3 iScale,
             float     iAlpha,
             int       iShiniStr,
             bool      iGenerateShadow,
+            bool      iReceivShadow,
             float     iShadowDarkness,
-            bool      iNormalMapping,
             float     iBloom,
             float     iBloomBrightness );
 
@@ -37,13 +37,13 @@ class Object
     float     _id;
     glm::vec3 _position;
     float     _angle;
-    float     _acca;
+    float     _angle_acc;
     glm::vec3 _scale;
     float     _alpha;
     int       _shini_str;
     bool      _generate_shadow;
+    bool      _receiv_shadow;
     float     _shadow_darkness;
-    bool      _normal_mapping;
     float     _bloom;
     float     _bloom_brightness;
 };

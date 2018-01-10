@@ -98,11 +98,11 @@ class Toolbox
     HDRManager * _hdr_image_manager;
 
     // VAO a VBO
-    unsigned int _quadVAO;
-    unsigned int _quadVBO;
+    unsigned int _quad_VAO;
+    unsigned int _quad_VBO;
 
-    unsigned int _cubeVAO;
-    unsigned int _cubeVBO;
+    unsigned int _cube_VAO;
+    unsigned int _cube_VBO;
 
     // FBOs & RBOs
     unsigned int _temp_hdr_FBO;
@@ -110,8 +110,8 @@ class Toolbox
 
     unsigned int _final_hdr_FBO;
 
-    unsigned int _captureFBO;
-    unsigned int _captureRBO;
+    unsigned int _capture_FBO;
+    unsigned int _capture_RBO;
     unsigned int _pingpong_FBO;
 
     // Textures

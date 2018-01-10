@@ -5,29 +5,44 @@
 //**********  Class Camera  ****************************************************
 //******************************************************************************
 
-Camera::Camera()
+Camera::Camera( glm::vec3 iPosition,
+                glm::vec3 iFront,
+                glm::vec3 iUp,
+                float     iYaw,
+                float     iPitch,
+                float     iNear,
+                float     iFar,
+                float     iFov,
+                float     iWidth,
+                float     iHeight,
+                float     iMoveSpeed )
 {
-  _position = glm::vec3( -7.02172, 2.42351, -6.27063 );
-  _front    = glm::vec3( 0.724498, -0.409127, 0.554724 );
-  _up       = glm::vec3( 0.0f, 1.0f,  0.0f );     
+  _position = iPosition;
+  _front    = iFront;
+  _up       = iUp;     
     
-  _near       = 0.01;
-  _far        = 100.0;
-  _yaw        = 37.44;
-  _pitch      = -24.0;
+  _near       = iNear;
+  _far        = iFar;
+  _yaw        = iYaw;
+  _pitch      = iPitch;
 
-  _move_speed = 3.0;
+  _projection_matrix = glm::perspective( iFov, iWidth / iHeight, iNear, iFar );
+
+  _move_speed = iMoveSpeed;
 
   _Z_state = 0;
   _D_state = 0;
   _Q_state = 0;
   _S_state = 0;
+
+  UpdateViewMatrix();
 }
 
 void Camera::CameraUpdate( float iDeltaTime )
 {
   KeyboardPositionUpdate( iDeltaTime );
   MouseFrontUpdate();
+  UpdateViewMatrix();
 }
 
 void Camera::KeyboardPositionUpdate( float iDeltaTime )
@@ -81,6 +96,16 @@ void Camera::MouseFrontUpdate()
   _front.y = sin( glm::radians( _pitch ) );
   _front.z = sin( glm::radians( _yaw ) ) * cos( glm::radians( _pitch ) );
   _front = glm::normalize( _front );
+}
+
+void Camera::SetProjectionMatrix( glm::mat4 * iProjectionMatrix )
+{
+  _projection_matrix = *iProjectionMatrix;
+}
+
+void Camera::UpdateViewMatrix()
+{
+  _view_matrix = glm::lookAt( _position, _position + _front, _up );   
 }
 
 void Camera::PrintState()
