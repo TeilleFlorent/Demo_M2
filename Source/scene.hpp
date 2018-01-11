@@ -123,9 +123,12 @@ class Scene
 
     // IBL param
     int   _res_env_cubeMap;
+
     int   _res_irradiance_cubeMap;
-    int   _res_pre_filter_cubeMap;
     float _irradiance_sample_delta;
+
+    int          _res_pre_filter_cubeMap;
+    unsigned int _pre_filter_sample_count;
 
     // Pointer on the scene window
     Window * _window;

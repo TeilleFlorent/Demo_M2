@@ -17,6 +17,8 @@ layout ( location = 0 ) out vec4 FragColor;
 // -----------------------
 uniform samplerCube uEnvironmentMap;
 uniform float       uRoughness;
+uniform float       uCubeMapRes;
+uniform uint        uSampleCount;
 
 
 // Fragment inputs from vertex shader 
@@ -47,6 +49,7 @@ vec2 Hammersley( uint iNum,
   return vec2( float( iNum ) / float( iCount ), RadicalInverseVDC( iNum ) );
 }
 
+
 // Importance sampling function
 // ----------------------------
 vec3 ImportanceSampleGGX( vec2 iSeqValue,
@@ -70,9 +73,28 @@ vec3 ImportanceSampleGGX( vec2 iSeqValue,
   vec3 up        = abs( iNormal.z ) < 0.999 ? vec3( 0.0, 0.0, 1.0 ) : vec3( 1.0, 0.0, 0.0 );
   vec3 tangent   = normalize( cross( up, iNormal ) );
   vec3 bitangent = cross( iNormal, tangent );
-  vec3 biased_halfway   = tangent * temp_biased_halfway.x + bitangent * temp_biased_halfway.y + iNormal * temp_biased_halfway.z;
+  vec3 biased_halfway = tangent * temp_biased_halfway.x + bitangent * temp_biased_halfway.y + iNormal * temp_biased_halfway.z;
 
   return normalize( biased_halfway );
+}
+
+
+// Normal distribution function, allow to generate pdf and mip level used to sample environment map
+// ------------------------------------------------------------------------------------------------
+float DistributionGGX( vec3  iNormal,
+                       vec3  iHalfway,
+                       float iRoughness )
+{
+  float a  = iRoughness * iRoughness;
+  float a2 = a * a;
+  float NdotH  = max( dot( iNormal, iHalfway ), 0.0);
+  float NdotH2 = NdotH * NdotH;
+
+  float nom   = a2;
+  float denom = ( NdotH2 * ( a2 - 1.0 ) + 1.0 );
+  denom = PI * denom * denom;
+  
+  return nom / denom;
 }
 
 
@@ -87,15 +109,15 @@ void main()
   vec3 view_dir = normal;
   vec3 reflect  = normal;
 
-  const uint sample_count = 1024u;
-  vec3 prefiltered_color  = vec3( 0.0 );
-  float total_weight      = 0.0;
+  vec3 prefiltered_color = vec3( 0.0 );
+  float total_weight     = 0.0;
 
-  // Perform 
-  for( uint sample_it = 0u; sample_it < sample_count; sample_it++ )
+  // Perform pre filtered color calculation using sample vectors biased towards the preferred alignment direction ( importance sampling )
+  for( uint sample_it = 0u; sample_it < uSampleCount; sample_it++ )
   {
     // Get value from the low discrepancy sequence
-    vec2 seq_value = Hammersley( sample_it, sample_count );
+    vec2 seq_value = Hammersley( sample_it,
+                                 uSampleCount );
 
     // Get biased halfway vector using importance sampling with sequence value and roughness
     vec3 biased_halfway = ImportanceSampleGGX( seq_value, 
@@ -105,7 +127,30 @@ void main()
     // Get biased light direction from biased halfway and view direction
     // It will be used to sample the input cubemap
     vec3 light_dir = normalize( 2.0 * dot( view_dir, biased_halfway ) * biased_halfway - view_dir );
+    
+    // Get corresponding sample N dot L
+    float N_dot_L = max( dot( normal, light_dir ), 0.0 );
+
+    if( N_dot_L > 0.0 )
+    {
+      // Get mip level used to sample environment map using probability density function
+      float NDF = DistributionGGX( normal,
+                                   biased_halfway,
+                                   uRoughness );
+      float N_dot_H   = max( dot( normal, biased_halfway ), 0.0 );
+      float H_dot_V   = max( dot( biased_halfway, view_dir ), 0.0 );
+      float pdf       = NDF * N_dot_H / ( 4.0 * H_dot_V ) + 0.0001;
+      float saTexel   = 4.0 * PI / ( 6.0 * uCubeMapRes * uCubeMapRes );
+      float saSample  = 1.0 / ( float( uSampleCount ) * pdf + 0.0001 );
+      float mip_level = uRoughness == 0.0 ? 0.0 : 0.5 * log2( saSample / saTexel );
+
+      // Sample environment map 
+      prefiltered_color += textureLod( uEnvironmentMap, light_dir, mip_level ).rgb * N_dot_L;
+
+      // Add corresponding sample weight ( sample with small N_dot_L == small influence )
+      total_weight += N_dot_L;
+    }
   }
 
-  FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );
+  FragColor = vec4( ( prefiltered_color / total_weight ), 1.0 );
 }

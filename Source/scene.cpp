@@ -29,12 +29,15 @@ Scene::Scene( Window * iParentWindow )
   _nb_multi_sample = 2;
 
   // Init IBL param
-  _res_env_cubeMap         = 512;
-  _res_irradiance_cubeMap  = 32;
-  _res_pre_filter_cubeMap  = 128;
-  _irradiance_sample_delta = 0.025;
   _current_env             = 2;
+  _res_env_cubeMap         = 512;
 
+  _res_irradiance_cubeMap  = 32;
+  _irradiance_sample_delta = 0.025;
+  
+  _res_pre_filter_cubeMap  = 256;
+  _pre_filter_sample_count = 1024 * 2;
+  
   // Lights volume
   _render_lights_volume = false;
 
@@ -755,7 +758,7 @@ void Scene::IBLCubeMapsInitialization()
     }
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 
-    glBindTexture( GL_TEXTURE_CUBE_MAP, env_cubeMap);
+    glBindTexture( GL_TEXTURE_CUBE_MAP, env_cubeMap );
     glGenerateMipmap( GL_TEXTURE_CUBE_MAP ); // generate mipmaps from first mip face (combatting visible dots artifact)
 
     
@@ -837,6 +840,8 @@ void Scene::IBLCubeMapsInitialization()
     _specular_pre_filter_shader.Use();
     glUniform1i( glGetUniformLocation( _specular_pre_filter_shader._program, "uEnvironmentMap" ), 0 );
     glUniformMatrix4fv( glGetUniformLocation( _specular_pre_filter_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_projection_matrix ) );
+    glUniform1f( glGetUniformLocation( _specular_pre_filter_shader._program, "uCubeMapRes" ), _res_pre_filter_cubeMap );
+    glUniform1ui( glGetUniformLocation( _specular_pre_filter_shader._program, "uSampleCount" ), _pre_filter_sample_count );
 
     glActiveTexture( GL_TEXTURE0 );
     glBindTexture( GL_TEXTURE_CUBE_MAP, env_cubeMap );

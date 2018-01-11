@@ -75,16 +75,16 @@ vec3 NormalMappingCalculation( vec2 iUV )
 
 // PBR lighting functions
 // ----------------------
-float DistributionGGX( vec3 iNormal,
-                       vec3 iHalfway,
+float DistributionGGX( vec3  iNormal,
+                       vec3  iHalfway,
                        float iRoughness )
 {
-  float a = iRoughness * iRoughness;
+  float a  = iRoughness * iRoughness;
   float a2 = a * a;
-  float NdotH = max( dot( iNormal, iHalfway ), 0.0);
+  float NdotH  = max( dot( iNormal, iHalfway ), 0.0);
   float NdotH2 = NdotH * NdotH;
 
-  float nom  = a2;
+  float nom   = a2;
   float denom = ( NdotH2 * ( a2 - 1.0 ) + 1.0 );
   denom = PI * denom * denom;
 
@@ -133,14 +133,14 @@ vec3 ReflectanceEquationCalculation( vec2     iUV,
                                      vec3     iViewDir,
                                      vec3     iNormal,
                                      vec3     iF0,
-                                     float    iMaxNormalDotViewDir,
+                                     float    iNormalDotViewDir,
                                      Material iMaterial )
 { 
 
   // Pre calculation optimisation
   // ----------------------------
-  float IV_max_dot_N_V = 4 * iMaxNormalDotViewDir; 
-  vec3 albedo_by_PI    = iMaterial._albedo / PI;
+  float IV_N_dot_V  = 4 * iNormalDotViewDir; 
+  vec3 albedo_by_PI = iMaterial._albedo / PI;
 
 
   // Compute equation to each scene light
@@ -179,7 +179,7 @@ vec3 ReflectanceEquationCalculation( vec2     iUV,
     vec3 F    = FresnelSchlick( max( dot( halfway, iViewDir ), 0.0 ), iF0 );
     float G   = GeometrySmith( iNormal, iViewDir, light_dir, iMaterial._roughness );      
     vec3 nominator      = NDF * F * G; 
-    float denominator   = ( IV_max_dot_N_V * max( dot( iNormal, light_dir ) , 0.0 ) ) + 0.001; // 0.001 to prevent divide by zero.
+    float denominator   = ( IV_N_dot_V * max( dot( iNormal, light_dir ) , 0.0 ) ) + 0.001; // 0.001 to prevent divide by zero.
     vec3 light_specular = nominator / denominator;
         
 
@@ -210,12 +210,12 @@ vec3 ReflectanceEquationCalculation( vec2     iUV,
   return Lo;
 } 
 
-vec3 IndirectIrradianceCalculation( float iMaxNormalDotViewDir,
+vec3 IndirectIrradianceCalculation( float iNormalDotViewDir,
                                     Material iMaterial,
                                     vec3 iF0,
                                     vec3 iNormal )
 {
-  vec3 kS = FresnelSchlickRoughness( iMaxNormalDotViewDir, iF0, iMaterial._roughness );
+  vec3 kS = FresnelSchlickRoughness( iNormalDotViewDir, iF0, iMaterial._roughness );
   vec3 kD = 1.0 - kS;
   kD *= ( 1.0 - iMaterial._metalness );   
   vec3 irradiance = texture( uIrradianceCubeMap, iNormal ).rgb;
@@ -241,8 +241,8 @@ vec3 PBRLightingCalculation( vec3 iNormal,
   vec3 F0 = vec3( 0.04 ); 
   F0 = mix( F0, material._albedo, material._metalness );  
 
-  // Pre calcul max_dot_N_V
-  float max_dot_N_V = max( dot( iNormal, iViewDir ), 0.0 );
+  // Pre calcul N dot V
+  float N_dot_V = max( dot( iNormal, iViewDir ), 0.0 );
 
   
   // BRDF calculation part
@@ -253,7 +253,7 @@ vec3 PBRLightingCalculation( vec3 iNormal,
                                                             iViewDir,
                                                             iNormal,
                                                             F0,
-                                                            max_dot_N_V,
+                                                            N_dot_V,
                                                             material );
 
 
@@ -261,7 +261,7 @@ vec3 PBRLightingCalculation( vec3 iNormal,
   // --------------------
    
   // Compute indirect irradiance
-  vec3 diffuse_IBL = IndirectIrradianceCalculation( max_dot_N_V,
+  vec3 diffuse_IBL = IndirectIrradianceCalculation( N_dot_V,
                                                     material,
                                                     F0,
                                                     iNormal );

@@ -116,6 +116,9 @@ void Window::InitGL()
   glEnable( GL_DEPTH_TEST );
   glDepthFunc( GL_LESS ); 
 
+  // enable seamless cubemap sampling for lower mip levels in the IBL specular pre-filter map
+  glEnable( GL_TEXTURE_CUBE_MAP_SEAMLESS );  
+
   Resize();
 
   //glEnable(GL_BLEND);
