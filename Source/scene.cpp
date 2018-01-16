@@ -18,25 +18,29 @@ Scene::Scene( Window * iParentWindow )
   // Frame exposure
   _exposure           = 1.0;
 
-  // Init bloom param
+  // Init bloom parameters
   _bloom              = true;
   _blur_downsample    = 0.5;
   _blur_pass_count    = 6;
   _blur_offset_factor = 0.5;
 
-  // Init multi sample param
+  // Init multi sample parameters
   _multi_sample    = false;
   _nb_multi_sample = 2;
 
-  // Init IBL param
+  // Init IBL parameters
   _current_env             = 2;
   _res_env_cubeMap         = 512;
 
   _res_irradiance_cubeMap  = 32;
   _irradiance_sample_delta = 0.025;
   
-  _res_pre_filter_cubeMap  = 256;
-  _pre_filter_sample_count = 1024 * 2;
+  _res_pre_filter_cubeMap   = 256;
+  _pre_filter_sample_count  = 1024 * 2;
+  _pre_filter_max_mip_Level = 5;
+
+  _res_pre_brdf_texture  = 512;
+  _pre_brdf_sample_count = 1024 * 2;    
   
   // Lights volume
   _render_lights_volume = false;
@@ -47,13 +51,6 @@ Scene::Scene( Window * iParentWindow )
 
   _ground_VAO = 0;
   _ground_VBO = 0;
-
-  _tex_albedo_ground    = 0;
-  _tex_normal_ground    = 0;
-  _tex_height_ground    = 0;
-  _tex_AO_ground        = 0;
-  _tex_roughness_ground = 0;
-  _tex_metalness_ground = 0;
 
   // Get pointer on the scene window
   _window = iParentWindow;
@@ -90,7 +87,7 @@ Scene::Scene( Window * iParentWindow )
   SceneDataInitialization();
 
   // Init all IBL cubemap
-  IBLCubeMapsInitialization();
+  IBLInitialization();
 
   // Init deferred rendering g-buffer
   if( _pipeline_type == DEFERRED_RENDERING )
@@ -157,16 +154,12 @@ void Scene::Quit()
     glDeleteFramebuffers( 1, &_window->_toolbox->_temp_hdr_FBO );
   if( _window->_toolbox->_final_hdr_FBO )
     glDeleteFramebuffers( 1, &_window->_toolbox->_final_hdr_FBO );
-  if( _window->_toolbox->_capture_FBO )
-    glDeleteFramebuffers( 1, &_window->_toolbox->_capture_FBO );
-
+  
 
   // Delete RBOs
   // -----------
   if( _window->_toolbox->_temp_depth_RBO )
     glDeleteRenderbuffers( 1, &_window->_toolbox->_temp_depth_RBO );
-  if( _window->_toolbox->_capture_RBO )
-    glDeleteRenderbuffers( 1, &_window->_toolbox->_capture_RBO );
 }
 
 void Scene::SceneDataInitialization()
@@ -655,8 +648,11 @@ void Scene::ObjectsInitialization()
 
 }
 
-void Scene::IBLCubeMapsInitialization()
+void Scene::IBLInitialization()
 { 
+  unsigned int capture_FBO;
+  unsigned int capture_RBO;
+
   std::vector< std::string > hdr_texture_paths;
   hdr_texture_paths.push_back( std::string( "../Skybox/hdr skybox 2/Ridgecrest_Road_Ref.hdr" ) );
   hdr_texture_paths.push_back( std::string( "../Skybox/hdr skybox 1/Arches_E_PineTree_3k.hdr" ) );
@@ -694,12 +690,12 @@ void Scene::IBLCubeMapsInitialization()
 
     // Gen FBO and RBO to render hdr tex into cube map tex
     // ---------------------------------------------------
-    glGenFramebuffers( 1, &_window->_toolbox->_capture_FBO );
-    glGenRenderbuffers( 1, &_window->_toolbox->_capture_RBO );
-    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_capture_FBO );
-    glBindRenderbuffer( GL_RENDERBUFFER, _window->_toolbox->_capture_RBO );
+    glGenFramebuffers( 1, &capture_FBO );
+    glGenRenderbuffers( 1, &capture_RBO );
+    glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
+    glBindRenderbuffer( GL_RENDERBUFFER, capture_RBO );
     glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, _res_env_cubeMap, _res_env_cubeMap );
-    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _window->_toolbox->_capture_RBO );
+    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, capture_RBO );
 
 
     // Gen cubemap textures
@@ -748,7 +744,7 @@ void Scene::IBLCubeMapsInitialization()
     glUniformMatrix4fv( glGetUniformLocation( _cube_map_converter_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_projection_matrix ) );
 
     glViewport( 0, 0, _res_env_cubeMap, _res_env_cubeMap ); // don't forget to configure the viewport to the capture dimensions.
-    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_capture_FBO );
+    glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
     for( unsigned int i = 0; i < 6; ++i )
     {
       glUniformMatrix4fv( glGetUniformLocation( _cube_map_converter_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_view_matrices[ i ] ) );
@@ -784,13 +780,13 @@ void Scene::IBLCubeMapsInitialization()
     glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 
-    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_capture_FBO );
-    glBindRenderbuffer( GL_RENDERBUFFER, _window->_toolbox->_capture_RBO );
+    glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
+    glBindRenderbuffer( GL_RENDERBUFFER, capture_RBO );
     glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, _res_irradiance_cubeMap, _res_irradiance_cubeMap );
 
 
-    // Diffuse irradiance cube map calculation  
-    // ---------------------------------------
+    // Compute diffuse irradiance cube map  
+    // -----------------------------------
     _diffuse_irradiance_shader.Use();
     glUniformMatrix4fv( glGetUniformLocation( _diffuse_irradiance_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_projection_matrix ) );
     glUniform1f( glGetUniformLocation( _diffuse_irradiance_shader._program, "uSampleDelta" ), _irradiance_sample_delta );
@@ -800,7 +796,7 @@ void Scene::IBLCubeMapsInitialization()
     glBindTexture( GL_TEXTURE_CUBE_MAP, env_cubeMap );
     
     glViewport( 0, 0, _res_irradiance_cubeMap, _res_irradiance_cubeMap ); // don't forget to configure the viewport to the capture dimensions.
-    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_capture_FBO );
+    glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
     for( unsigned int i = 0; i < 6; ++i )
     {
       glUniformMatrix4fv( glGetUniformLocation( _diffuse_irradiance_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_view_matrices[ i ] ) );
@@ -835,8 +831,8 @@ void Scene::IBLCubeMapsInitialization()
     glGenerateMipmap( GL_TEXTURE_CUBE_MAP ); // generate mipmaps for the cubemap so OpenGL automatically allocates the required memory 
 
 
-    // Compute pre filter cube map
-    // ---------------------------
+    // Compute specular pre filter cube map
+    // ------------------------------------
     _specular_pre_filter_shader.Use();
     glUniform1i( glGetUniformLocation( _specular_pre_filter_shader._program, "uEnvironmentMap" ), 0 );
     glUniformMatrix4fv( glGetUniformLocation( _specular_pre_filter_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_projection_matrix ) );
@@ -846,20 +842,19 @@ void Scene::IBLCubeMapsInitialization()
     glActiveTexture( GL_TEXTURE0 );
     glBindTexture( GL_TEXTURE_CUBE_MAP, env_cubeMap );
 
-    glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_capture_FBO );
+    glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
 
-    unsigned int max_mip_Level = 5;
-    for( unsigned int mip = 0; mip < max_mip_Level; mip++ )
+    for( unsigned int mip = 0; mip < _pre_filter_max_mip_Level; mip++ )
     {
       // Reisze framebuffer according to mip-level size.
       unsigned int mip_width  = _res_pre_filter_cubeMap * std::pow( 0.5, mip );
       unsigned int mip_height = mip_width;
-      glBindRenderbuffer( GL_RENDERBUFFER, _window->_toolbox->_capture_RBO );
+      glBindRenderbuffer( GL_RENDERBUFFER, capture_RBO );
       glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mip_width, mip_height );
       glViewport( 0, 0, mip_width, mip_height );
 
       // Set roughness level for wich we need to render
-      float roughness = ( float )mip / ( float )( max_mip_Level - 1 );
+      float roughness = ( float )mip / ( float )( _pre_filter_max_mip_Level - 1 );
       glUniform1f( glGetUniformLocation( _specular_pre_filter_shader._program, "uRoughness" ), roughness );
 
       // Compute pre filter cube map for a given mip level and roughness level
@@ -871,6 +866,36 @@ void Scene::IBLCubeMapsInitialization()
         _window->_toolbox->RenderCube();
       }
     }
+    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+
+    
+    // Gen specular pre brdf texture
+    // -----------------------------    
+    glGenTextures( 1, &_pre_brdf_texture );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RG16F, _res_pre_brdf_texture, _res_pre_brdf_texture, 0, GL_RG, GL_FLOAT, 0 );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+
+
+    // Compute specular pre brdf texture
+    // ---------------------------------
+    
+    // Re configure capture FBO
+    glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
+    glBindRenderbuffer( GL_RENDERBUFFER, capture_RBO );
+    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, _res_pre_brdf_texture, _res_pre_brdf_texture );
+    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _pre_brdf_texture, 0 );
+
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    glViewport( 0, 0, _res_pre_brdf_texture, _res_pre_brdf_texture );
+    
+    _specular_pre_brdf_shader.Use();
+    glUniform1ui( glGetUniformLocation( _specular_pre_brdf_shader._program, "uSampleCount" ), _pre_brdf_sample_count );
+    _window->_toolbox->RenderQuad();
+
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 
 
@@ -886,21 +911,23 @@ void Scene::IBLCubeMapsInitialization()
 void Scene::ShadersInitialization()
 {
 
-  // Compilation des shaders
+  // Set and compile shaders
   // -----------------------
-  _forward_pbr_shader.SetShaderClassicPipeline(         "../Shaders/forward_pbr_lighting.vs",   "../Shaders/forward_pbr_lighting.fs" );
-  _skybox_shader.SetShaderClassicPipeline(              "../Shaders/skybox.vs",                 "../Shaders/skybox.fs" );
-  _flat_color_shader.SetShaderClassicPipeline(          "../Shaders/flat_color.vs",             "../Shaders/flat_color.fs" );
-  _observer_shader.SetShaderClassicPipeline(            "../Shaders/observer.vs",               "../Shaders/observer.fs" );
-  _blur_shader.SetShaderClassicPipeline(                "../Shaders/post_process.vs",           "../Shaders/blur.fs" );
-  _post_process_shader.SetShaderClassicPipeline(        "../Shaders/post_process.vs",           "../Shaders/post_process.fs" );
-  _MS_blit_shader.SetShaderClassicPipeline(             "../Shaders/multisample_blit.vs",       "../Shaders/multisample_blit.fs" );
-  _cube_map_converter_shader.SetShaderClassicPipeline(  "../Shaders/cube_map_converter.vs",     "../Shaders/cube_map_converter.fs" );
-  _diffuse_irradiance_shader.SetShaderClassicPipeline(  "../Shaders/cube_map_converter.vs",     "../Shaders/diffuse_irradiance.fs" );
+  _forward_pbr_shader.SetShaderClassicPipeline(         "../Shaders/forward_pbr_lighting.vs", "../Shaders/forward_pbr_lighting.fs" );
+  _skybox_shader.SetShaderClassicPipeline(              "../Shaders/skybox.vs",               "../Shaders/skybox.fs" );
+  _flat_color_shader.SetShaderClassicPipeline(          "../Shaders/flat_color.vs",           "../Shaders/flat_color.fs" );
+  _observer_shader.SetShaderClassicPipeline(            "../Shaders/observer.vs",             "../Shaders/observer.fs" );
+  _blur_shader.SetShaderClassicPipeline(                "../Shaders/observer.vs",             "../Shaders/blur.fs" );
+  _post_process_shader.SetShaderClassicPipeline(        "../Shaders/observer.vs",             "../Shaders/post_process.fs" );
+  _MS_blit_shader.SetShaderClassicPipeline(             "../Shaders/observer.vs",             "../Shaders/multisample_blit.fs" );
+  _cube_map_converter_shader.SetShaderClassicPipeline(  "../Shaders/cube_map_converter.vs",   "../Shaders/cube_map_converter.fs" );
+  _diffuse_irradiance_shader.SetShaderClassicPipeline(  "../Shaders/cube_map_converter.vs",   "../Shaders/diffuse_irradiance.fs" );
+  _specular_pre_filter_shader.SetShaderClassicPipeline( "../Shaders/cube_map_converter.vs",   "../Shaders/specular_pre_filter.fs" );
+  _specular_pre_brdf_shader.SetShaderClassicPipeline(   "../Shaders/observer.vs",             "../Shaders/specular_pre_brdf.fs" );
+
   _geometry_pass_shader.SetShaderClassicPipeline(       "../Shaders/deferred_geometry_pass.vs", "../Shaders/deferred_geometry_pass.fs" );
   _lighting_pass_shader.SetShaderClassicPipeline(       "../Shaders/deferred_lighting_pass.vs", "../Shaders/deferred_lighting_pass.fs" );
   _empty_shader.SetShaderClassicPipeline(               "../Shaders/flat_color.vs",             "../Shaders/empty.fs" );
-  _specular_pre_filter_shader.SetShaderClassicPipeline( "../Shaders/cube_map_converter.vs",     "../Shaders/specular_pre_filter.fs" );
 
 
   // Set texture uniform location
@@ -913,7 +940,6 @@ void Scene::ShadersInitialization()
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureRoughness1" ), 4 );
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureMetalness1" ), 5 );
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureSpecular1" ), 6 );
-
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIrradianceCubeMap" ), 9 ); 
   glUseProgram( 0 );
 
@@ -1078,9 +1104,9 @@ void Scene::SceneForwardRendering()
   glUniform1f( glGetUniformLocation( _skybox_shader._program, "uBloomBrightness" ), _ground1->_bloom_brightness );
 
   glActiveTexture( GL_TEXTURE0 );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _env_cubeMaps[ _current_env ] ); // bind les 6 textures du cube map 
   //glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] ); // bind les 6 textures du cube map 
-  //glBindTexture( GL_TEXTURE_CUBE_MAP, _env_cubeMaps[ _current_env ] ); // bind les 6 textures du cube map 
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); // bind les 6 textures du cube map 
+  //glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); // bind les 6 textures du cube map 
 
   _window->_toolbox->RenderCube();
 

@@ -108,10 +108,10 @@ float GeometrySmith( vec3 iNormal,
                      vec3 iLightDir,
                      float iRoughness )
 {
-  float NdotV = max( dot ( iNormal, iViewDir ), 0.0 );
+  float NdotV = max( dot( iNormal, iViewDir ), 0.0 );
   float NdotL = max( dot( iNormal, iLightDir ), 0.0 );
-  float ggx2 = GeometrySchlickGGX( NdotV, iRoughness );
-  float ggx1 = GeometrySchlickGGX( NdotL, iRoughness );
+  float ggx2  = GeometrySchlickGGX( NdotV, iRoughness );
+  float ggx1  = GeometrySchlickGGX( NdotL, iRoughness );
 
   return ggx1 * ggx2;
 }

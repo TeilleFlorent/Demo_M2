@@ -42,7 +42,7 @@ class Scene
 
     void ObjectsInitialization();
 
-    void IBLCubeMapsInitialization();
+    void IBLInitialization();
 
     void ModelsLoading();
 
@@ -80,6 +80,8 @@ class Scene
     Shader _cube_map_converter_shader;
     Shader _diffuse_irradiance_shader;
     Shader _specular_pre_filter_shader;
+    Shader _specular_pre_brdf_shader;
+
     Shader _geometry_pass_shader;
     Shader _lighting_pass_shader;
     Shader _empty_shader;
@@ -91,13 +93,14 @@ class Scene
     unsigned int _ground_VBO;
 
     // Textures
+    int _current_env;
     std::vector< unsigned int > _hdr_textures;
     std::vector< unsigned int > _env_cubeMaps;
     std::vector< unsigned int > _irradiance_cubeMaps;
-    std::vector< unsigned int > _pre_filter_cubeMaps;   
-    int _current_env;
+    std::vector< unsigned int > _pre_filter_cubeMaps;
+    unsigned int _pre_brdf_texture;
    
-    std::vector< const GLchar * > _faces; // data skybox cube map texture
+    std::vector< const GLchar * > _faces; // skybox textures path
 
     unsigned int _tex_albedo_ground;
     unsigned int _tex_normal_ground;
@@ -110,18 +113,18 @@ class Scene
     unsigned int _g_buffer_FBO;
     std::vector< unsigned int > _g_buffer_textures; // [ position, normal, color, roughness_metalness_AO, depth, lighting, brightest ]
 
-    // Bloom param
+    // Bloom parameters
     float _exposure;
     bool  _bloom;
     float _blur_downsample;
     int   _blur_pass_count;
     float _blur_offset_factor;
 
-    // Multi sample param
+    // Multi sample parameters
     bool _multi_sample;
     int  _nb_multi_sample;
 
-    // IBL param
+    // IBL parameters
     int   _res_env_cubeMap;
 
     int   _res_irradiance_cubeMap;
@@ -129,6 +132,10 @@ class Scene
 
     int          _res_pre_filter_cubeMap;
     unsigned int _pre_filter_sample_count;
+    unsigned int _pre_filter_max_mip_Level;
+
+    unsigned int _res_pre_brdf_texture;
+    unsigned int _pre_brdf_sample_count;
 
     // Pointer on the scene window
     Window * _window;

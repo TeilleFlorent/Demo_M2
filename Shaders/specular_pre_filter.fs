@@ -69,10 +69,12 @@ vec3 ImportanceSampleGGX( vec2 iSeqValue,
   temp_biased_halfway.y = sin( phi ) * sin_theta;
   temp_biased_halfway.z = cos_theta;
   
-  // Get biased halfway vector to world space from tangent space
+  // Get tangent and bitangent  
   vec3 up        = abs( iNormal.z ) < 0.999 ? vec3( 0.0, 0.0, 1.0 ) : vec3( 1.0, 0.0, 0.0 );
   vec3 tangent   = normalize( cross( up, iNormal ) );
   vec3 bitangent = cross( iNormal, tangent );
+    
+  // Get biased halfway vector to world space from tangent space
   vec3 biased_halfway = tangent * temp_biased_halfway.x + bitangent * temp_biased_halfway.y + iNormal * temp_biased_halfway.z;
 
   return normalize( biased_halfway );
@@ -98,10 +100,10 @@ float DistributionGGX( vec3  iNormal,
 }
 
 
-// Main function
-// -------------
-void main()
-{		
+// Pre filtering calculation function
+// ----------------------------------
+vec3 PreFilterConvolution()
+{
   // Get cube fragment normal
   vec3 normal = normalize( oWorldPos );
 
@@ -152,5 +154,13 @@ void main()
     }
   }
 
-  FragColor = vec4( ( prefiltered_color / total_weight ), 1.0 );
+  return prefiltered_color / total_weight;
+}
+
+
+// Main function
+// -------------
+void main()
+{		
+  FragColor = vec4( PreFilterConvolution(), 1.0 );
 }

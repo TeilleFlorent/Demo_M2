@@ -110,8 +110,6 @@ class Toolbox
 
     unsigned int _final_hdr_FBO;
 
-    unsigned int _capture_FBO;
-    unsigned int _capture_RBO;
     unsigned int _pingpong_FBO;
 
     // Textures

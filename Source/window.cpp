@@ -287,9 +287,9 @@ void Window::Draw()
     _scene->BlurProcess();
   }  
 
-  //_toolbox->RenderObserver();
+  _toolbox->RenderObserver();
 
   // Post process calculations => final render
-  glViewport( 0, 0, _width, _height );
-  _scene->PostProcess();
+  //glViewport( 0, 0, _width, _height );
+  //_scene->PostProcess();
 }

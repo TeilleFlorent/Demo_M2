@@ -29,9 +29,7 @@ out vec3 oUV;
 
 void main()
 {
-  vec4 clip_space_position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4( _position, 1.0);
-  gl_Position = clip_space_position;  
-
+  gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4( _position, 1.0 );;  
   oUV = _position;
 }  
 
