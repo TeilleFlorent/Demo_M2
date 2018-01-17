@@ -130,7 +130,7 @@ vec3 PreFilterConvolution()
     // It will be used to sample the input cubemap
     vec3 light_dir = normalize( 2.0 * dot( view_dir, biased_halfway ) * biased_halfway - view_dir );
     
-    // Get corresponding sample N dot L
+    // Get corresponding sample NdotL angle
     float N_dot_L = max( dot( normal, light_dir ), 0.0 );
 
     if( N_dot_L > 0.0 )
@@ -142,9 +142,9 @@ vec3 PreFilterConvolution()
       float N_dot_H   = max( dot( normal, biased_halfway ), 0.0 );
       float H_dot_V   = max( dot( biased_halfway, view_dir ), 0.0 );
       float pdf       = NDF * N_dot_H / ( 4.0 * H_dot_V ) + 0.0001;
-      float saTexel   = 4.0 * PI / ( 6.0 * uCubeMapRes * uCubeMapRes );
-      float saSample  = 1.0 / ( float( uSampleCount ) * pdf + 0.0001 );
-      float mip_level = uRoughness == 0.0 ? 0.0 : 0.5 * log2( saSample / saTexel );
+      float sa_texel   = 4.0 * PI / ( 6.0 * uCubeMapRes * uCubeMapRes );
+      float sa_sample  = 1.0 / ( float( uSampleCount ) * pdf + 0.0001 );
+      float mip_level = uRoughness == 0.0 ? 0.0 : 0.5 * log2( sa_sample / sa_texel );
 
       // Sample environment map 
       prefiltered_color += textureLod( uEnvironmentMap, light_dir, mip_level ).rgb * N_dot_L;

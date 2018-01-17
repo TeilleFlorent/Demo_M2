@@ -940,7 +940,9 @@ void Scene::ShadersInitialization()
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureRoughness1" ), 4 );
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureMetalness1" ), 5 );
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureSpecular1" ), 6 );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIrradianceCubeMap" ), 9 ); 
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIrradianceCubeMap" ), 7 );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uPreFilterCubeMap" ), 8 );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uPreBrdfLUT" ), 9 ); 
   glUseProgram( 0 );
 
   _geometry_pass_shader.Use();
@@ -1162,8 +1164,12 @@ void Scene::SceneForwardRendering()
   glBindTexture( GL_TEXTURE_2D, _tex_roughness_ground ); 
   glActiveTexture( GL_TEXTURE5 );
   glBindTexture( GL_TEXTURE_2D, _tex_metalness_ground ); 
+  glActiveTexture( GL_TEXTURE7 );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
+  glActiveTexture( GL_TEXTURE8 );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); 
   glActiveTexture( GL_TEXTURE9 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] ); // bind les 6 textures du cube map 
+  glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture );
 
   glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
   glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
@@ -1183,6 +1189,8 @@ void Scene::SceneForwardRendering()
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _ground1->_bloom_brightness );
 
   glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _ground1->_alpha );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ground1->_id );    
@@ -1205,8 +1213,12 @@ void Scene::SceneForwardRendering()
     model_matrix = glm::rotate( model_matrix, _tables[ i ]._angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
     model_matrix = glm::scale( model_matrix, _tables[ i ]._scale ); 
 
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); 
     glActiveTexture( GL_TEXTURE9 );
-    glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] ); 
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
 
     glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
     glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
@@ -1224,6 +1236,8 @@ void Scene::SceneForwardRendering()
 
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _tables[ i ]._bloom );
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _tables[ i ]._bloom_brightness );
+
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
     glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 

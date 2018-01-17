@@ -35,17 +35,22 @@ uniform vec3 uViewPos;
 uniform float uBloom;
 uniform float uBloomBrightness;
 
+uniform float uMaxMipLevel;
+
 uniform float uAlpha;
 uniform float uID;
 
-uniform sampler2D uTextureDiffuse1; 
-uniform sampler2D uTextureNormal1; 
-uniform sampler2D uTextureHeight1; 
-uniform sampler2D uTextureAO1; 
-uniform sampler2D uTextureRoughness1; 
-uniform sampler2D uTextureMetalness1; 
-uniform sampler2D uTextureSpecular1;
+uniform sampler2D   uTextureDiffuse1; 
+uniform sampler2D   uTextureNormal1; 
+uniform sampler2D   uTextureHeight1; 
+uniform sampler2D   uTextureAO1; 
+uniform sampler2D   uTextureRoughness1; 
+uniform sampler2D   uTextureMetalness1; 
+uniform sampler2D   uTextureSpecular1;
+
 uniform samplerCube uIrradianceCubeMap;
+uniform samplerCube uPreFilterCubeMap;
+uniform sampler2D   uPreBrdfLUT;
 
 
 // Fragment inputs from vertex shader 
@@ -61,7 +66,6 @@ in vec3 oTBN[ 3 ];
 
 
 // Normal mapping function
-// -----------------------
 vec3 NormalMappingCalculation( vec2 iUV )                                                                     
 {      
   vec3 res_normal;
@@ -73,8 +77,7 @@ vec3 NormalMappingCalculation( vec2 iUV )
 }
 
 
-// PBR lighting functions
-// ----------------------
+// Cook torrance D function
 float DistributionGGX( vec3  iNormal,
                        vec3  iHalfway,
                        float iRoughness )
@@ -103,6 +106,7 @@ float GeometrySchlickGGX( float NdotV,
   return nom / denom;
 }
 
+// Cook torrance G function
 float GeometrySmith( vec3 iNormal,
                      vec3 iViewDir,
                      vec3 iLightDir,
@@ -116,12 +120,14 @@ float GeometrySmith( vec3 iNormal,
   return ggx1 * ggx2;
 }
 
+// Cook torrance F function
 vec3 FresnelSchlick( float iCosTheta,
                      vec3 iF0 )
 {
   return iF0 + ( 1.0 - iF0 ) * pow( 1.0 - iCosTheta, 5.0 );
 }
 
+// Cook torrance F function taking account of the surface's roughness
 vec3 FresnelSchlickRoughness( float iCosTheta,
                               vec3 iF0,
                               float iRoughness )
@@ -129,12 +135,13 @@ vec3 FresnelSchlickRoughness( float iCosTheta,
   return iF0 + ( max( vec3( 1.0 - iRoughness), iF0 ) - iF0 ) * pow( 1.0 - iCosTheta, 5.0 );
 }   
 
-vec3 ReflectanceEquationCalculation( vec2     iUV,
-                                     vec3     iViewDir,
-                                     vec3     iNormal,
-                                     vec3     iF0,
-                                     float    iNormalDotViewDir,
-                                     Material iMaterial )
+// Cook torrance for point light function
+vec3 PointLightReflectance( vec2     iUV,
+                            vec3     iViewDir,
+                            vec3     iNormal,
+                            vec3     iF0,
+                            float    iNormalDotViewDir,
+                            Material iMaterial )
 { 
 
   // Pre calculation optimisation
@@ -210,21 +217,56 @@ vec3 ReflectanceEquationCalculation( vec2     iUV,
   return Lo;
 } 
 
-vec3 IndirectIrradianceCalculation( float iNormalDotViewDir,
-                                    Material iMaterial,
-                                    vec3 iF0,
-                                    vec3 iNormal )
+// PBR IBL calculation
+vec3 IBLAmbientReflectance( float iNormalDotViewDir,
+                            Material iMaterial,
+                            vec3 iF0,
+                            vec3 iNormal,
+                            vec3 iViewDir )
 {
+
+  // Diffuse irradiance calculation
+  // ------------------------------
+
+  // Get kS taking account the roughness
   vec3 kS = FresnelSchlickRoughness( iNormalDotViewDir, iF0, iMaterial._roughness );
+  
+  // Get kD with energy conservation
   vec3 kD = 1.0 - kS;
+
+  // Decrease diffuse by the metalness, pure metal have no diffuse light
   kD *= ( 1.0 - iMaterial._metalness );   
+
+  // Sample pre compute irradiance cubemap
   vec3 irradiance = texture( uIrradianceCubeMap, iNormal ).rgb;
-  vec3 diffuse = irradiance * iMaterial._albedo;
-  vec3 ambient = ( kD * diffuse ) * iMaterial._ao; 
+
+  vec3 diffuse = ( irradiance * iMaterial._albedo ) * kD;
+  
+
+  // Specular reflectance calculation
+  // --------------------------------
+  
+  // Get reflection vector
+  vec3 reflect = reflect( -iViewDir, iNormal ); 
+
+  // Sample specular pre filtered color with a mip level corresponding to the given roughness
+  vec3 prefiltered_color = textureLod( uPreFilterCubeMap, reflect,  iMaterial._roughness * uMaxMipLevel ).rgb; 
+
+  // Sample the BRDF look up texture with the given angle and roughness to get the corresponding scale and bias to F0
+  vec2 brdf = texture( uPreBrdfLUT, vec2( max( dot( iNormal, iViewDir ), 0.0 ), iMaterial._roughness) ).rg;
+
+  // Compute IBL specular color
+  vec3 specular = prefiltered_color * ( ( kS * brdf.x ) + brdf.y );
+
+
+  // Compute final ambient IBL lighting
+  // ----------------------------------
+  vec3 ambient = ( diffuse + specular ) * iMaterial._ao; 
 
   return ambient;
 }
 
+// Complete PBR lighting calculation
 vec3 PBRLightingCalculation( vec3 iNormal,
                              vec3 iViewDir,  
                              vec2 iUV )
@@ -249,27 +291,28 @@ vec3 PBRLightingCalculation( vec3 iNormal,
   // ---------------------
   
   // Compute reflectance equation calculation to each scene light
-  vec3 lights_reflectance = ReflectanceEquationCalculation( iUV,
-                                                            iViewDir,
-                                                            iNormal,
-                                                            F0,
-                                                            N_dot_V,
-                                                            material );
+  vec3 point_lights_reflectance = PointLightReflectance( iUV,
+                                                         iViewDir,
+                                                         iNormal,
+                                                         F0,
+                                                         N_dot_V,
+                                                         material );
 
 
   // IBL calculation part
   // --------------------
    
   // Compute indirect irradiance
-  vec3 diffuse_IBL = IndirectIrradianceCalculation( N_dot_V,
+  vec3 ambient_reflectance = IBLAmbientReflectance( N_dot_V,
                                                     material,
                                                     F0,
-                                                    iNormal );
-  
+                                                    iNormal,
+                                                    iViewDir );
+        
 
   // Return fragment final PBR lighting 
   // ----------------------------------
-  return diffuse_IBL + lights_reflectance;
+  return ambient_reflectance + point_lights_reflectance;
 }
 
 

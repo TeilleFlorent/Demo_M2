@@ -10,7 +10,7 @@
 
 // Fragment color output(s)
 // ------------------------
-layout ( location = 0 ) out vec4 FragColor;
+layout ( location = 0 ) out vec2 FragColor;
 
 
 // Fragment input uniforms
@@ -83,7 +83,7 @@ vec3 ImportanceSampleGGX( vec2 iSeqValue,
 float GeometrySchlickGGX( float NdotV,
                           float iRoughness )
 {
-  float r = ( iRoughness + 1.0 );
+  float r = iRoughness;
   float k = ( r * r ) / 2.0;
 
   float nom   = NdotV;
@@ -111,15 +111,59 @@ float GeometrySmith( vec3 iNormal,
 vec2 PreBRDFConvolution( float iNdotV,
                          float iRoughness )
 {
-  // Get view direction vector
+  // Create arbitrary view direction vector corresponding to NdotV value
   vec3 view_dir;
   view_dir.x = sqrt( 1.0 - iNdotV * iNdotV );
   view_dir.y = 0.0;
   view_dir.z = iNdotV;
 
+  // Create normal vector corresponding to view vector and NdotV value
+  vec3 normal = vec3( 0.0, 0.0, 1.0 );
+
   float output_scale = 0.0;
   float output_bias  = 0.0; 
 
+  for( uint sample_it = 0u; sample_it < uSampleCount; sample_it++ )
+  {
+    // Get value from the low discrepancy sequence
+    vec2 seq_value = Hammersley( sample_it,
+                                 uSampleCount );
+
+    // Get biased halfway vector using importance sampling with sequence value and roughness
+    vec3 biased_halfway = ImportanceSampleGGX( seq_value, 
+                                               normal, 
+                                               iRoughness );
+
+    // Get biased light direction from biased halfway and view direction
+    vec3 light_dir = normalize( 2.0 * dot( view_dir, biased_halfway ) * biased_halfway - view_dir );
+
+    float N_dot_L = max( light_dir.z, 0.0 );
+    float N_dot_H = max( biased_halfway.z, 0.0 );
+    float V_dot_H = max( dot( view_dir, biased_halfway ), 0.0 );
+
+    if( N_dot_L > 0.0 )
+    { 
+      // compute G part of the cook torrance equation
+      float G = GeometrySmith( normal,
+                               view_dir, 
+                               light_dir, 
+                               iRoughness );
+
+      // This variable is the result of ( cook_torrance / pdf ), this operation take D out the equation
+      // We also take F0 out the equation with a division trick
+      float G_Vis = ( G * V_dot_H ) / ( N_dot_H * iNdotV );
+      
+      // Fc is Fresnel calculation without F0
+      float Fc = pow( 1.0 - V_dot_H, 5.0 );
+
+      // Incremente both scale and bias with their corresponding equation
+      output_scale += ( 1.0 - Fc ) * G_Vis;
+      output_bias  += Fc * G_Vis;
+    }
+  }
+
+  output_scale /= float( uSampleCount );
+  output_bias  /= float( uSampleCount );
 
   return vec2( output_scale, output_bias );
 }
@@ -129,5 +173,5 @@ vec2 PreBRDFConvolution( float iNdotV,
 // -------------
 void main()
 {		
-  FragColor = vec4( 0.0, 1.0, 0.0, 1.0 );
+  FragColor = PreBRDFConvolution( oUV.x, oUV.y );
 }
