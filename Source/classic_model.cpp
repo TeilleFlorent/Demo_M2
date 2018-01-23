@@ -19,48 +19,46 @@ Mesh::Mesh( vector< Vertex > iVertices,
 void Mesh::Draw( Shader iShader,
                  int iID ) 
 {
-  // var pour bind la bonne tex
-  unsigned int diffuse_count = 1;
-  unsigned int normal_count = 1;
-  unsigned int height_count = 1;
-  unsigned int AO_count = 1;
-  unsigned int roughness_count = 1;
-  unsigned int metalness_count = 1;
-  unsigned int opacity_count = 1;
-
 
   // Mesh corresponding texture binding
   // ----------------------------------
   for( unsigned int i = 0; i < this->_textures.size(); i++ )
   {
-    glActiveTexture( GL_TEXTURE0 + i );
-
-    stringstream ss;
-    string number;
+    int n; 
     string name = this->_textures[ i ]._type;
-
-    //std::cout << "tex = " << name << ", i = " << i << std::endl;
 
     // generate texture string uniform
     if( name == "uTextureDiffuse" )
-        ss << diffuse_count++; 
+    {
+    	n = 0;
+    }
     if( name == "uTextureNormal" )
-        ss << normal_count++; 
+    {
+    	n = 1;
+    }
     if( name == "uTextureHeight" )
-        ss << height_count++; 
+    {
+    	n = 2;
+    }
     if( name == "uTextureAO" )
-        ss << AO_count++; 
+    {
+    	n = 3;
+    }
     if( name == "uTextureRoughness" )
-        ss << roughness_count++; 
+    {
+    	n = 4;
+    }
     if( name == "uTextureMetalness" )
-        ss << metalness_count++;
+    {
+    	n = 5;
+    }
     if( name == "uTextureOpacity" )
-      ss << metalness_count++; 
-               
-    number = ss.str(); 
-
-    glUniform1i( glGetUniformLocation( iShader._program, ( name + number ).c_str() ), i );
-    glBindTexture( GL_TEXTURE_2D, this->_textures[ i ]._id ); // bind la tex qui correspond au string generer et envoyer au juste avant
+    {
+    	n = 6;
+    }
+    
+    glActiveTexture( GL_TEXTURE0 + n );
+    glBindTexture( GL_TEXTURE_2D, this->_textures[ i ]._id );
   }
 
 
@@ -376,14 +374,14 @@ vector< Texture > Model::LoadModelTextures( int iMeshNum )
   if( this->_model_id == 2 )
   {
     // albedo
-    /*textures.push_back( LoadTexture( "uTextureDiffuse",
+    textures.push_back( LoadTexture( "uTextureDiffuse",
                                      "albedo.png" ) );
 
     // normal
     textures.push_back( LoadTexture( "uTextureNormal",
                                      "normal.png" ) );
     // AO
-    textures.push_back( LoadTexture( "uTextureAO",
+    /*textures.push_back( LoadTexture( "uTextureAO",
                                      "AO.png" ) );
 
     // roughness 
@@ -404,8 +402,6 @@ vector< Texture > Model::LoadModelTextures( int iMeshNum )
 
 unsigned int Model::TextureFromFile( string iTexturePath )
 {
-
-  std::cout << "path =" << iTexturePath << std::endl;
 
   // Check loaded texture vector to not load two times the same texture file
   // -----------------------------------------------------------------------
@@ -428,7 +424,8 @@ unsigned int Model::TextureFromFile( string iTexturePath )
   unsigned int textureID;
   glGenTextures( 1, &textureID );
   t = IMG_Load( iTexturePath.c_str() );
-  
+  std::cout << "path loaded =" << iTexturePath << std::endl;
+	  
   if( !t )
   {
     printf( "Loading image fail => image null\n" );

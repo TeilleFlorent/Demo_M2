@@ -340,13 +340,15 @@ void main()
                                                      oUV );
 
   // Main out color
-  FragColor = vec4( PBR_lighting_result, uAlpha );
+  //FragColor = vec4( PBR_lighting_result, uAlpha );
+  FragColor = vec4( texture( uTextureNormal1, oUV ).rgb, 1.0 );
 
-  if( uID == 2.0 )
-  {
+
+  //if( uID == 2.0 )
+  //{
     //FragColor = vec4( oNormal, 1.0 );
-    FragColor = vec4( texture( uTextureDiffuse1, oUV ).rgb, 1.0 );
-  }
+    //FragColor = vec4( texture( uTextureDiffuse1, oUV ).rgb, 1.0 );
+  //}
 
   // Second out color => draw only brightest fragments
   vec3 bright_color = vec3( 0.0, 0.0, 0.0 );
