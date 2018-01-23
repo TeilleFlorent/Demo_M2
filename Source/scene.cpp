@@ -30,7 +30,7 @@ Scene::Scene( Window * iParentWindow )
 
   // Init IBL parameters
   _current_env             = 2;
-  _res_env_cubeMap         = 1024;
+  _res_env_cubeMap         = 512;
 
   _res_irradiance_cubeMap  = 32;
   _irradiance_sample_delta = 0.025;
@@ -401,7 +401,7 @@ void Scene::SceneDataInitialization()
   }
 
   // Load ground normal texture
-  // ----------------------------
+  // --------------------------
   if( ( sdl_image_data = IMG_Load( "../Textures/ground1/normal.png" ) ) != NULL )
   {
     _tex_normal_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,

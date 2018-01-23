@@ -346,6 +346,8 @@ unsigned int Toolbox::CreateTextureFromData( SDL_Surface * iImage,
                                              bool          iAnisotropy,
                                              float         iAnisotropyValue )
 {
+  std::cout << "width = " << iImage->w << ", height = " << iImage->h << std::endl;
+
   unsigned int result_id;
 
   glGenTextures( 1, &result_id );

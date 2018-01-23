@@ -328,7 +328,6 @@ Texture Model::LoadTexture( string iTextureType,
   Texture result_texture;
 
   result_texture._path = this->_directory + '/' + iTextureName;
-  std::cout << "path =" << result_texture._path << std::endl;
   result_texture._id   = TextureFromFile( result_texture._path ); 
   result_texture._type = iTextureType;
 
@@ -371,16 +370,17 @@ vector< Texture > Model::LoadModelTextures( int iMeshNum )
                                      "metalness.png" ) );
   }
 
+
   // Load table1 textures 
   // --------------------
   if( this->_model_id == 2 )
   {
     // albedo
-    textures.push_back( LoadTexture( "uTextureDiffuse",
+    /*textures.push_back( LoadTexture( "uTextureDiffuse",
                                      "albedo.png" ) );
 
     // normal
-    /*textures.push_back( LoadTexture( "uTextureNormal",
+    textures.push_back( LoadTexture( "uTextureNormal",
                                      "normal.png" ) );
     // AO
     textures.push_back( LoadTexture( "uTextureAO",
@@ -405,6 +405,8 @@ vector< Texture > Model::LoadModelTextures( int iMeshNum )
 unsigned int Model::TextureFromFile( string iTexturePath )
 {
 
+  std::cout << "path =" << iTexturePath << std::endl;
+
   // Check loaded texture vector to not load two times the same texture file
   // -----------------------------------------------------------------------
   for( unsigned int i = 0; i < _textures_loaded.size(); i++ )
@@ -426,7 +428,7 @@ unsigned int Model::TextureFromFile( string iTexturePath )
   unsigned int textureID;
   glGenTextures( 1, &textureID );
   t = IMG_Load( iTexturePath.c_str() );
-
+  
   if( !t )
   {
     printf( "Loading image fail => image null\n" );
