@@ -23,12 +23,12 @@ class Object
             float     iAngleAcc,
             glm::vec3 iScale,
             float     iAlpha,
-            int       iShiniStr,
             bool      iGenerateShadow,
             bool      iReceivShadow,
             float     iShadowDarkness,
             float     iBloom,
-            float     iBloomBrightness );
+            float     iBloomBrightness,
+            float     iOpacityMap );
 
 
     // Object class members
@@ -40,12 +40,12 @@ class Object
     float     _angle_acc;
     glm::vec3 _scale;
     float     _alpha;
-    int       _shini_str;
     bool      _generate_shadow;
     bool      _receiv_shadow;
     float     _shadow_darkness;
     float     _bloom;
     float     _bloom_brightness;
+    float     _opacity_map;
 };
 
 #endif  // OBJECT_H

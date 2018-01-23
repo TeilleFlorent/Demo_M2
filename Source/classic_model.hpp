@@ -107,13 +107,11 @@ class Model
 
     // Class functions
     // ---------------
-    Model();
+    Model( string iPath,
+           int    iID,
+           string iName );
 
     void Draw( Shader iShader );   
-
-    void Load_Model( string iPath,
-                     int    iID,
-                     string iName );
 
     void Print_info_model();
 
@@ -126,6 +124,9 @@ class Model
                       int     iMeshNum );
 
     vector< Texture > LoadModelTextures( int iMeshNum );
+
+    Texture LoadTexture( string iTextureType,
+                         string iTextureName );
     
     unsigned int TextureFromFile( string iTexturePath );
 
@@ -134,16 +135,18 @@ class Model
     static Toolbox * GetToolbox();
 
 
-    // Class data
-    // ----------
-    vector< Mesh >    _meshes;
-    string            _directory;
-    vector< Texture > _textures_loaded;
+    // Class members
+    // -------------
     int               _model_id;
+    string            _model_name;
+    string            _directory;
+
+    vector< Mesh >    _meshes;
+    int               _vertice_count;
+
+    vector< Texture > _textures_loaded;
     Assimp::Importer  _importer;
     const aiScene *   _scene;
-    int               _vertice_count;
-    string            _model_name; 
 
 
   private:

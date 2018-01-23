@@ -121,7 +121,8 @@ void Window::InitGL()
 
   Resize();
 
-  //glEnable(GL_BLEND);
+  glDisable( GL_BLEND );
+  
   //glBlendEquation(GL_FUNC_ADD);
   //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
  

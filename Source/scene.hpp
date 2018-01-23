@@ -99,15 +99,15 @@ class Scene
     std::vector< unsigned int > _irradiance_cubeMaps;
     std::vector< unsigned int > _pre_filter_cubeMaps;
     unsigned int _pre_brdf_texture;
-   
-    std::vector< const GLchar * > _faces; // skybox textures path
-
+  
     unsigned int _tex_albedo_ground;
     unsigned int _tex_normal_ground;
     unsigned int _tex_height_ground;
     unsigned int _tex_AO_ground;
     unsigned int _tex_roughness_ground;
     unsigned int _tex_metalness_ground;
+
+    std::vector< const GLchar * > _faces; // skybox textures path
 
     // Deferred rendering data
     unsigned int _g_buffer_FBO;
@@ -152,11 +152,13 @@ class Scene
 
     // Scene's objects
     std::vector< Object > _tables;
-    Object * _ground1;
+    Object *              _ground1;
+    Object *              _ink_bottle;
 
     // Models
     Model * _table_model;
     Model * _sphere_model;
+    Model * _ink_bottle_model;
 };
 
 #endif  // SCENE_H

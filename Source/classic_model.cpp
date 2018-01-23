@@ -20,20 +20,20 @@ void Mesh::Draw( Shader iShader,
                  int iID ) 
 {
   // var pour bind la bonne tex
-  unsigned int diffuseNr = 1;
-  unsigned int specularNr = 1;
-  unsigned int normalNr = 1;
-  unsigned int heightNr = 1;
-  unsigned int AONr = 1;
-  unsigned int roughnessNr = 1;
-  unsigned int metalnessNr = 1;
+  unsigned int diffuse_count = 1;
+  unsigned int normal_count = 1;
+  unsigned int height_count = 1;
+  unsigned int AO_count = 1;
+  unsigned int roughness_count = 1;
+  unsigned int metalness_count = 1;
+  unsigned int opacity_count = 1;
 
 
   // Mesh corresponding texture binding
   // ----------------------------------
   for( unsigned int i = 0; i < this->_textures.size(); i++ )
   {
-    glActiveTexture( GL_TEXTURE0 + i ); // active la texture qu'il faut
+    glActiveTexture( GL_TEXTURE0 + i );
 
     stringstream ss;
     string number;
@@ -43,23 +43,21 @@ void Mesh::Draw( Shader iShader,
 
     // generate texture string uniform
     if( name == "uTextureDiffuse" )
-        ss << diffuseNr++; 
+        ss << diffuse_count++; 
     if( name == "uTextureNormal" )
-        ss << normalNr++; 
+        ss << normal_count++; 
     if( name == "uTextureHeight" )
-        ss << heightNr++; 
+        ss << height_count++; 
     if( name == "uTextureAO" )
-        ss << AONr++; 
+        ss << AO_count++; 
     if( name == "uTextureRoughness" )
-        ss << roughnessNr++; 
+        ss << roughness_count++; 
     if( name == "uTextureMetalness" )
-        ss << metalnessNr++; 
-    if( name == "uTextureSpecular" )
-        ss << specularNr++; 
+        ss << metalness_count++;
+    if( name == "uTextureOpacity" )
+      ss << metalness_count++; 
                
     number = ss.str(); 
-
-    //std::cout << "uniform sampler name = " << (name + number) << std::endl;
 
     glUniform1i( glGetUniformLocation( iShader._program, ( name + number ).c_str() ), i );
     glBindTexture( GL_TEXTURE_2D, this->_textures[ i ]._id ); // bind la tex qui correspond au string generer et envoyer au juste avant
@@ -115,7 +113,6 @@ void Mesh::SetupMesh()
   // Vertex Bi Tangent
   glEnableVertexAttribArray( 4 );   
   glVertexAttribPointer( 4, 3, GL_FLOAT, GL_FALSE, sizeof( Vertex ), ( GLvoid* )offsetof( Vertex, _bi_tangent ) );
-
   glBindVertexArray( 0 );
 }
 
@@ -126,8 +123,13 @@ void Mesh::SetupMesh()
 
 Toolbox * Model::_toolbox; 
 
-Model::Model()
+Model::Model( string iPath, 
+              int iID,
+              string iName )
 {
+  _model_id = iID;
+  _model_name = iName;
+  LoadModel( iPath );
 }
 
 void Model::Draw( Shader iShader )
@@ -136,15 +138,6 @@ void Model::Draw( Shader iShader )
   {
     this->_meshes[ i ].Draw( iShader, this->_model_id );
   }
-}
-    
-void Model::Load_Model( string iPath, 
-                        int iID,
-                        string iName )
-{
-  _model_id = iID;
-  _model_name = iName;
-  LoadModel( iPath );
 }
 
 void Model::Print_info_model()
@@ -166,9 +159,9 @@ void Model::Print_info_model()
 
 void Model::LoadModel( string iPath )
 {
-  // print tous les format supporté
-  aiString all_supported_format;   
-  _importer.GetExtensionList( all_supported_format );
+  // Get and print all supported file format 
+  //aiString all_supported_format;   
+  //_importer.GetExtensionList( all_supported_format );
   //std::cout << all_supported_format.C_Str() << std::endl;   
   
   _scene = _importer.ReadFile( iPath, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace );
@@ -189,7 +182,7 @@ void Model::ProcessNode( aiNode * iNode,
   for( unsigned int i = 0; i < iNode->mNumMeshes; i++ )
   {
     aiMesh * mesh = _scene->mMeshes[ iNode->mMeshes[ i ] ]; 
-    this->_meshes.push_back( this->ProcessMesh( mesh, iMeshNum) );  
+    this->_meshes.push_back( this->ProcessMesh( mesh, iMeshNum ) );  
   }
    
   for( unsigned int i = 0; i < iNode->mNumChildren; i++ )
@@ -240,7 +233,7 @@ Mesh Model::ProcessMesh( aiMesh * iMesh,
       UV_warning = true;
     }
 
-    if( _model_id != 2 )
+    if( _model_id != 1 )
     { 
       // Assimp tangent
       vector.x = iMesh->mTangents[ i ].x;
@@ -262,7 +255,7 @@ Mesh Model::ProcessMesh( aiMesh * iMesh,
   if( UV_warning )
   {
     std::cout << std::endl << "WARNING : Model \"" << _model_name << "\", Mesh " << iMeshNum << " does not have UVs" << std::endl
-                           << "--------------------------------------------------------" << std::endl;
+                           << "--------------------------------------------------------";
   }
 
 
@@ -270,7 +263,7 @@ Mesh Model::ProcessMesh( aiMesh * iMesh,
   // ----------------------------------------------
   /*for( unsigned int i = 0; i < vertices.size(); i += 3 )
   { 
-    if( _model_id == 2 )
+    if( _model_id == 1 )
     {
       break;
     }
@@ -329,13 +322,24 @@ Mesh Model::ProcessMesh( aiMesh * iMesh,
   return Mesh( vertices, indices, textures );
 }
 
+Texture Model::LoadTexture( string iTextureType,
+                            string iTextureName )
+{
+  Texture result_texture;
+
+  result_texture._path = this->_directory + '/' + iTextureName;
+  std::cout << "path =" << result_texture._path << std::endl;
+  result_texture._id   = TextureFromFile( result_texture._path ); 
+  result_texture._type = iTextureType;
+
+  this->_textures_loaded.push_back( result_texture );  
+
+  return result_texture;
+}
+
 vector< Texture > Model::LoadModelTextures( int iMeshNum )
 {
   vector< Texture > textures;
-  Texture texture;
-  string texture_name;
-  string texture_path;
-  string texture_type;
 
   
   // Load table1 textures 
@@ -343,75 +347,66 @@ vector< Texture > Model::LoadModelTextures( int iMeshNum )
   if( this->_model_id == 0 )
   {
     // albedo
-    texture_type  = "texture_diffuse"; 
-    texture_name  = "albedo.png";            
-    texture_path  = this->_directory + '/' + texture_name;
-    texture._id   = TextureFromFile( texture_path );
-    texture._path = texture_path;
-    texture._type = texture_type;
-    textures.push_back( texture );
-    this->_textures_loaded.push_back( texture );  
+    textures.push_back( LoadTexture( "uTextureDiffuse",
+                                     "albedo.png" ) );
 
     // normal
-    texture_type  = "texture_normal"; 
-    texture_name  = "normal.png";            
-    texture_path  = this->_directory + '/' + texture_name;
-    texture._id   = TextureFromFile( texture_path );
-    texture._path = texture_path;
-    texture._type = texture_type;
-    textures.push_back( texture );
-    this->_textures_loaded.push_back( texture ); 
+    textures.push_back( LoadTexture( "uTextureNormal",
+                                     "normal.png" ) );
 
     // height
-    texture_type  = "texture_height"; 
-    texture_name  = "height.png";            
-    texture_path  = this->_directory + '/' + texture_name;
-    texture._id   = TextureFromFile( texture_path );
-    texture._path = texture_path;
-    texture._type = texture_type;
-    textures.push_back( texture );
-    this->_textures_loaded.push_back( texture );
+    textures.push_back( LoadTexture( "uTextureHeight",
+                                     "height.png" ) );
 
     // AO
-    texture_type  = "texture_AO"; 
-    texture_name  = "AO.png";            
-    texture_path  = this->_directory + '/' + texture_name;
-    texture._id   = TextureFromFile( texture_path );
-    texture._path = texture_path;
-    texture._type = texture_type;
-    textures.push_back( texture );
-    this->_textures_loaded.push_back( texture );
+    textures.push_back( LoadTexture( "uTextureAO",
+                                     "AO.png" ) );
 
     // roughness 
-    texture_type  = "texture_roughness"; 
-    texture_name  = "roughness.png";            
-    texture_path  = this->_directory + '/' + texture_name;
-    texture._id   = TextureFromFile( texture_path );
-    texture._path = texture_path;
-    texture._type = texture_type;
-    textures.push_back( texture );
-    this->_textures_loaded.push_back( texture );
+    textures.push_back( LoadTexture( "uTextureRoughness",
+                                     "roughness.png" ) );
 
     // metalness
-    texture_type  = "texture_metalness"; 
-    texture_name  = "metalness.png";            
-    texture_path  = this->_directory + '/' + texture_name;
-    texture._id   = TextureFromFile( texture_path );
-    texture._path = texture_path;
-    texture._type = texture_type;
-    textures.push_back( texture );
-    this->_textures_loaded.push_back( texture );
-
-    return textures;
+    textures.push_back( LoadTexture( "uTextureMetalness",
+                                     "metalness.png" ) );
   }
 
+  // Load table1 textures 
+  // --------------------
+  if( this->_model_id == 2 )
+  {
+    // albedo
+    textures.push_back( LoadTexture( "uTextureDiffuse",
+                                     "albedo.png" ) );
+
+    // normal
+    /*textures.push_back( LoadTexture( "uTextureNormal",
+                                     "normal.png" ) );
+    // AO
+    textures.push_back( LoadTexture( "uTextureAO",
+                                     "AO.png" ) );
+
+    // roughness 
+    textures.push_back( LoadTexture( "uTextureRoughness",
+                                     "roughness.png" ) );
+
+    // metalness
+    textures.push_back( LoadTexture( "uTextureMetalness",
+                                     "metalness.png" ) );
+
+    // opacity
+    textures.push_back( LoadTexture( "uTextureOpacity",
+                                     "opacity.png" ) ); */
+  }
+
+  return textures;
 }
 
 unsigned int Model::TextureFromFile( string iTexturePath )
 {
 
-  // Check loaded texture vector and for not load two times the same texture file
-  // ----------------------------------------------------------------------------
+  // Check loaded texture vector to not load two times the same texture file
+  // -----------------------------------------------------------------------
   for( unsigned int i = 0; i < _textures_loaded.size(); i++ )
   {
     if( iTexturePath.compare( _textures_loaded[ i ]._path ) == 0 )

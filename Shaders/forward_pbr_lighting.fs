@@ -37,6 +37,7 @@ uniform float uBloomBrightness;
 
 uniform float uMaxMipLevel;
 
+uniform float uOpacityMap;
 uniform float uAlpha;
 uniform float uID;
 
@@ -46,7 +47,7 @@ uniform sampler2D   uTextureHeight1;
 uniform sampler2D   uTextureAO1; 
 uniform sampler2D   uTextureRoughness1; 
 uniform sampler2D   uTextureMetalness1; 
-uniform sampler2D   uTextureSpecular1;
+uniform sampler2D   uTextureOpacity1; 
 
 uniform samplerCube uIrradianceCubeMap;
 uniform samplerCube uPreFilterCubeMap;
@@ -58,6 +59,7 @@ uniform sampler2D   uPreBrdfLUT;
 in vec2 oUV;
 in vec3 oFragPos;
 in vec3 oTBN[ 3 ];
+in vec3 oNormal;
 
 
 //******************************************************************************
@@ -69,11 +71,17 @@ in vec3 oTBN[ 3 ];
 vec3 NormalMappingCalculation( vec2 iUV )                                                                     
 {      
   vec3 res_normal;
+
+  // Get TBN matrix
+  mat3 TBN;
+  TBN[ 0 ] = oTBN[ 0 ];
+  TBN[ 1 ] = oTBN[ 1 ];
+  TBN[ 2 ] = oTBN[ 2 ];
       
   res_normal = texture( uTextureNormal1, iUV ).rgb;
   res_normal = normalize( res_normal * 2.0 - 1.0 );   
 
-  return res_normal;
+  return ( res_normal * TBN );
 }
 
 
@@ -84,7 +92,7 @@ float DistributionGGX( vec3  iNormal,
 {
   float a  = iRoughness * iRoughness;
   float a2 = a * a;
-  float NdotH  = max( dot( iNormal, iHalfway ), 0.0);
+  float NdotH  = max( dot( iNormal, iHalfway ), 0.0 );
   float NdotH2 = NdotH * NdotH;
 
   float nom   = a2;
@@ -183,11 +191,11 @@ vec3 PointLightReflectance( vec2     iUV,
 
     // Specular BRDF calculation
     float NDF = DistributionGGX( iNormal, halfway, iMaterial._roughness );   
-    vec3 F    = FresnelSchlick( max( dot( halfway, iViewDir ), 0.0 ), iF0 );
+    vec3  F   = FresnelSchlick( max( dot( halfway, iViewDir ), 0.0 ), iF0 );
     float G   = GeometrySmith( iNormal, iViewDir, light_dir, iMaterial._roughness );      
-    vec3 nominator      = NDF * F * G; 
-    float denominator   = ( IV_N_dot_V * max( dot( iNormal, light_dir ) , 0.0 ) ) + 0.001; // 0.001 to prevent divide by zero.
-    vec3 light_specular = nominator / denominator;
+    vec3  nominator      = NDF * F * G; 
+    float denominator    = ( IV_N_dot_V * max( dot( iNormal, light_dir ) , 0.0 ) ) + 0.001; // 0.001 to prevent divide by zero.
+    vec3  light_specular = nominator / denominator;
         
 
     // Get kS value
@@ -208,8 +216,8 @@ vec3 PointLightReflectance( vec2     iUV,
     float normal_dot_light_dir = clamp( dot( iNormal, light_dir ), 0.0, 1.0 );        
 
 
-    // Final light influence
-    // ---------------------
+    // Final point light influence
+    // ---------------------------
     Lo += ( ( kD * ( albedo_by_PI ) ) + light_specular ) * light_radiance * normal_dot_light_dir;  // already multiplied the specular by the Fresnel ( kS )
     
   }   
@@ -218,11 +226,11 @@ vec3 PointLightReflectance( vec2     iUV,
 } 
 
 // PBR IBL calculation
-vec3 IBLAmbientReflectance( float iNormalDotViewDir,
+vec3 IBLAmbientReflectance( float    iNormalDotViewDir,
                             Material iMaterial,
-                            vec3 iF0,
-                            vec3 iNormal,
-                            vec3 iViewDir )
+                            vec3     iF0,
+                            vec3     iNormal,
+                            vec3     iViewDir )
 {
 
   // Diffuse irradiance calculation
@@ -253,7 +261,7 @@ vec3 IBLAmbientReflectance( float iNormalDotViewDir,
   vec3 prefiltered_color = textureLod( uPreFilterCubeMap, reflect,  iMaterial._roughness * uMaxMipLevel ).rgb; 
 
   // Sample the BRDF look up texture with the given angle and roughness to get the corresponding scale and bias to F0
-  vec2 brdf = texture( uPreBrdfLUT, vec2( max( dot( iNormal, iViewDir ), 0.0 ), iMaterial._roughness) ).rg;
+  vec2 brdf = texture( uPreBrdfLUT, vec2( iNormalDotViewDir, iMaterial._roughness) ).rg;
 
   // Compute IBL specular color
   vec3 specular = prefiltered_color * ( ( kS * brdf.x ) + brdf.y );
@@ -290,7 +298,7 @@ vec3 PBRLightingCalculation( vec3 iNormal,
   // BRDF calculation part
   // ---------------------
   
-  // Compute reflectance equation calculation to each scene light
+  // Compute reflectance equation calculation to each scene point light
   vec3 point_lights_reflectance = PointLightReflectance( iUV,
                                                          iViewDir,
                                                          iNormal,
@@ -316,33 +324,29 @@ vec3 PBRLightingCalculation( vec3 iNormal,
 }
 
 
-// Main
-// ----
+// Main function
+// -------------
 void main()
 {
-  vec3 PBR_lighting_result;
-  vec2 final_UV;
-  vec3 view_dir;
-
-  // Get TBN matrix
-  mat3 TBN;
-  TBN[ 0 ] = oTBN[ 0 ];
-  TBN[ 1 ] = oTBN[ 1 ];
-  TBN[ 2 ] = oTBN[ 2 ];
-
   // Get view direction
-  view_dir = normalize( uViewPos - oFragPos );
+  vec3 view_dir = normalize( uViewPos - oFragPos );
 
   // Normal mapping calculation
-  vec3 norm = NormalMappingCalculation( oUV ) * TBN;
+  vec3 normal = NormalMappingCalculation( oUV );
 
   // PBR lighting calculation 
-  PBR_lighting_result = PBRLightingCalculation( norm,
-                                                view_dir,  
-                                                oUV );
+  vec3 PBR_lighting_result = PBRLightingCalculation( normal,
+                                                     view_dir,  
+                                                     oUV );
 
   // Main out color
   FragColor = vec4( PBR_lighting_result, uAlpha );
+
+  if( uID == 2.0 )
+  {
+    //FragColor = vec4( oNormal, 1.0 );
+    FragColor = vec4( texture( uTextureDiffuse1, oUV ).rgb, 1.0 );
+  }
 
   // Second out color => draw only brightest fragments
   vec3 bright_color = vec3( 0.0, 0.0, 0.0 );

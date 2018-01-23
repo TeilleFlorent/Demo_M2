@@ -18,10 +18,6 @@ Toolbox::Toolbox( Window * iParentWindow )
 
   _cube_VAO     = 0;
   _cube_VBO     = 0;
-
-  _depth_map_res_seed     = 1024.0;
-  _reflection_cubeMap_res = 512;
-  _tex_VL_res_seed        = 2048.0;
 }
 
 void Toolbox::Quit()
@@ -345,8 +341,117 @@ void Toolbox::RenderObserver()
   glUseProgram( 0 );
 }
 
+unsigned int Toolbox::CreateTextureFromData( SDL_Surface * iImage,
+                                             bool          iMipmap,
+                                             bool          iAnisotropy,
+                                             float         iAnisotropyValue )
+{
+  unsigned int result_id;
+
+  glGenTextures( 1, &result_id );
+  glBindTexture( GL_TEXTURE_2D, result_id );
+
+  if( IsTextureRGBA( iImage ) )
+  {
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, iImage->w, iImage->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, iImage->pixels );
+  }
+  else
+  {
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, iImage->w, iImage->h, 0, GL_RGB, GL_UNSIGNED_BYTE, iImage->pixels );
+  }
+
+  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, ( iMipmap == true ) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
+  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+  
+  if( iAnisotropy )
+  {
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, iAnisotropyValue ); // anisotropie
+  }
+
+  if( iMipmap )
+  {
+    glGenerateMipmap( GL_TEXTURE_2D );
+  }
+
+  glBindTexture( GL_TEXTURE_2D, 0 );
+
+  return result_id;
+}
+
+unsigned int Toolbox::CreateEmptyTexture( int   iWidth,
+                                          int   iHeight,
+                                          int   iInternalFormat,
+                                          int   iFormat,
+                                          bool  iMipmap,
+                                          bool  iAnisotropy,
+                                          float iAnisotropyValue )
+{
+  unsigned int result_id;
+
+  glGenTextures( 1, &result_id );
+  glBindTexture( GL_TEXTURE_2D, result_id );
+
+  glTexImage2D( GL_TEXTURE_2D, 0, iInternalFormat, iWidth, iHeight, 0, iFormat, GL_FLOAT, 0 );
+
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, ( iMipmap == true ) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+
+  if( iAnisotropy )
+  {
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, iAnisotropyValue ); // anisotropie
+  }
+
+  if( iMipmap )
+  {
+    glGenerateMipmap( GL_TEXTURE_2D );
+  }
+
+  glBindTexture( GL_TEXTURE_2D, 0 );
+
+  return result_id;
+}
+
+unsigned int Toolbox::CreateCubeMapTexture( int  iResolution,
+                                            bool iMipmap )
+{
+  unsigned int result_id;
+
+  glGenTextures( 1, &result_id );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, result_id );
+
+  for( unsigned int i = 0; i < 6; ++i )
+  {
+    glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+    0, 
+    GL_RGB16F, 
+    iResolution, 
+    iResolution, 
+    0, 
+    GL_RGB, 
+    GL_FLOAT, 
+    nullptr );
+  }
+
+  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE );
+  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, ( iMipmap == true ) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
+  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+
+  if( iMipmap )
+  {
+    glGenerateMipmap( GL_TEXTURE_CUBE_MAP ); // generate mipmaps for the cubemap so OpenGL automatically allocates the required memory 
+  }
+
+  return result_id;
+}
+
 void Toolbox::SetFboTexture( unsigned int iTextureID,
-                             GLenum       iFormat,
+                             int          iFormat,
                              int          iWidth,
                              int          iHeight,
                              GLenum       iAttachment )
@@ -362,7 +467,7 @@ void Toolbox::SetFboTexture( unsigned int iTextureID,
 
 void Toolbox::SetFboMultiSampleTexture( unsigned int iTextureID,
                                         int          iSampleCount,
-                                        GLenum       iFormat,
+                                        int          iFormat,
                                         int          iWidth,
                                         int          iHeight,
                                         GLenum       iAttachment )

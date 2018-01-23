@@ -26,21 +26,21 @@ Scene::Scene( Window * iParentWindow )
 
   // Init multi sample parameters
   _multi_sample    = false;
-  _nb_multi_sample = 2;
+  _nb_multi_sample = 4;
 
   // Init IBL parameters
   _current_env             = 2;
-  _res_env_cubeMap         = 512;
+  _res_env_cubeMap         = 1024;
 
   _res_irradiance_cubeMap  = 32;
   _irradiance_sample_delta = 0.025;
   
   _res_pre_filter_cubeMap   = 256;
-  _pre_filter_sample_count  = 1024 * 2;
+  _pre_filter_sample_count  = 1024 * 1;
   _pre_filter_max_mip_Level = 5;
 
   _res_pre_brdf_texture  = 512;
-  _pre_brdf_sample_count = 1024 * 2;    
+  _pre_brdf_sample_count = 1024 * 1;    
   
   // Lights volume
   _render_lights_volume = false;
@@ -69,19 +69,19 @@ Scene::Scene( Window * iParentWindow )
                         45.0f,
                         ( float )_window->_width,
                         ( float )_window->_height,
-                        3.0 );
+                        1.5 );
 
   // Create and init all shaders
   ShadersInitialization();
+
+  // Create lights
+  LightsInitialization(); 
 
   // Create all scene's objects
   ObjectsInitialization();
 
   // Load all scene models
-  ModelsLoading();
-
-  // Create lights
-  LightsInitialization();  
+  ModelsLoading(); 
 
   // Init scene data 
   SceneDataInitialization();
@@ -165,10 +165,10 @@ void Scene::Quit()
 void Scene::SceneDataInitialization()
 {
 
-  float aniso = 0.0f; 
-  glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso );
+  float anisotropy_value = 0.0f; 
+  glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &anisotropy_value );
 
-  SDL_Surface * t = NULL;
+  SDL_Surface * sdl_image_data = NULL;
 
 
   // Create all primitive geometry data
@@ -253,8 +253,6 @@ void Scene::SceneDataInitialization()
     bitangent2.y = f * ( -deltaUV2.x * edge1.y + deltaUV1.x * edge2.y );
     bitangent2.z = f * ( -deltaUV2.x * edge1.z + deltaUV1.x * edge2.z );
     bitangent2 = glm::normalize( bitangent2 );
-
-    //std::cout << "TEST = " << bitangent1.x << ", " << bitangent1.y << ", " << bitangent1.z << std::endl;
 
     GLfloat ground_vertices[] =
     {
@@ -366,8 +364,8 @@ void Scene::SceneDataInitialization()
   }
 
   
-  // Create pingpong buffer
-  // ----------------------
+  // Create pingpong buffer and textures
+  // -----------------------------------
   glGenFramebuffers( 1, &_window->_toolbox->_pingpong_FBO );
   glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_pingpong_FBO );
   glGenTextures( 2, _window->_toolbox->_pingpong_color_buffers );
@@ -389,182 +387,97 @@ void Scene::SceneDataInitialization()
 
   // Load ground albedo texture
   // --------------------------
-  glGenTextures( 1, &_tex_albedo_ground );
-  glBindTexture( GL_TEXTURE_2D, _tex_albedo_ground );
-  if( ( t = IMG_Load( "../Textures/ground1/albedo.png" ) ) != NULL )
+  if( ( sdl_image_data = IMG_Load( "../Textures/ground1/albedo.png" ) ) != NULL )
   {
-    if( _window->_toolbox->IsTextureRGBA( t ) )
-    {
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->pixels );
-    }
-    else
-    {
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels );
-    }
-    SDL_FreeSurface( t );
+    _tex_albedo_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+                                                                   true,
+                                                                   true,
+                                                                   anisotropy_value );
+    SDL_FreeSurface( sdl_image_data );
   }
   else
   {
     fprintf( stderr, "Erreur lors du chargement de la texture\n" );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL );
   }
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso ); // anisotropie
-  glGenerateMipmap( GL_TEXTURE_2D );
-  glBindTexture( GL_TEXTURE_2D, 0 );
-
 
   // Load ground normal texture
   // ----------------------------
-  glGenTextures( 1, &_tex_normal_ground );
-  glBindTexture( GL_TEXTURE_2D, _tex_normal_ground );
-  if( ( t = IMG_Load( "../Textures/ground1/normal.png" ) ) != NULL )
+  if( ( sdl_image_data = IMG_Load( "../Textures/ground1/normal.png" ) ) != NULL )
   {
-    if( _window->_toolbox->IsTextureRGBA( t ) )
-    {
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->pixels );
-    }
-    else
-    {
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels );
-    }
-    SDL_FreeSurface( t );
-  } 
+    _tex_normal_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+                                                                   true,
+                                                                   true,
+                                                                   anisotropy_value );
+    SDL_FreeSurface( sdl_image_data );
+  }
   else
   {
     fprintf( stderr, "Erreur lors du chargement de la texture\n" );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL );
   }
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso ); // anisotropie
-  glGenerateMipmap( GL_TEXTURE_2D );
-  glBindTexture( GL_TEXTURE_2D, 0 );
 
 
   // Load ground height texture
   // --------------------------
-  glGenTextures( 1, &_tex_height_ground );
-  glBindTexture( GL_TEXTURE_2D, _tex_height_ground );
-  if( ( t = IMG_Load( "../Textures/ground1/height.png" ) ) != NULL )
+  if( ( sdl_image_data = IMG_Load( "../Textures/ground1/height.png" ) ) != NULL )
   {
-    if( _window->_toolbox->IsTextureRGBA( t ) )
-    {
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->pixels );
-    }
-    else
-    {
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels );
-    }
-    SDL_FreeSurface( t );
-  } 
-  else 
+    _tex_height_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+                                                                   true,
+                                                                   true,
+                                                                   anisotropy_value );
+    SDL_FreeSurface( sdl_image_data );
+  }
+  else
   {
     fprintf( stderr, "Erreur lors du chargement de la texture\n" );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL );
   }
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso ); // anisotropie
-  glGenerateMipmap( GL_TEXTURE_2D );
-  glBindTexture( GL_TEXTURE_2D, 0 );
 
 
   // Load ground AO texture
   // ----------------------
-  glGenTextures( 1, &_tex_AO_ground );
-  glBindTexture( GL_TEXTURE_2D, _tex_AO_ground );
-  if( ( t = IMG_Load( "../Textures/ground1/AO.png" ) ) != NULL ) 
+  if( ( sdl_image_data = IMG_Load( "../Textures/ground1/AO.png" ) ) != NULL )
   {
-    if( _window->_toolbox->IsTextureRGBA( t ) )
-    {
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->pixels );
-    }
-    else
-    {
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels );
-    }
-    SDL_FreeSurface( t );
-  } 
-  else 
+    _tex_AO_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+                                                               true,
+                                                               true,
+                                                               anisotropy_value );
+    SDL_FreeSurface( sdl_image_data );
+  }
+  else
   {
     fprintf( stderr, "Erreur lors du chargement de la texture\n" );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL );
   }
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso ); // anisotropie
-  glGenerateMipmap( GL_TEXTURE_2D );
-  glBindTexture( GL_TEXTURE_2D, 0 );
 
 
   // Load ground roughness texture 
   // -----------------------------
-  glGenTextures( 1, &_tex_roughness_ground );
-  glBindTexture( GL_TEXTURE_2D, _tex_roughness_ground );
-  if( ( t = IMG_Load( "../Textures/ground1/roughness.png" ) ) != NULL ) 
+  if( ( sdl_image_data = IMG_Load( "../Textures/ground1/roughness.png" ) ) != NULL )
   {
-    if( _window->_toolbox->IsTextureRGBA( t ) )
-    {
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->pixels );
-    }
-    else
-    {
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels );
-    }
-    SDL_FreeSurface( t );
-  } 
-  else 
+    _tex_roughness_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+                                                                      true,
+                                                                      true,
+                                                                      anisotropy_value );
+    SDL_FreeSurface( sdl_image_data );
+  }
+  else
   {
     fprintf( stderr, "Erreur lors du chargement de la texture\n" );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL );
   }
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso ); // anisotropie
-  glGenerateMipmap( GL_TEXTURE_2D );
-  glBindTexture( GL_TEXTURE_2D, 0 );
 
 
   // Load ground metalness texture  
   // -----------------------------
-  glGenTextures( 1, &_tex_metalness_ground );
-  glBindTexture( GL_TEXTURE_2D, _tex_metalness_ground );
-  if( ( t = IMG_Load( "../Textures/ground1/metalness.png" ) ) != NULL ) 
+  if( ( sdl_image_data = IMG_Load( "../Textures/ground1/metalness.png" ) ) != NULL )
   {
-   if( _window->_toolbox->IsTextureRGBA( t ) )
-   {
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->pixels );
-    }
-    else
-    {
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels );
-    }
-    SDL_FreeSurface( t );
-  } 
-  else 
+    _tex_metalness_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+                                                                      true,
+                                                                      true,
+                                                                      anisotropy_value );
+    SDL_FreeSurface( sdl_image_data );
+  }
+  else
   {
     fprintf( stderr, "Erreur lors du chargement de la texture\n" );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL );
   }
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso ); // anisotropie
-  glGenerateMipmap( GL_TEXTURE_2D );
-  glBindTexture( GL_TEXTURE_2D, 0 );
 
 }
 
@@ -596,8 +509,8 @@ void Scene::ObjectsInitialization()
   glm::vec3 position;
 
 
-  // Tables object initialization
-  // ----------------------------
+  // _tables object initialization
+  // -----------------------------
   for( int i = 0; i < 20; i++ )
   { 
 
@@ -616,22 +529,22 @@ void Scene::ObjectsInitialization()
         break;
     }
 
-    _tables.push_back( Object( 0, // ID
+    _tables.push_back( Object( 0,     // ID
                                position,
                                0.0,
                                0.0,
                                glm::vec3( 0.01, 0.01, 0.01 ),
                                1.0,   // alpha
-                               8,
                                false,
                                false,
                                0.75,
-                               false,   // bloom
-                               1.0 ) );
+                               false, // bloom
+                               0.7,
+                               0.0 ) );
   }
 
 
-  // _Ground1 object initialization
+  // _ground1 object initialization
   // ------------------------------
   _ground1 = new Object( 1, // ID
                          glm::vec3( 0.0, 0.0, 0.0 ),
@@ -639,12 +552,28 @@ void Scene::ObjectsInitialization()
                          0.0,
                          glm::vec3( 10.0, 10.0, 1.0 ),
                          1.0,
-                         8,
                          false,
                          false,
                          0.75,
                          false,
-                         1.0 );
+                         0.999,
+                         0.0 );
+
+
+  // _ink_bottle object initialization
+  // ---------------------------------
+  _ink_bottle = new Object( 2, // ID
+                            glm::vec3( 0.0, 0.5, 0.0 ),
+                            0.0,
+                            0.0,
+                            glm::vec3( 0.1, 0.1, 0.1 ),
+                            1.0,
+                            false,
+                            false,
+                            0.75,
+                            false,
+                            0.999,
+                            1.0 );
 
 }
 
@@ -760,25 +689,8 @@ void Scene::IBLInitialization()
     
     // Gen irradiance cube map textures
     // --------------------------------
-    glGenTextures( 1, &irradiance_cubeMap );
-    glBindTexture( GL_TEXTURE_CUBE_MAP, irradiance_cubeMap );
-    for( unsigned int i = 0; i < 6; ++i )
-    {
-      glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                    0,
-                    GL_RGB16F,
-                    _res_irradiance_cubeMap,
-                    _res_irradiance_cubeMap,
-                    0,
-                    GL_RGB,
-                    GL_FLOAT, 
-                    nullptr );
-    }
-    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    irradiance_cubeMap = _window->_toolbox->CreateCubeMapTexture( _res_irradiance_cubeMap,
+                                                                  false );
 
     glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
     glBindRenderbuffer( GL_RENDERBUFFER, capture_RBO );
@@ -809,26 +721,8 @@ void Scene::IBLInitialization()
     
     // Create pre filter cube map textures
     // -----------------------------------
-    glGenTextures( 1, &pre_filter_cubeMap );
-    glBindTexture( GL_TEXTURE_CUBE_MAP, pre_filter_cubeMap );
-    for( unsigned int i = 0; i < 6; ++i )
-    {
-      glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                    0, 
-                    GL_RGB16F, 
-                    _res_pre_filter_cubeMap, 
-                    _res_pre_filter_cubeMap, 
-                    0, 
-                    GL_RGB, 
-                    GL_FLOAT, 
-                    nullptr );
-    }
-    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
-    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glGenerateMipmap( GL_TEXTURE_CUBE_MAP ); // generate mipmaps for the cubemap so OpenGL automatically allocates the required memory 
+    pre_filter_cubeMap = _window->_toolbox->CreateCubeMapTexture( _res_pre_filter_cubeMap,
+                                                                  true );
 
 
     // Compute specular pre filter cube map
@@ -871,13 +765,13 @@ void Scene::IBLInitialization()
     
     // Gen specular pre brdf texture
     // -----------------------------    
-    glGenTextures( 1, &_pre_brdf_texture );
-    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RG16F, _res_pre_brdf_texture, _res_pre_brdf_texture, 0, GL_RG, GL_FLOAT, 0 );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    _pre_brdf_texture = _window->_toolbox->CreateEmptyTexture( _res_pre_brdf_texture,
+                                                               _res_pre_brdf_texture,
+                                                               GL_RG16F,
+                                                               GL_RG,
+                                                               false,
+                                                               false,
+                                                               0.0 );
 
 
     // Compute specular pre brdf texture
@@ -921,9 +815,9 @@ void Scene::ShadersInitialization()
   _post_process_shader.SetShaderClassicPipeline(        "../Shaders/observer.vs",             "../Shaders/post_process.fs" );
   _MS_blit_shader.SetShaderClassicPipeline(             "../Shaders/observer.vs",             "../Shaders/multisample_blit.fs" );
   _cube_map_converter_shader.SetShaderClassicPipeline(  "../Shaders/cube_map_converter.vs",   "../Shaders/cube_map_converter.fs" );
-  _diffuse_irradiance_shader.SetShaderClassicPipeline(  "../Shaders/cube_map_converter.vs",   "../Shaders/diffuse_irradiance.fs" );
-  _specular_pre_filter_shader.SetShaderClassicPipeline( "../Shaders/cube_map_converter.vs",   "../Shaders/specular_pre_filter.fs" );
-  _specular_pre_brdf_shader.SetShaderClassicPipeline(   "../Shaders/observer.vs",             "../Shaders/specular_pre_brdf.fs" );
+  _diffuse_irradiance_shader.SetShaderClassicPipeline(  "../Shaders/cube_map_converter.vs",   "../Shaders/IBL_diffuse_irradiance.fs" );
+  _specular_pre_filter_shader.SetShaderClassicPipeline( "../Shaders/cube_map_converter.vs",   "../Shaders/IBL_specular_pre_filter.fs" );
+  _specular_pre_brdf_shader.SetShaderClassicPipeline(   "../Shaders/observer.vs",             "../Shaders/IBL_specular_pre_brdf.fs" );
 
   _geometry_pass_shader.SetShaderClassicPipeline(       "../Shaders/deferred_geometry_pass.vs", "../Shaders/deferred_geometry_pass.fs" );
   _lighting_pass_shader.SetShaderClassicPipeline(       "../Shaders/deferred_lighting_pass.vs", "../Shaders/deferred_lighting_pass.fs" );
@@ -939,7 +833,7 @@ void Scene::ShadersInitialization()
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureAO1" ), 3 );
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureRoughness1" ), 4 );
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureMetalness1" ), 5 );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureSpecular1" ), 6 );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureOpacity1" ), 6 );
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIrradianceCubeMap" ), 7 );
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uPreFilterCubeMap" ), 8 );
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uPreBrdfLUT" ), 9 ); 
@@ -990,14 +884,22 @@ void Scene::ModelsLoading()
   Model::SetToolbox( _window->_toolbox );
 
   // Table model loading
-  _table_model = new Model();
-  _table_model->Load_Model( "../Models/cube/Rounded Cube.fbx", 0, "Table1" );
+  _table_model = new Model( "../Models/cube/rounded_cube.fbx", 
+                            0, 
+                            "Table1" );
   _table_model->Print_info_model();
 
   // Volume sphere model loading
-  _sphere_model = new Model();
-  _sphere_model->Load_Model( "../Models/volume_sphere/volume_sphere.obj", 2, "VolumeSphere" );
-  _sphere_model->Print_info_model();  
+  _sphere_model = new Model( "../Models/volume_sphere/volume_sphere.obj", 
+                             1, 
+                             "VolumeSphere" );
+  _sphere_model->Print_info_model();
+
+  // Ink bottle model loading
+  _ink_bottle_model = new Model( "../Models/ink_bottle/ink_bottle.FBX", 
+                                 2, 
+                                 "InkBottle" );
+  _ink_bottle_model->Print_info_model();  
 }
 
 void Scene::DeferredBuffersInitialization()
@@ -1147,7 +1049,6 @@ void Scene::SceneForwardRendering()
   _forward_pbr_shader.Use();
 
   model_matrix = glm::mat4();
-
   model_matrix = glm::translate( model_matrix, _ground1->_position );
   model_matrix = glm::rotate( model_matrix, _ground1->_angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
   model_matrix = glm::scale( model_matrix, _ground1->_scale ); 
@@ -1192,6 +1093,7 @@ void Scene::SceneForwardRendering()
 
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _ground1->_opacity_map );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _ground1->_alpha );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ground1->_id );    
 
@@ -1208,9 +1110,7 @@ void Scene::SceneForwardRendering()
   for( int i = 0; i < _tables.size(); i++ )
   {
     model_matrix = glm::mat4();
-
     model_matrix = glm::translate( model_matrix, _tables[ i ]._position );
-    model_matrix = glm::rotate( model_matrix, _tables[ i ]._angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
     model_matrix = glm::scale( model_matrix, _tables[ i ]._scale ); 
 
     glActiveTexture( GL_TEXTURE7 );
@@ -1241,6 +1141,7 @@ void Scene::SceneForwardRendering()
 
     glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _tables[ i ]._opacity_map );
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _tables[ i ]._alpha );
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _tables[ i ]._id );    
 
@@ -1249,6 +1150,52 @@ void Scene::SceneForwardRendering()
   glUseProgram( 0 );
 
   glDisable( GL_CULL_FACE );
+
+
+  // Draw ink bottle
+  // ---------------
+  _forward_pbr_shader.Use();
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, _ink_bottle->_position );
+  model_matrix = glm::scale( model_matrix, _ink_bottle->_scale ); 
+
+  glActiveTexture( GL_TEXTURE7 );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
+  glActiveTexture( GL_TEXTURE8 );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); 
+  glActiveTexture( GL_TEXTURE9 );
+  glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+
+  for( int i = 0; i < _lights.size(); i++ )
+  {
+    string temp = to_string( i );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+    glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+  }
+
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _ink_bottle->_bloom );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _ink_bottle->_bloom_brightness );
+
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+
+  glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _ink_bottle->_opacity_map );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _ink_bottle->_alpha );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ink_bottle->_id );    
+
+  _ink_bottle_model->Draw( _forward_pbr_shader );
+
+  glUseProgram( 0 );
+
 
   // Unbinding    
   glBindFramebuffer( GL_FRAMEBUFFER, 0 );

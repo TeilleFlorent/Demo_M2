@@ -66,15 +66,31 @@ class Toolbox
 
     void RenderObserver();
 
+    unsigned int CreateTextureFromData( SDL_Surface * iImage,
+                                        bool          iMipmap,
+                                        bool          iAnisotropy,
+                                        float         iAnisotropyValue );
+
+    unsigned int CreateEmptyTexture( int   iWidth,
+                                     int   iHeight,
+                                     int   iInternalFormat,
+                                     int   iFormat,
+                                     bool  iMipmap,
+                                     bool  iAnisotropy,
+                                     float iAnisotropyValue );
+
+    unsigned int CreateCubeMapTexture( int  iResolution,
+                                       bool iMipmap );
+
     void SetFboTexture( unsigned int iTextureID,
-                        GLenum       iFormat,
+                        int          iFormat,
                         int          iWidth,
                         int          iHeight,
                         GLenum       iAttachment );
 
     void SetFboMultiSampleTexture( unsigned int iTextureID,
                                    int          iSampleCount,
-                                   GLenum       iFormat,
+                                   int          iFormat,
                                    int          iWidth,
                                    int          iHeight,
                                    GLenum       iAttachment );
@@ -116,13 +132,6 @@ class Toolbox
     unsigned int _pingpong_color_buffers[ 2 ];
     unsigned int _temp_tex_color_buffer[ 2 ];
     unsigned int _final_tex_color_buffer[ 2 ];
-
-    // Textures resolution
-    float _depth_map_res_seed;
-    float _depth_map_res_x, _depth_map_res_y;
-
-    float _reflection_cubeMap_res;
-    float _tex_VL_res_seed;
 
 };
 

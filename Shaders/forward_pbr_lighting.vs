@@ -35,7 +35,7 @@ uniform vec3 uLightPos[ MAX_NB_LIGHTS ];
 out vec2 oUV;
 out vec3 oFragPos;
 out vec3 oTBN[ 3 ];
- 
+out vec3 oNormal;
 
 //******************************************************************************
 //**********  Vertex shader functions  *****************************************
@@ -46,8 +46,7 @@ void main()
 
 	// Vertex position calculation
 	// ---------------------------
-	vec4 clip_space_position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4( _position, 1.0 );
-	gl_Position = clip_space_position;
+	gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4( _position, 1.0 );
 
 
 	// Vertex TBN matrix calculation
@@ -68,5 +67,7 @@ void main()
 	oTBN[ 0 ] = TBN[ 0 ];
 	oTBN[ 1 ] = TBN[ 1 ];
 	oTBN[ 2 ] = TBN[ 2 ];
+
+	oNormal = N;
 }
 
