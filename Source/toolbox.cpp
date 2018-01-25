@@ -342,6 +342,8 @@ void Toolbox::RenderObserver()
 }
 
 unsigned int Toolbox::CreateTextureFromData( SDL_Surface * iImage,
+                                             int           iInternalFormat,
+                                             int           iFormat,
                                              bool          iMipmap,
                                              bool          iAnisotropy,
                                              float         iAnisotropyValue )
@@ -351,14 +353,7 @@ unsigned int Toolbox::CreateTextureFromData( SDL_Surface * iImage,
   glGenTextures( 1, &result_id );
   glBindTexture( GL_TEXTURE_2D, result_id );
 
-  if( IsTextureRGBA( iImage ) )
-  {
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, iImage->w, iImage->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, iImage->pixels );
-  }
-  else
-  {
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, iImage->w, iImage->h, 0, GL_RGB, GL_UNSIGNED_BYTE, iImage->pixels );
-  }
+  glTexImage2D( GL_TEXTURE_2D, 0, iInternalFormat, iImage->w, iImage->h, 0, iFormat, GL_UNSIGNED_BYTE, iImage->pixels );
 
   glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
   glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, ( iMipmap == true ) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );

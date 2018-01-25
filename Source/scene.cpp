@@ -390,6 +390,8 @@ void Scene::SceneDataInitialization()
   if( ( sdl_image_data = IMG_Load( "../Textures/ground1/albedo.png" ) ) != NULL )
   {
     _tex_albedo_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+                                                                   GL_RGB,
+                                                                   GL_RGB,
                                                                    true,
                                                                    true,
                                                                    anisotropy_value );
@@ -405,6 +407,8 @@ void Scene::SceneDataInitialization()
   if( ( sdl_image_data = IMG_Load( "../Textures/ground1/normal.png" ) ) != NULL )
   {
     _tex_normal_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+                                                                   GL_RGB,
+                                                                   GL_RGB,
                                                                    true,
                                                                    true,
                                                                    anisotropy_value );
@@ -421,6 +425,8 @@ void Scene::SceneDataInitialization()
   if( ( sdl_image_data = IMG_Load( "../Textures/ground1/height.png" ) ) != NULL )
   {
     _tex_height_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+                                                                   GL_R8,
+                                                                   GL_RED,
                                                                    true,
                                                                    true,
                                                                    anisotropy_value );
@@ -437,6 +443,8 @@ void Scene::SceneDataInitialization()
   if( ( sdl_image_data = IMG_Load( "../Textures/ground1/AO.png" ) ) != NULL )
   {
     _tex_AO_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+                                                               GL_R8,
+                                                               GL_RED,
                                                                true,
                                                                true,
                                                                anisotropy_value );
@@ -453,6 +461,8 @@ void Scene::SceneDataInitialization()
   if( ( sdl_image_data = IMG_Load( "../Textures/ground1/roughness.png" ) ) != NULL )
   {
     _tex_roughness_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+                                                                      GL_R8,
+                                                                      GL_RED,
                                                                       true,
                                                                       true,
                                                                       anisotropy_value );
@@ -469,6 +479,8 @@ void Scene::SceneDataInitialization()
   if( ( sdl_image_data = IMG_Load( "../Textures/ground1/metalness.png" ) ) != NULL )
   {
     _tex_metalness_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+                                                                      GL_R8,
+                                                                      GL_RED,
                                                                       true,
                                                                       true,
                                                                       anisotropy_value );

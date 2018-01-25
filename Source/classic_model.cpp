@@ -188,7 +188,7 @@ void Model::LoadModel( string iPath )
   //_importer.GetExtensionList( all_supported_format );
   //std::cout << all_supported_format.C_Str() << std::endl;   
   
-  
+
   // Load model scene and process all nodes hierarchy
   // ------------------------------------------------
   _scene = _importer.ReadFile( iPath, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace );
@@ -379,12 +379,16 @@ Mesh Model::ProcessMesh( aiMesh * 	 iMesh,
 }
 
 Texture Model::LoadTexture( string iTextureType,
-                            string iTextureName )
+                            string iTextureName,
+                            int    iInternalFormat,
+                            int    iFormat )
 {
   Texture result_texture;
 
   result_texture._path = this->_directory + '/' + iTextureName;
-  result_texture._id   = TextureFromFile( result_texture._path ); 
+  result_texture._id   = TextureFromFile( result_texture._path,
+  																				iInternalFormat,
+  																				iFormat ); 
   result_texture._type = iTextureType;
 
   this->_textures_loaded.push_back( result_texture );  
@@ -403,27 +407,39 @@ vector< Texture > Model::LoadModelTextures( int iMeshNum )
   {
     // albedo
     textures.push_back( LoadTexture( "uTextureDiffuse",
-                                     "albedo.png" ) );
+                                     "albedo.png",
+                                     GL_RGB,
+                                     GL_RGB ) );
 
     // normal
     textures.push_back( LoadTexture( "uTextureNormal",
-                                     "normal.png" ) );
+                                     "normal.png",
+                                     GL_RGB,
+                                     GL_RGB ) );
 
     // height
     textures.push_back( LoadTexture( "uTextureHeight",
-                                     "height.png" ) );
+                                     "height.png",
+                                     GL_R8,
+                                     GL_RED ) );
 
     // AO
     textures.push_back( LoadTexture( "uTextureAO",
-                                     "AO.png" ) );
+                                     "AO.png",
+                                     GL_R8,
+                                     GL_RED ) );
 
     // roughness 
     textures.push_back( LoadTexture( "uTextureRoughness",
-                                     "roughness.png" ) );
+                                     "roughness.png",
+                                     GL_R8,
+                                     GL_RED ) );
 
     // metalness
     textures.push_back( LoadTexture( "uTextureMetalness",
-                                     "metalness.png" ) );
+                                     "metalness.png",
+                                     GL_R8,
+                                     GL_RED ) );
   }
 
 
@@ -433,32 +449,46 @@ vector< Texture > Model::LoadModelTextures( int iMeshNum )
   {
     // albedo
     textures.push_back( LoadTexture( "uTextureDiffuse",
-                                     "albedo.png" ) );
+                                     "albedo.png",
+                                     GL_RGB,
+                                     GL_RGB ) );
 
     // normal
     textures.push_back( LoadTexture( "uTextureNormal",
-                                     "normal.png" ) );
+                                     "normal.png",
+                                     GL_RGB,
+                                     GL_RGB ) );
     // AO
     textures.push_back( LoadTexture( "uTextureAO",
-                                     "AO.png" ) );
+                                     "AO.png",
+                                     GL_R8,
+                                     GL_RED ) );
 
     // roughness 
     textures.push_back( LoadTexture( "uTextureRoughness",
-                                     "roughness.png" ) );
+                                     "roughness.png",
+                                     GL_R8,
+                                     GL_RED ) );
 
     // metalness
     textures.push_back( LoadTexture( "uTextureMetalness",
-                                     "metalness.png" ) );
+                                     "metalness.png",
+                                     GL_R8,
+                                     GL_RED ) );
 
     // opacity
     textures.push_back( LoadTexture( "uTextureOpacity",
-                                     "opacity.png" ) );
+                                     "opacity.png",
+                                     GL_R8,
+                                     GL_RED ) );
   }
 
   return textures;
 }
 
-unsigned int Model::TextureFromFile( string iTexturePath )
+unsigned int Model::TextureFromFile( string iTexturePath,
+																		 int    iInternalFormat,
+                            				 int    iFormat )
 {
 
   // Check loaded texture vector to not load two times the same texture file
@@ -486,7 +516,7 @@ unsigned int Model::TextureFromFile( string iTexturePath )
 	  
   if( !t )
   {
-    printf( "Loading image fail => image null\n" );
+  	printf( "Loading image fail => image null\n" );
   }
   else
   {
@@ -494,14 +524,8 @@ unsigned int Model::TextureFromFile( string iTexturePath )
   }
   
   glBindTexture( GL_TEXTURE_2D, textureID );
-  if( _toolbox->IsTextureRGBA( t ) )
-  {
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->pixels );
-  }
-  else
-  {
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, t->w, t->h, 0, GL_RGB, GL_UNSIGNED_BYTE, t->pixels );
-  }
+  
+  glTexImage2D( GL_TEXTURE_2D, 0, iInternalFormat, t->w, t->h, 0, iFormat, GL_UNSIGNED_BYTE, t->pixels );
  
   glGenerateMipmap( GL_TEXTURE_2D );    
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );

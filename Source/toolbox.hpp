@@ -67,6 +67,8 @@ class Toolbox
     void RenderObserver();
 
     unsigned int CreateTextureFromData( SDL_Surface * iImage,
+                                        int           iInternalFormat,
+                                        int           iFormat,
                                         bool          iMipmap,
                                         bool          iAnisotropy,
                                         float         iAnisotropyValue );

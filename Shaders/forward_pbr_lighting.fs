@@ -282,7 +282,7 @@ vec3 PBRLightingCalculation( vec3 iNormal,
   // Get material inputs data
   Material material;
   material._albedo    = pow( texture( uTextureDiffuse1, iUV ).rgb, vec3( 2.2 ) );
-  material._albedo    = pow( vec3( 1.0 ), vec3( 2.2 ) );
+  //material._albedo    = pow( vec3( 1.0 ), vec3( 2.2 ) );
   material._metalness = texture( uTextureMetalness1, iUV ).r;
   material._roughness = texture( uTextureRoughness1, iUV ).r;
   material._ao        = texture( uTextureAO1, iUV ).r;
@@ -333,13 +333,12 @@ void main()
 
   // Normal mapping calculation
   vec3 normal = NormalMappingCalculation( oUV );
-  normal = oNormal;
 
   // Get Fragment opacity
   float opacity;
   if( uOpacityMap == 1.0 )
   {
-    opacity = texture( uTextureOpacity1, oUV ).g;
+    opacity = texture( uTextureOpacity1, oUV ).r;
     //opacity *= opacity; 
   }
   else

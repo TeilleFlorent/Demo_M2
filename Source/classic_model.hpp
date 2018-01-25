@@ -132,9 +132,13 @@ class Model
     vector< Texture > LoadModelTextures( int iMeshNum );
 
     Texture LoadTexture( string iTextureType,
-                         string iTextureName );
+                         string iTextureName,
+                         int    iInternalFormat,
+                         int    iFormat );
     
-    unsigned int TextureFromFile( string iTexturePath );
+    unsigned int TextureFromFile( string iTexturePath,
+                                  int    iInternalFormat,
+                                  int    iFormat );
 
     static void SetToolbox( Toolbox * iToolbox );
 
