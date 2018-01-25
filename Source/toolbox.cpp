@@ -503,3 +503,30 @@ void Toolbox::LinkMultiSampleRbo( unsigned int iRboID,
   glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, iRboID );
   glBindRenderbuffer( GL_RENDERBUFFER, 0 );
 }
+
+glm::mat4 Toolbox::AssimpMatrixToGlmMatrix( const aiMatrix4x4 * iAssimpMatrix )
+{
+  glm::mat4 result_matrix;
+
+  result_matrix[ 0 ][ 0 ] = ( GLfloat )iAssimpMatrix->a1; 
+  result_matrix[ 1 ][ 0 ] = ( GLfloat )iAssimpMatrix->a2; 
+  result_matrix[ 2 ][ 0 ] = ( GLfloat )iAssimpMatrix->a3; 
+  result_matrix[ 3 ][ 0 ] = ( GLfloat )iAssimpMatrix->a4; 
+
+  result_matrix[ 0 ][ 1 ] = ( GLfloat )iAssimpMatrix->b1;  
+  result_matrix[ 1 ][ 1 ] = ( GLfloat )iAssimpMatrix->b2;  
+  result_matrix[ 2 ][ 1 ] = ( GLfloat )iAssimpMatrix->b3;  
+  result_matrix[ 3 ][ 1 ] = ( GLfloat )iAssimpMatrix->b4;  
+
+  result_matrix[ 0 ][ 2 ] = ( GLfloat )iAssimpMatrix->c1; 
+  result_matrix[ 1 ][ 2 ] = ( GLfloat )iAssimpMatrix->c2; 
+  result_matrix[ 2 ][ 2 ] = ( GLfloat )iAssimpMatrix->c3; 
+  result_matrix[ 3 ][ 2 ] = ( GLfloat )iAssimpMatrix->c4; 
+
+  result_matrix[ 0 ][ 3 ] = ( GLfloat )iAssimpMatrix->d1;
+  result_matrix[ 1 ][ 3 ] = ( GLfloat )iAssimpMatrix->d2;
+  result_matrix[ 2 ][ 3 ] = ( GLfloat )iAssimpMatrix->d3;
+  result_matrix[ 3 ][ 3 ] = ( GLfloat )iAssimpMatrix->d4;
+
+  return result_matrix;
+}

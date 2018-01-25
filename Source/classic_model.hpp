@@ -71,7 +71,8 @@ class Mesh
     // ---------------
     Mesh( vector< Vertex >  iVertices,
           vector< GLuint >  iIndices,
-          vector< Texture > iTextures );
+          vector< Texture > iTextures,
+          glm::mat4         iLocalTransform );
 
     void Draw( Shader      iShader,
                int         iModelID,
@@ -84,7 +85,7 @@ class Mesh
     vector< Vertex >  _vertices;
     vector< GLuint >  _indices;
     vector< Texture > _textures;
-    glm::mat4         _model_matrix;
+    glm::mat4         _local_transform;
 
 
   private:
@@ -124,8 +125,9 @@ class Model
     void ProcessNode( aiNode * iNode,
                       int      iMeshNum );
 
-    Mesh ProcessMesh( aiMesh* iMesh,
-                      int     iMeshNum );
+    Mesh ProcessMesh( aiMesh *    iMesh,
+                      int         iMeshNum,
+                      aiMatrix4x4 iLocalTransform );
 
     vector< Texture > LoadModelTextures( int iMeshNum );
 

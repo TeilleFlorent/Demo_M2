@@ -154,11 +154,13 @@ class Scene
     std::vector< Object > _tables;
     Object *              _ground1;
     Object *              _ink_bottle;
+    Object *              _collection_car;
 
     // Models
     Model * _table_model;
     Model * _sphere_model;
     Model * _ink_bottle_model;
+    Model * _collection_car_model;
 };
 
 #endif  // SCENE_H

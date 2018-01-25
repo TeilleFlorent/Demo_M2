@@ -6,13 +6,15 @@
 //**********  Class Mesh  ******************************************************
 //******************************************************************************
 
-Mesh::Mesh( vector< Vertex > iVertices,
+Mesh::Mesh( vector< Vertex > 			 iVertices,
             vector< unsigned int > iIndices,
-            vector< Texture > iTextures )
+            vector< Texture > 		 iTextures,
+            glm::mat4       		 	 iLocalTransform )
 {
-  this->_vertices = iVertices;
-  this->_indices = iIndices;
-  this->_textures = iTextures;
+  this->_vertices        = iVertices;
+  this->_indices         = iIndices;
+  this->_textures        = iTextures;
+  this->_local_transform = iLocalTransform;
   this->SetupMesh();
 }
 
@@ -68,15 +70,17 @@ void Mesh::Draw( Shader      iShader,
   // ------------
 	glBindVertexArray( this->_VAO );
 	
+	glm::mat4 model_matrix;
+	model_matrix = iModelMatrix * _local_transform;
+	glUniformMatrix4fv( glGetUniformLocation( iShader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+
 	if( iModelID == 2 )
   {
-  	if( iMeshNumber == 0 )
-  	{
-  		glCullFace( GL_FRONT );
-			glDrawElements( GL_TRIANGLES, this->_indices.size(), GL_UNSIGNED_INT, 0 );
-	  	glCullFace( GL_BACK );
-			glDrawElements( GL_TRIANGLES, this->_indices.size(), GL_UNSIGNED_INT, 0 );
-  	}
+		// Transparent double sided mesh
+		glCullFace( GL_FRONT );
+		glDrawElements( GL_TRIANGLES, this->_indices.size(), GL_UNSIGNED_INT, 0 );
+		glCullFace( GL_BACK );
+		glDrawElements( GL_TRIANGLES, this->_indices.size(), GL_UNSIGNED_INT, 0 );
   }
   else
   {
@@ -176,11 +180,17 @@ void Model::Print_info_model()
 
 void Model::LoadModel( string iPath )
 {
+
   // Get and print all supported file format 
+  // ---------------------------------------
+  
   //aiString all_supported_format;   
   //_importer.GetExtensionList( all_supported_format );
   //std::cout << all_supported_format.C_Str() << std::endl;   
   
+  
+  // Load model scene and process all nodes hierarchy
+  // ------------------------------------------------
   _scene = _importer.ReadFile( iPath, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace );
 
   if( !_scene || _scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !_scene->mRootNode )
@@ -191,6 +201,21 @@ void Model::LoadModel( string iPath )
 
   this->_directory = iPath.substr( 0, iPath.find_last_of( '/' ) );
   this->ProcessNode( _scene->mRootNode, 0 );
+
+
+  // Erase unwanted mesh
+  // -------------------
+  if( _model_id == 2 )
+  {	
+  	// delete [ 1 ]
+  	_meshes.erase( _meshes.begin() + 1 );
+  }
+
+  if( _model_id == 3 )
+  {	
+  	// delete [ 1 ]
+  	_meshes.erase( _meshes.begin() + 1 );
+  }
 }
 
 void Model::ProcessNode( aiNode * iNode,
@@ -199,7 +224,9 @@ void Model::ProcessNode( aiNode * iNode,
   for( unsigned int i = 0; i < iNode->mNumMeshes; i++ )
   {
     aiMesh * mesh = _scene->mMeshes[ iNode->mMeshes[ i ] ]; 
-    this->_meshes.push_back( this->ProcessMesh( mesh, iMeshNum ) );  
+    this->_meshes.push_back( this->ProcessMesh( mesh,
+    																				    iMeshNum,
+    																				    iNode->mTransformation ) );  
   }
    
   for( unsigned int i = 0; i < iNode->mNumChildren; i++ )
@@ -208,8 +235,9 @@ void Model::ProcessNode( aiNode * iNode,
   }
 }
 
-Mesh Model::ProcessMesh( aiMesh * iMesh, 
-                         int iMeshNum )
+Mesh Model::ProcessMesh( aiMesh * 	 iMesh, 
+                         int 				 iMeshNum,
+                         aiMatrix4x4 iLocalTransform )
 {
   vector< Vertex > vertices;
   vector< unsigned int > indices;
@@ -335,8 +363,19 @@ Mesh Model::ProcessMesh( aiMesh * iMesh,
   // -------------------
   vector< Texture > model_textures = this->LoadModelTextures( iMeshNum );
   textures.insert( textures.end(), model_textures.begin(), model_textures.end() );
-      
-  return Mesh( vertices, indices, textures );
+	
+
+	// Get mesh local transform matrix
+  // -------------------------------
+  glm::mat4 local_transform = _toolbox->AssimpMatrixToGlmMatrix( &iLocalTransform );
+  //std::cout << "\nModel Name = " << _model_name << std::endl
+  //					<< "Local transform mesh : " << iMeshNum << std::endl;
+  //_toolbox->PrintMatrix( &local_transform );
+
+  return Mesh( vertices,
+  					   indices,
+  					   textures,
+  					   local_transform );
 }
 
 Texture Model::LoadTexture( string iTextureType,

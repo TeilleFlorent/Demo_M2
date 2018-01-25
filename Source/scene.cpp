@@ -532,7 +532,6 @@ void Scene::ObjectsInitialization()
     _tables.push_back( Object( 0,     // ID
                                position,
                                0.0,
-                               0.0,
                                glm::vec3( 0.01, 0.01, 0.01 ),
                                1.0,   // alpha
                                false,
@@ -549,7 +548,6 @@ void Scene::ObjectsInitialization()
   _ground1 = new Object( 1, // ID
                          glm::vec3( 0.0, 0.0, 0.0 ),
                          _PI_2,
-                         0.0,
                          glm::vec3( 10.0, 10.0, 1.0 ),
                          1.0,
                          false,
@@ -563,10 +561,9 @@ void Scene::ObjectsInitialization()
   // _ink_bottle object initialization
   // ---------------------------------
   _ink_bottle = new Object( 2, // ID
-                            glm::vec3( 0.0, 0.2, 0.0 ),
+                            glm::vec3( 0.0, 0.3, 0.0 ),
                             0.0,
-                            0.0,
-                            glm::vec3( 0.1, 0.1, 0.1 ),
+                            glm::vec3( 0.03, 0.03, 0.03 ),
                             0.6,
                             false,
                             false,
@@ -574,6 +571,21 @@ void Scene::ObjectsInitialization()
                             false,
                             0.999,
                             1.0 );
+
+
+  // _collection_car object initialization
+  // -------------------------------------
+  _collection_car = new Object( 3, // ID
+                                glm::vec3( 2.0, 0.1, 0.0 ),
+                                _PI_2,
+                                glm::vec3( 0.001, 0.001, 0.001 ),
+                                0.6,
+                                false,
+                                false,
+                                0.75,
+                                false,
+                                0.999,
+                                0.0 );
 
 }
 
@@ -899,7 +911,13 @@ void Scene::ModelsLoading()
   _ink_bottle_model = new Model( "../Models/ink_bottle/ink_bottle.FBX", 
                                  2, 
                                  "InkBottle" );
-  _ink_bottle_model->Print_info_model();  
+  _ink_bottle_model->Print_info_model();
+
+  // Collection car model loading
+  _collection_car_model = new Model( "../Models/collection_car/collection_car.FBX", 
+                                     3, 
+                                    "CollectionCar" );
+  _collection_car_model->Print_info_model();  
 }
 
 void Scene::DeferredBuffersInitialization()
@@ -1038,7 +1056,7 @@ void Scene::SceneForwardRendering()
     glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), true );
     glUniform1f( glGetUniformLocation( _flat_color_shader._program, "uBloomBrightness" ), 1.0f );
 
-    //_sphere_model->Draw( _flat_color_shader, model_matrix );
+    _sphere_model->Draw( _flat_color_shader, model_matrix );
   }
   glBindVertexArray( 0 );
   glUseProgram( 0 );
@@ -1098,7 +1116,7 @@ void Scene::SceneForwardRendering()
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ground1->_id );    
 
   glBindVertexArray( _ground_VAO );
-  //glDrawArrays( GL_TRIANGLES, 0, 6 );
+  glDrawArrays( GL_TRIANGLES, 0, 6 );
   glBindVertexArray( 0 );
   glUseProgram( 0 );
  
@@ -1145,7 +1163,7 @@ void Scene::SceneForwardRendering()
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _tables[ i ]._alpha );
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _tables[ i ]._id );    
 
-    //_table_model->Draw( _forward_pbr_shader, model_matrix );
+    _table_model->Draw( _forward_pbr_shader, model_matrix );
   } 
   glUseProgram( 0 );
 
@@ -1200,10 +1218,58 @@ void Scene::SceneForwardRendering()
   
   glUseProgram( 0 );
 
+
+  // Disable cull face
   glDisable( GL_CULL_FACE );
 
 
-  // Unbinding    
+  // Draw collection car
+  // -------------------
+  _forward_pbr_shader.Use();
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, _collection_car->_position );
+  model_matrix = glm::rotate( model_matrix, _collection_car->_angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
+  model_matrix = glm::scale( model_matrix, _collection_car->_scale ); 
+
+  glActiveTexture( GL_TEXTURE7 );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
+  glActiveTexture( GL_TEXTURE8 );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); 
+  glActiveTexture( GL_TEXTURE9 );
+  glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+
+  for( int i = 0; i < _lights.size(); i++ )
+  {
+    string temp = to_string( i );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+    glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+  }
+
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _collection_car->_bloom );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _collection_car->_bloom_brightness );
+
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+
+  glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _collection_car->_opacity_map );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _collection_car->_alpha );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _collection_car->_id );    
+
+  _collection_car_model->Draw( _forward_pbr_shader, model_matrix );
+
+  glUseProgram( 0 );
+
+
+  // Unbind current FBO
   glBindFramebuffer( GL_FRAMEBUFFER, 0 );
   glBindVertexArray( 0 );
 

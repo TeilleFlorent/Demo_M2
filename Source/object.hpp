@@ -20,7 +20,6 @@ class Object
     Object( int       iID,
             glm::vec3 iPosition,
             float     iAngle,
-            float     iAngleAcc,
             glm::vec3 iScale,
             float     iAlpha,
             bool      iGenerateShadow,
@@ -37,7 +36,6 @@ class Object
     float     _id;
     glm::vec3 _position;
     float     _angle;
-    float     _angle_acc;
     glm::vec3 _scale;
     float     _alpha;
     bool      _generate_shadow;

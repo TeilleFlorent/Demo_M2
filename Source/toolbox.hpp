@@ -104,6 +104,8 @@ class Toolbox
                              int          iWidth,
                              int          iHeight );
 
+    glm::mat4 AssimpMatrixToGlmMatrix( const aiMatrix4x4 * iAssimpMatrix );
+
 
     // Toolbox class members
     // ---------------------

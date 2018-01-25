@@ -8,7 +8,6 @@
 Object::Object( int       iID,
                 glm::vec3 iPosition,
                 float     iAngle,
-                float     iAngleAcc,
                 glm::vec3 iScale,
                 float     iAlpha,
                 bool      iGenerateShadow,
@@ -21,7 +20,6 @@ Object::Object( int       iID,
   _id               = iID;
   _position         = iPosition;
   _angle            = iAngle;
-  _angle_acc        = iAngleAcc;
   _scale            = iScale;
   _alpha            = iAlpha;
   _generate_shadow  = iGenerateShadow;
