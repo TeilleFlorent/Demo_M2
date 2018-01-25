@@ -16,8 +16,10 @@ Mesh::Mesh( vector< Vertex > iVertices,
   this->SetupMesh();
 }
 
-void Mesh::Draw( Shader iShader,
-                 int iID ) 
+void Mesh::Draw( Shader      iShader,
+                 int         iModelID,
+                 int         iMeshNumber,
+                 glm::mat4   iModelMatrix ) 
 {
 
   // Mesh corresponding texture binding
@@ -64,11 +66,24 @@ void Mesh::Draw( Shader iShader,
 
   // Mesh Drawing
   // ------------
-  glBindVertexArray( this->_VAO );
-  glDrawElements( GL_TRIANGLES, this->_indices.size(), GL_UNSIGNED_INT, 0 );
-  //glDrawArrays(GL_TRIANGLES, 0, this->indices.size());
-  glBindVertexArray( 0 );
-
+	glBindVertexArray( this->_VAO );
+	
+	if( iModelID == 2 )
+  {
+  	if( iMeshNumber == 0 )
+  	{
+  		glCullFace( GL_FRONT );
+			glDrawElements( GL_TRIANGLES, this->_indices.size(), GL_UNSIGNED_INT, 0 );
+	  	glCullFace( GL_BACK );
+			glDrawElements( GL_TRIANGLES, this->_indices.size(), GL_UNSIGNED_INT, 0 );
+  	}
+  }
+  else
+  {
+		glDrawElements( GL_TRIANGLES, this->_indices.size(), GL_UNSIGNED_INT, 0 );
+	}
+	
+	glBindVertexArray( 0 );
 
   // Unbind all used textures
   for( unsigned int i = 0; i < this->_textures.size(); i++ )
@@ -130,11 +145,15 @@ Model::Model( string iPath,
   LoadModel( iPath );
 }
 
-void Model::Draw( Shader iShader )
+void Model::Draw( Shader      iShader,
+									glm::mat4   iModelMatrix )
 {
   for( unsigned int i = 0; i < this->_meshes.size(); i++ )
   {
-    this->_meshes[ i ].Draw( iShader, this->_model_id );
+    this->_meshes[ i ].Draw( iShader,
+    											   this->_model_id,
+    											   i,
+    											   iModelMatrix );
   }
 }
 
@@ -381,7 +400,7 @@ vector< Texture > Model::LoadModelTextures( int iMeshNum )
     textures.push_back( LoadTexture( "uTextureNormal",
                                      "normal.png" ) );
     // AO
-    /*textures.push_back( LoadTexture( "uTextureAO",
+    textures.push_back( LoadTexture( "uTextureAO",
                                      "AO.png" ) );
 
     // roughness 
@@ -394,7 +413,7 @@ vector< Texture > Model::LoadModelTextures( int iMeshNum )
 
     // opacity
     textures.push_back( LoadTexture( "uTextureOpacity",
-                                     "opacity.png" ) ); */
+                                     "opacity.png" ) );
   }
 
   return textures;
@@ -424,7 +443,7 @@ unsigned int Model::TextureFromFile( string iTexturePath )
   unsigned int textureID;
   glGenTextures( 1, &textureID );
   t = IMG_Load( iTexturePath.c_str() );
-  std::cout << "path loaded =" << iTexturePath << std::endl;
+  //std::cout << "path loaded =" << iTexturePath << std::endl;
 	  
   if( !t )
   {

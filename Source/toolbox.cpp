@@ -329,9 +329,9 @@ void Toolbox::RenderObserver()
   _window->_scene->_observer_shader.Use();
   glActiveTexture( GL_TEXTURE0 );
   //glBindTexture( GL_TEXTURE_2D, _window->_scene->_g_buffer_textures[ 5 ] );
-  //glBindTexture( GL_TEXTURE_2D, _pingpong_color_buffers[ 0 ] );
+  glBindTexture( GL_TEXTURE_2D, _temp_tex_color_buffer[ 0 ] );
   //glBindTexture( GL_TEXTURE_2D_MULTISAMPLE, temp_tex_color_buffer[ 1 ] /*final_tex_color_buffer[0]*/ /*pingpongColorbuffers[0]*/ /*tex_depth_ssr*/ );
-  glBindTexture( GL_TEXTURE_2D, _window->_scene->_pre_brdf_texture );
+  //glBindTexture( GL_TEXTURE_2D, _window->_scene->_pre_brdf_texture );
   
   glUniform1f( glGetUniformLocation( _window->_scene->_observer_shader._program, "uCameraNear" ), _window->_scene->_camera->_near );
   glUniform1f( glGetUniformLocation( _window->_scene->_observer_shader._program, "uCameraFar" ), _window->_scene->_camera->_far );

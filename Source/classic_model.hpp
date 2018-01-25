@@ -73,8 +73,10 @@ class Mesh
           vector< GLuint >  iIndices,
           vector< Texture > iTextures );
 
-    void Draw( Shader iShader,
-               int    iID ); 
+    void Draw( Shader      iShader,
+               int         iModelID,
+               int         iMeshNumber,
+               glm::mat4   iModelMatrix ); 
 
     
     // Class data
@@ -82,6 +84,7 @@ class Mesh
     vector< Vertex >  _vertices;
     vector< GLuint >  _indices;
     vector< Texture > _textures;
+    glm::mat4         _model_matrix;
 
 
   private:
@@ -107,11 +110,12 @@ class Model
 
     // Class functions
     // ---------------
-    Model( string iPath,
-           int    iID,
-           string iName );
+    Model( string      iPath,
+           int         iID,
+           string      iName );
 
-    void Draw( Shader iShader );   
+    void Draw( Shader      iShader,
+               glm::mat4   iModelMatrix );   
 
     void Print_info_model();
 

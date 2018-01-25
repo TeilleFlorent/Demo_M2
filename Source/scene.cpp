@@ -563,11 +563,11 @@ void Scene::ObjectsInitialization()
   // _ink_bottle object initialization
   // ---------------------------------
   _ink_bottle = new Object( 2, // ID
-                            glm::vec3( 0.0, 0.5, 0.0 ),
+                            glm::vec3( 0.0, 0.2, 0.0 ),
                             0.0,
                             0.0,
                             glm::vec3( 0.1, 0.1, 0.1 ),
-                            1.0,
+                            0.6,
                             false,
                             false,
                             0.75,
@@ -1038,7 +1038,7 @@ void Scene::SceneForwardRendering()
     glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), true );
     glUniform1f( glGetUniformLocation( _flat_color_shader._program, "uBloomBrightness" ), 1.0f );
 
-    _sphere_model->Draw( _flat_color_shader );
+    //_sphere_model->Draw( _flat_color_shader, model_matrix );
   }
   glBindVertexArray( 0 );
   glUseProgram( 0 );
@@ -1098,7 +1098,7 @@ void Scene::SceneForwardRendering()
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ground1->_id );    
 
   glBindVertexArray( _ground_VAO );
-  glDrawArrays( GL_TRIANGLES, 0, 6 );
+  //glDrawArrays( GL_TRIANGLES, 0, 6 );
   glBindVertexArray( 0 );
   glUseProgram( 0 );
  
@@ -1145,11 +1145,9 @@ void Scene::SceneForwardRendering()
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _tables[ i ]._alpha );
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _tables[ i ]._id );    
 
-    _table_model->Draw( _forward_pbr_shader );
+    //_table_model->Draw( _forward_pbr_shader, model_matrix );
   } 
   glUseProgram( 0 );
-
-  glDisable( GL_CULL_FACE );
 
 
   // Draw ink bottle
@@ -1192,9 +1190,17 @@ void Scene::SceneForwardRendering()
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _ink_bottle->_alpha );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ink_bottle->_id );    
 
-  _ink_bottle_model->Draw( _forward_pbr_shader );
+  
+  glEnable( GL_BLEND );
+  glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
+  _ink_bottle_model->Draw( _forward_pbr_shader, model_matrix );
+
+  glDisable( GL_BLEND );
+  
   glUseProgram( 0 );
+
+  glDisable( GL_CULL_FACE );
 
 
   // Unbinding    
@@ -1310,7 +1316,7 @@ void Scene::DeferredGeometryPass( glm::mat4 * iProjectionMatrix,
     glUniform1f( glGetUniformLocation( _geometry_pass_shader._program, "uBloom" ), _tables[ i ]._bloom );
     glUniform1f( glGetUniformLocation( _geometry_pass_shader._program, "uBloomBrightness" ), _tables[ i ]._bloom_brightness );
 
-    _table_model->Draw( _geometry_pass_shader );
+    _table_model->Draw( _geometry_pass_shader, model_matrix );
   } 
   glBindVertexArray( 0 );
   glUseProgram( 0 );
@@ -1361,7 +1367,7 @@ void Scene::DeferredLightingPass( glm::mat4 * iProjectionMatrix,
     glUniformMatrix4fv( glGetUniformLocation( _empty_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
     glUniformMatrix4fv( glGetUniformLocation( _empty_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( *iProjectionMatrix ) );
 
-    _sphere_model->Draw( _empty_shader );
+    _sphere_model->Draw( _empty_shader, model_matrix );
     glBindVertexArray( 0 );
     
     glUseProgram( 0 );
@@ -1414,7 +1420,7 @@ void Scene::DeferredLightingPass( glm::mat4 * iProjectionMatrix,
     glUniform1f(  glGetUniformLocation( _lighting_pass_shader._program, "uLightMaxDistance" ), _lights[ i ]._max_lighting_distance );
     glUniform2fv( glGetUniformLocation( _lighting_pass_shader._program, "uScreenSize" ), 1, screen_size );
 
-    _sphere_model->Draw( _lighting_pass_shader );
+    _sphere_model->Draw( _lighting_pass_shader, model_matrix );
     glBindVertexArray( 0 );
 
     glUseProgram( 0 );
@@ -1473,7 +1479,7 @@ void Scene::SceneDeferredRendering()
     glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), true );
     glUniform1f( glGetUniformLocation( _flat_color_shader._program, "uBloomBrightness" ), 1.0f );
 
-    _sphere_model->Draw( _flat_color_shader );
+    _sphere_model->Draw( _flat_color_shader, model_matrix );
   }
   glUseProgram( 0 );
   
@@ -1496,7 +1502,7 @@ void Scene::SceneDeferredRendering()
 
       glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), false );
 
-      _sphere_model->Draw( _flat_color_shader );
+      _sphere_model->Draw( _flat_color_shader, model_matrix );
     }
     glUseProgram( 0 );
   }

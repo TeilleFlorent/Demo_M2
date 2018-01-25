@@ -334,21 +334,25 @@ void main()
   // Normal mapping calculation
   vec3 normal = NormalMappingCalculation( oUV );
 
+  // Get Fragment opacity
+  float opacity;
+  if( uOpacityMap == 1.0 )
+  {
+    opacity = texture( uTextureOpacity1, oUV ).g;
+    opacity *= opacity; 
+  }
+  else
+  {
+    opacity = uAlpha;
+  }
+
   // PBR lighting calculation 
   vec3 PBR_lighting_result = PBRLightingCalculation( normal,
                                                      view_dir,  
                                                      oUV );
 
   // Main out color
-  //FragColor = vec4( PBR_lighting_result, uAlpha );
-  FragColor = vec4( texture( uTextureNormal1, oUV ).rgb, 1.0 );
-
-
-  //if( uID == 2.0 )
-  //{
-    //FragColor = vec4( oNormal, 1.0 );
-    //FragColor = vec4( texture( uTextureDiffuse1, oUV ).rgb, 1.0 );
-  //}
+  FragColor = vec4( PBR_lighting_result, opacity );
 
   // Second out color => draw only brightest fragments
   vec3 bright_color = vec3( 0.0, 0.0, 0.0 );
@@ -360,5 +364,5 @@ void main()
       bright_color = PBR_lighting_result;
     }
   }
-  FragColorBrightness = vec4( bright_color, uAlpha );
+  FragColorBrightness = vec4( bright_color, opacity );
 }
