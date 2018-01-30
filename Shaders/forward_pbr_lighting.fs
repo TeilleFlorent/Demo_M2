@@ -32,16 +32,20 @@ uniform float uLightIntensity[ MAX_NB_LIGHTS ];
 
 uniform vec3 uViewPos;
 
-uniform float uBloom;
+uniform bool  uBloom;
 uniform float uBloomBrightness;
 
 uniform float uMaxMipLevel;
 
-uniform float uOpacityMap;
+uniform bool uOpacityMap;
+uniform bool uNormalMap;
+
+uniform float uOpacityDiscard;
+
 uniform float uAlpha;
 uniform float uID;
 
-uniform sampler2D   uTextureDiffuse1; 
+uniform sampler2D   uTextureAlbedo1; 
 uniform sampler2D   uTextureNormal1; 
 uniform sampler2D   uTextureHeight1; 
 uniform sampler2D   uTextureAO1; 
@@ -230,7 +234,8 @@ vec3 IBLAmbientReflectance( float    iNormalDotViewDir,
                             Material iMaterial,
                             vec3     iF0,
                             vec3     iNormal,
-                            vec3     iViewDir )
+                            vec3     iViewDir,
+                            float    iOpacity )
 {
 
   // Diffuse irradiance calculation
@@ -269,7 +274,13 @@ vec3 IBLAmbientReflectance( float    iNormalDotViewDir,
 
   // Compute final ambient IBL lighting
   // ----------------------------------
-  vec3 ambient = ( diffuse + specular ) * iMaterial._ao; 
+  vec3 ambient = ( diffuse + specular ); 
+  
+  // No ambient occlusion for transparent object
+  if( iOpacity == 1.0 )
+  {
+    ambient *= iMaterial._ao;
+  }
 
   return ambient;
 }
@@ -277,11 +288,12 @@ vec3 IBLAmbientReflectance( float    iNormalDotViewDir,
 // Complete PBR lighting calculation
 vec3 PBRLightingCalculation( vec3 iNormal,
                              vec3 iViewDir,  
-                             vec2 iUV )
+                             vec2 iUV,
+                             float iOpacity )
 {
   // Get material inputs data
   Material material;
-  material._albedo    = pow( texture( uTextureDiffuse1, iUV ).rgb, vec3( 2.2 ) );
+  material._albedo    = pow( texture( uTextureAlbedo1, iUV ).rgb, vec3( 2.2 ) );
   //material._albedo    = pow( vec3( 1.0 ), vec3( 2.2 ) );
   material._metalness = texture( uTextureMetalness1, iUV ).r;
   material._roughness = texture( uTextureRoughness1, iUV ).r;
@@ -315,7 +327,8 @@ vec3 PBRLightingCalculation( vec3 iNormal,
                                                     material,
                                                     F0,
                                                     iNormal,
-                                                    iViewDir );
+                                                    iViewDir,
+                                                    iOpacity );
         
 
   // Return fragment final PBR lighting 
@@ -327,36 +340,61 @@ vec3 PBRLightingCalculation( vec3 iNormal,
 // Main function
 // -------------
 void main()
-{
-  // Get view direction
-  vec3 view_dir = normalize( uViewPos - oFragPos );
-
-  // Normal mapping calculation
-  vec3 normal = NormalMappingCalculation( oUV );
-
-  // Get Fragment opacity
+{ 
+  // Get fragment opacity
   float opacity;
-  if( uOpacityMap == 1.0 )
+  if( uOpacityMap )
   {
     opacity = texture( uTextureOpacity1, oUV ).r;
-    //opacity *= opacity; 
   }
   else
   {
     opacity = uAlpha;
   }
 
+  // Discard for depth peeling
+  if( uOpacityDiscard == 1.0 && opacity < 1.0f )
+  {
+    discard;
+  }
+  if( uOpacityDiscard == 2.0 && opacity == 1.0f )
+  {
+    discard;
+  }
+
+  // Get view direction
+  vec3 view_dir = normalize( uViewPos - oFragPos );
+
+  // Get fragment normal
+  vec3 normal;
+  if( uNormalMap )
+  {
+    normal = NormalMappingCalculation( oUV );
+  }
+  else
+  {
+    normal = oNormal;
+  }
+
+  // Inverse normal for double sided mesh
+  if( !gl_FrontFacing )
+  {
+    normal *= -1.0;
+  }
+
   // PBR lighting calculation 
   vec3 PBR_lighting_result = PBRLightingCalculation( normal,
                                                      view_dir,  
-                                                     oUV );
+                                                     oUV,
+                                                     opacity );
 
   // Main out color
   FragColor = vec4( PBR_lighting_result, opacity );
+  //FragColor = vec4( vec3( texture( uTextureAlbedo1, oUV ).rgb ), 1.0 );
 
   // Second out color => draw only brightest fragments
   vec3 bright_color = vec3( 0.0, 0.0, 0.0 );
-  if( uBloom == 1.0 )
+  if( uBloom )
   {
     float brightness = dot( PBR_lighting_result, vec3( 0.2126, 0.7152, 0.0722 ) );
     if( brightness > uBloomBrightness )

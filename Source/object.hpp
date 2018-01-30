@@ -25,9 +25,10 @@ class Object
             bool      iGenerateShadow,
             bool      iReceivShadow,
             float     iShadowDarkness,
-            float     iBloom,
+            bool      iBloom,
             float     iBloomBrightness,
-            float     iOpacityMap );
+            bool      iOpacityMap,
+            bool      iNormalMap );
 
 
     // Object class members
@@ -41,9 +42,10 @@ class Object
     bool      _generate_shadow;
     bool      _receiv_shadow;
     float     _shadow_darkness;
-    float     _bloom;
+    bool      _bloom;
     float     _bloom_brightness;
-    float     _opacity_map;
+    bool      _opacity_map;
+    bool      _normal_map;
 };
 
 #endif  // OBJECT_H

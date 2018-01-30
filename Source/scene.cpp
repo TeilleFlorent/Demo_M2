@@ -497,7 +497,7 @@ void Scene::LightsInitialization()
 { 
   _lights.clear();
   
-  PointLight::SetLightsMultiplier( 100.0 );
+  PointLight::SetLightsMultiplier( 30.0 );
 
   for( int row = 0; row < 5; row++ )
   {
@@ -505,7 +505,7 @@ void Scene::LightsInitialization()
     {
       _lights.push_back( PointLight( glm::vec3( -4.0 + ( row * 2.0 ), 1.0, -4.0 + ( column * 2.0 ) ),
                                      glm::vec3( 1.0, 1.0, 1.0 ),
-                                     0.05,
+                                     0.1,
                                      3.0 ) );    
     }
   }
@@ -541,17 +541,18 @@ void Scene::ObjectsInitialization()
         break;
     }
 
-    _tables.push_back( Object( 0,     // ID
+    _tables.push_back( Object( 0,         // ID
                                position,
                                0.0,
                                glm::vec3( 0.01, 0.01, 0.01 ),
-                               1.0,   // alpha
+                               1.0,       // alpha
                                false,
                                false,
                                0.75,
-                               false, // bloom
+                               false,     // bloom
                                0.7,
-                               0.0 ) );
+                               false,     // opacity map
+                               true ) );  // normal map
   }
 
 
@@ -567,7 +568,8 @@ void Scene::ObjectsInitialization()
                          0.75,
                          false,
                          0.999,
-                         0.0 );
+                         false,
+                         true );
 
 
   // _ink_bottle object initialization
@@ -576,13 +578,14 @@ void Scene::ObjectsInitialization()
                             glm::vec3( 0.0, 0.3, 0.0 ),
                             0.0,
                             glm::vec3( 0.03, 0.03, 0.03 ),
-                            0.6,
+                            1.0,
                             false,
                             false,
                             0.75,
                             false,
                             0.999,
-                            1.0 );
+                            true,
+                            true );
 
 
   // _collection_car object initialization
@@ -591,13 +594,14 @@ void Scene::ObjectsInitialization()
                                 glm::vec3( 2.0, 0.1, 0.0 ),
                                 _PI_2,
                                 glm::vec3( 0.001, 0.001, 0.001 ),
-                                0.6,
+                                1.0,
                                 false,
                                 false,
                                 0.75,
                                 false,
                                 0.999,
-                                0.0 );
+                                false,
+                                false );
 
 }
 
@@ -844,14 +848,14 @@ void Scene::ShadersInitialization()
   _specular_pre_brdf_shader.SetShaderClassicPipeline(   "../Shaders/observer.vs",             "../Shaders/IBL_specular_pre_brdf.fs" );
 
   _geometry_pass_shader.SetShaderClassicPipeline(       "../Shaders/deferred_geometry_pass.vs", "../Shaders/deferred_geometry_pass.fs" );
-  _lighting_pass_shader.SetShaderClassicPipeline(       "../Shaders/deferred_lighting_pass.vs", "../Shaders/deferred_lighting_pass.fs" );
+  _lighting_pass_shader.SetShaderClassicPipeline(       "../Shaders/flat_color.vs",             "../Shaders/deferred_lighting_pass.fs" );
   _empty_shader.SetShaderClassicPipeline(               "../Shaders/flat_color.vs",             "../Shaders/empty.fs" );
 
 
   // Set texture uniform location
   // ----------------------------
   _forward_pbr_shader.Use();
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureDiffuse1" ), 0 ) ;
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureAlbedo1" ), 0 ) ;
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureNormal1" ), 1 );
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureHeight1" ), 2 ) ;
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureAO1" ), 3 );
@@ -864,7 +868,7 @@ void Scene::ShadersInitialization()
   glUseProgram( 0 );
 
   _geometry_pass_shader.Use();
-  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureDiffuse1" ), 0 ) ;
+  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureAlbedo1" ), 0 ) ;
   glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureNormal1" ), 1 );
   glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureHeight1" ), 2 ) ;
   glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureAO1" ), 3 );
@@ -911,25 +915,25 @@ void Scene::ModelsLoading()
   _table_model = new Model( "../Models/cube/rounded_cube.fbx", 
                             0, 
                             "Table1" );
-  _table_model->Print_info_model();
+  _table_model->PrintInfos();
 
   // Volume sphere model loading
   _sphere_model = new Model( "../Models/volume_sphere/volume_sphere.obj", 
                              1, 
                              "VolumeSphere" );
-  _sphere_model->Print_info_model();
+  _sphere_model->PrintInfos();
 
   // Ink bottle model loading
   _ink_bottle_model = new Model( "../Models/ink_bottle/ink_bottle.FBX", 
                                  2, 
                                  "InkBottle" );
-  _ink_bottle_model->Print_info_model();
+  _ink_bottle_model->PrintInfos();
 
   // Collection car model loading
-  _collection_car_model = new Model( "../Models/collection_car/collection_car.FBX", 
+  /*_collection_car_model = new Model( "../Models/collection_car/collection_car.FBX", 
                                      3, 
                                     "CollectionCar" );
-  _collection_car_model->Print_info_model();  
+  _collection_car_model->PrintInfos();*/  
 }
 
 void Scene::DeferredBuffersInitialization()
@@ -1116,14 +1120,16 @@ void Scene::SceneForwardRendering()
     glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
   }
 
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _ground1->_bloom );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _ground1->_bloom );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _ground1->_bloom_brightness );
 
   glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _ground1->_opacity_map );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _ground1->_opacity_map );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _ground1->_normal_map );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _ground1->_alpha );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ground1->_id );    
 
@@ -1164,20 +1170,23 @@ void Scene::SceneForwardRendering()
       glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
     }
 
-    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _tables[ i ]._bloom );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _tables[ i ]._bloom );
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _tables[ i ]._bloom_brightness );
 
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
     glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
-    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _tables[ i ]._opacity_map );
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _tables[ i ]._alpha );
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _tables[ i ]._id );    
 
     _table_model->Draw( _forward_pbr_shader, model_matrix );
   } 
   glUseProgram( 0 );
+
+
+  // Disable cull face
+  glDisable( GL_CULL_FACE );
 
 
   // Draw ink bottle
@@ -1209,39 +1218,29 @@ void Scene::SceneForwardRendering()
     glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
   }
 
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _ink_bottle->_bloom );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _ink_bottle->_bloom );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _ink_bottle->_bloom_brightness );
 
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
   glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _ink_bottle->_opacity_map );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _ink_bottle->_alpha );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ink_bottle->_id );    
 
-  
-  glEnable( GL_BLEND );
-  glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-
   _ink_bottle_model->Draw( _forward_pbr_shader, model_matrix );
 
-  glDisable( GL_BLEND );
-  
   glUseProgram( 0 );
-
-
-  // Disable cull face
-  glDisable( GL_CULL_FACE );
 
 
   // Draw collection car
   // -------------------
-  _forward_pbr_shader.Use();
+  /*_forward_pbr_shader.Use();
 
   model_matrix = glm::mat4();
   model_matrix = glm::translate( model_matrix, _collection_car->_position );
   model_matrix = glm::rotate( model_matrix, _collection_car->_angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
+  model_matrix = glm::rotate( model_matrix, _collection_car->_angle * 2.0f, glm::vec3( 0.0, 0.0 , 1.0 ) );
   model_matrix = glm::scale( model_matrix, _collection_car->_scale ); 
 
   glActiveTexture( GL_TEXTURE7 );
@@ -1265,20 +1264,19 @@ void Scene::SceneForwardRendering()
     glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
   }
 
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _collection_car->_bloom );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _collection_car->_bloom );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _collection_car->_bloom_brightness );
 
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
   glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _collection_car->_opacity_map );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _collection_car->_alpha );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _collection_car->_id );    
 
   _collection_car_model->Draw( _forward_pbr_shader, model_matrix );
 
-  glUseProgram( 0 );
+  glUseProgram( 0 );*/
 
 
   // Unbind current FBO
@@ -1367,7 +1365,7 @@ void Scene::DeferredGeometryPass( glm::mat4 * iProjectionMatrix,
   glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
   glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( *iProjectionMatrix ) );
 
-  glUniform1f( glGetUniformLocation( _geometry_pass_shader._program, "uBloom" ), _ground1->_bloom );
+  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uBloom" ), _ground1->_bloom );
   glUniform1f( glGetUniformLocation( _geometry_pass_shader._program, "uBloomBrightness" ), _ground1->_bloom_brightness );
 
   glBindVertexArray( _ground_VAO );
@@ -1391,7 +1389,7 @@ void Scene::DeferredGeometryPass( glm::mat4 * iProjectionMatrix,
     glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
     glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( *iProjectionMatrix ) );
 
-    glUniform1f( glGetUniformLocation( _geometry_pass_shader._program, "uBloom" ), _tables[ i ]._bloom );
+    glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uBloom" ), _tables[ i ]._bloom );
     glUniform1f( glGetUniformLocation( _geometry_pass_shader._program, "uBloomBrightness" ), _tables[ i ]._bloom_brightness );
 
     _table_model->Draw( _geometry_pass_shader, model_matrix );

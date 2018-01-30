@@ -72,20 +72,25 @@ class Mesh
     Mesh( vector< Vertex >  iVertices,
           vector< GLuint >  iIndices,
           vector< Texture > iTextures,
-          glm::mat4         iLocalTransform );
+          glm::mat4         iLocalTransform,
+          aiString          iMeshName,
+          bool              iOpacityMap );
 
     void Draw( Shader      iShader,
                int         iModelID,
                int         iMeshNumber,
-               glm::mat4   iModelMatrix ); 
+               glm::mat4   iModelMatrix,
+               float       iOpacityDiscard ); 
 
     
-    // Class data
-    // ---------  
+    // Class members
+    // -------------
     vector< Vertex >  _vertices;
     vector< GLuint >  _indices;
     vector< Texture > _textures;
     glm::mat4         _local_transform;
+    aiString          _name;
+    bool              _opacity_map;
 
 
   private:
@@ -118,18 +123,18 @@ class Model
     void Draw( Shader      iShader,
                glm::mat4   iModelMatrix );   
 
-    void Print_info_model();
+    void PrintInfos();
 
     void LoadModel( string iPath );
 
-    void ProcessNode( aiNode * iNode,
-                      int      iMeshNum );
+    void ProcessNode( aiNode * iNode );
 
     Mesh ProcessMesh( aiMesh *    iMesh,
-                      int         iMeshNum,
-                      aiMatrix4x4 iLocalTransform );
+                      aiMatrix4x4 iLocalTransform,
+                      aiString    iNodeName  );
 
-    vector< Texture > LoadModelTextures( int iMeshNum );
+    vector< Texture > LoadMeshTextures( aiString iMeshName,
+                                        bool *   oOpacityMap );
 
     Texture LoadTexture( string iTextureType,
                          string iTextureName,

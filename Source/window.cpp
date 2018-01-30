@@ -123,6 +123,8 @@ void Window::InitGL()
 
   glDisable( GL_BLEND ); 
   
+  glLightModelf( GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE );
+
   //glBlendEquation(GL_FUNC_ADD);
   //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
  

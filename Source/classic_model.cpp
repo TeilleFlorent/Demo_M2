@@ -9,20 +9,29 @@
 Mesh::Mesh( vector< Vertex > 			 iVertices,
             vector< unsigned int > iIndices,
             vector< Texture > 		 iTextures,
-            glm::mat4       		 	 iLocalTransform )
+            glm::mat4       		 	 iLocalTransform,
+            aiString               iMeshName,
+            bool 									 iOpacityMap )
 {
   this->_vertices        = iVertices;
   this->_indices         = iIndices;
   this->_textures        = iTextures;
   this->_local_transform = iLocalTransform;
+  this->_name            = iMeshName;  
+  this->_opacity_map     = iOpacityMap;
   this->SetupMesh();
 }
 
 void Mesh::Draw( Shader      iShader,
                  int         iModelID,
                  int         iMeshNumber,
-                 glm::mat4   iModelMatrix ) 
+                 glm::mat4   iModelMatrix,
+                 float       iOpacityDiscard ) 
 {
+	glUniform1i( glGetUniformLocation( iShader._program, "uNormalMap" ), false );
+	glUniform1i( glGetUniformLocation( iShader._program, "uOpacityMap" ), false );
+  glUniform1f( glGetUniformLocation( iShader._program, "uOpacityDiscard" ), iOpacityDiscard );
+
 
   // Mesh corresponding texture binding
   // ----------------------------------
@@ -32,13 +41,14 @@ void Mesh::Draw( Shader      iShader,
     string name = this->_textures[ i ]._type;
 
     // generate texture string uniform
-    if( name == "uTextureDiffuse" )
+    if( name == "uTextureAlbedo" )
     {
     	n = 0;
     }
     if( name == "uTextureNormal" )
     {
     	n = 1;
+  		glUniform1i( glGetUniformLocation( iShader._program, "uNormalMap" ), true );
     }
     if( name == "uTextureHeight" )
     {
@@ -59,6 +69,7 @@ void Mesh::Draw( Shader      iShader,
     if( name == "uTextureOpacity" )
     {
     	n = 6;
+    	glUniform1i( glGetUniformLocation( iShader._program, "uOpacityMap" ), true );
     }
     
     glActiveTexture( GL_TEXTURE0 + n );
@@ -70,17 +81,20 @@ void Mesh::Draw( Shader      iShader,
   // ------------
 	glBindVertexArray( this->_VAO );
 	
+	// Perform mesh local transform
 	glm::mat4 model_matrix;
 	model_matrix = iModelMatrix * _local_transform;
 	glUniformMatrix4fv( glGetUniformLocation( iShader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
 
-	if( iModelID == 2 )
+	// Draw only transparent mesh part
+	if( iOpacityDiscard == 2.0 )
   {
-		// Transparent double sided mesh
-		glCullFace( GL_FRONT );
+		glEnable( GL_BLEND );
+		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+
 		glDrawElements( GL_TRIANGLES, this->_indices.size(), GL_UNSIGNED_INT, 0 );
-		glCullFace( GL_BACK );
-		glDrawElements( GL_TRIANGLES, this->_indices.size(), GL_UNSIGNED_INT, 0 );
+
+		glDisable( GL_BLEND );
   }
   else
   {
@@ -152,16 +166,31 @@ Model::Model( string iPath,
 void Model::Draw( Shader      iShader,
 									glm::mat4   iModelMatrix )
 {
+	// Draw non transparent model parts
   for( unsigned int i = 0; i < this->_meshes.size(); i++ )
   {
     this->_meshes[ i ].Draw( iShader,
     											   this->_model_id,
     											   i,
-    											   iModelMatrix );
+    											   iModelMatrix,
+    											   1.0 );
+  }
+
+	// Draw transparent model parts
+  for( unsigned int i = 0; i < this->_meshes.size(); i++ )
+  {	
+  	if( this->_meshes[ i ]._opacity_map )
+  	{
+	    this->_meshes[ i ].Draw( iShader,
+	    											   this->_model_id,
+	    											   i,
+	    											   iModelMatrix,
+	    											   2.0 );
+	  }
   }
 }
 
-void Model::Print_info_model()
+void Model::PrintInfos()
 {
   float res = 0;
   cout << "\n\nClassic model: " << "\"" << _model_name << "\"" << std::endl
@@ -170,7 +199,7 @@ void Model::Print_info_model()
 
   for( unsigned int i = 0; i < _meshes.size(); i++ )
   {
-    cout << "Mesh " << i << " -> vertice count : " << _meshes[ i ]._vertices.size() << endl;
+    cout << "Mesh " << i << " -> " << "\"" << _meshes[ i ]._name.C_Str() << "\"" << " : " << _meshes[ i ]._vertices.size() << " vertices" << endl;
     res += _meshes[ i ]._vertices.size();
   }
 
@@ -200,7 +229,7 @@ void Model::LoadModel( string iPath )
   }
 
   this->_directory = iPath.substr( 0, iPath.find_last_of( '/' ) );
-  this->ProcessNode( _scene->mRootNode, 0 );
+  this->ProcessNode( _scene->mRootNode );
 
 
   // Erase unwanted mesh
@@ -218,26 +247,25 @@ void Model::LoadModel( string iPath )
   }
 }
 
-void Model::ProcessNode( aiNode * iNode,
-                         int iMeshNum )
+void Model::ProcessNode( aiNode * iNode )
 {
   for( unsigned int i = 0; i < iNode->mNumMeshes; i++ )
   {
     aiMesh * mesh = _scene->mMeshes[ iNode->mMeshes[ i ] ]; 
     this->_meshes.push_back( this->ProcessMesh( mesh,
-    																				    iMeshNum,
-    																				    iNode->mTransformation ) );  
+    																				    iNode->mTransformation,
+    																				    iNode->mName ) );  
   }
    
   for( unsigned int i = 0; i < iNode->mNumChildren; i++ )
   {
-    this->ProcessNode( iNode->mChildren[ i ], i );
+    this->ProcessNode( iNode->mChildren[ i ] );
   }
 }
 
-Mesh Model::ProcessMesh( aiMesh * 	 iMesh, 
-                         int 				 iMeshNum,
-                         aiMatrix4x4 iLocalTransform )
+Mesh Model::ProcessMesh( aiMesh * 	 iMesh,
+                         aiMatrix4x4 iLocalTransform,
+                         aiString    iNodeName )
 {
   vector< Vertex > vertices;
   vector< unsigned int > indices;
@@ -299,8 +327,8 @@ Mesh Model::ProcessMesh( aiMesh * 	 iMesh,
 
   if( UV_warning )
   {
-    std::cout << std::endl << "WARNING : Model \"" << _model_name << "\", Mesh " << iMeshNum << " does not have UVs" << std::endl
-                           << "--------------------------------------------------------";
+    std::cout << std::endl << "WARNING : Model \"" << _model_name << "\", Mesh : " << "\"" << iNodeName.C_Str() << "\"" << " does not have UVs" << std::endl
+                           << "-----------------------------------------------------------------";
   }
 
 
@@ -361,7 +389,9 @@ Mesh Model::ProcessMesh( aiMesh * 	 iMesh,
 
   // Load model textures
   // -------------------
-  vector< Texture > model_textures = this->LoadModelTextures( iMeshNum );
+  bool opacity_map = false;
+  vector< Texture > model_textures = this->LoadMeshTextures( iNodeName,
+  																											     &opacity_map );
   textures.insert( textures.end(), model_textures.begin(), model_textures.end() );
 	
 
@@ -369,13 +399,15 @@ Mesh Model::ProcessMesh( aiMesh * 	 iMesh,
   // -------------------------------
   glm::mat4 local_transform = _toolbox->AssimpMatrixToGlmMatrix( &iLocalTransform );
   //std::cout << "\nModel Name = " << _model_name << std::endl
-  //					<< "Local transform mesh : " << iMeshNum << std::endl;
+  //					<< "Local transform mesh : " << "\"" << iNodeName << "\"" << std::endl;
   //_toolbox->PrintMatrix( &local_transform );
 
   return Mesh( vertices,
   					   indices,
   					   textures,
-  					   local_transform );
+  					   local_transform,
+  					   iMesh->mName,
+  					   opacity_map );
 }
 
 Texture Model::LoadTexture( string iTextureType,
@@ -396,17 +428,18 @@ Texture Model::LoadTexture( string iTextureType,
   return result_texture;
 }
 
-vector< Texture > Model::LoadModelTextures( int iMeshNum )
+vector< Texture > Model::LoadMeshTextures( aiString iNodeName,
+																					 bool *   oOpacityMap )
 {
   vector< Texture > textures;
 
-  
+
   // Load table1 textures 
   // --------------------
   if( this->_model_id == 0 )
   {
     // albedo
-    textures.push_back( LoadTexture( "uTextureDiffuse",
+    textures.push_back( LoadTexture( "uTextureAlbedo",
                                      "albedo.png",
                                      GL_RGB,
                                      GL_RGB ) );
@@ -443,12 +476,12 @@ vector< Texture > Model::LoadModelTextures( int iMeshNum )
   }
 
 
-  // Load table1 textures 
-  // --------------------
+  // Load ink bottle textures 
+  // ------------------------
   if( this->_model_id == 2 )
   {
     // albedo
-    textures.push_back( LoadTexture( "uTextureDiffuse",
+    textures.push_back( LoadTexture( "uTextureAlbedo",
                                      "albedo.png",
                                      GL_RGB,
                                      GL_RGB ) );
@@ -481,6 +514,185 @@ vector< Texture > Model::LoadModelTextures( int iMeshNum )
                                      "opacity.png",
                                      GL_R8,
                                      GL_RED ) );
+
+    *oOpacityMap = true;
+  }
+
+
+  // Load collection car textures 
+  // ----------------------------
+  if( this->_model_id == 3 )
+  {	
+  	std::cout << "Node name = " << iNodeName.C_Str() << std::endl;
+
+  	// Car body texture loading
+  	if( iNodeName == aiString( std::string( "Body" ) ) )
+  	{
+
+	    // albedo
+	    textures.push_back( LoadTexture( "uTextureAlbedo",
+	                                     "body_albedo.png",
+	                                     GL_RGB,
+	                                     GL_RGB ) );
+
+	    // AO
+	    textures.push_back( LoadTexture( "uTextureAO",
+	                                     "body_AO.png",
+	                                     GL_R8,
+	                                     GL_RED ) );
+
+	    // roughness 
+	    textures.push_back( LoadTexture( "uTextureRoughness",
+	                                     "body_roughness.png",
+	                                     GL_R8,
+	                                     GL_RED ) );
+
+	    // metalness
+	    textures.push_back( LoadTexture( "uTextureMetalness",
+	                                     "body_metalness.png",
+	                                     GL_R8,
+	                                     GL_RED ) );
+
+	    // opacity
+	    textures.push_back( LoadTexture( "uTextureOpacity",
+	                                     "body_opacity.png",
+	                                     GL_R8,
+	                                     GL_RED ) );
+
+	    *oOpacityMap = true;
+	  }
+
+	  // Car roof texture loading
+  	if( iNodeName == aiString( std::string( "roof" ) ) )
+  	{
+
+	    // albedo
+	    textures.push_back( LoadTexture( "uTextureAlbedo",
+	                                     "roof_albedo.png",
+	                                     GL_RGB,
+	                                     GL_RGB ) );
+
+	    // AO
+	    textures.push_back( LoadTexture( "uTextureAO",
+	                                     "roof_AO.png",
+	                                     GL_R8,
+	                                     GL_RED ) );
+
+	    // roughness 
+	    textures.push_back( LoadTexture( "uTextureRoughness",
+	                                     "roof_roughness.png",
+	                                     GL_R8,
+	                                     GL_RED ) );
+
+	    // metalness
+	    textures.push_back( LoadTexture( "uTextureMetalness",
+	                                     "roof_metalness.png",
+	                                     GL_R8,
+	                                     GL_RED ) );
+
+	    // opacity
+	    textures.push_back( LoadTexture( "uTextureOpacity",
+	                                     "roof_opacity.png",
+	                                     GL_R8,
+	                                     GL_RED ) );
+	    *oOpacityMap = true;
+
+	    // normal
+	    textures.push_back( LoadTexture( "uTextureNormal",
+	                                     "roof_normal.png",
+	                                     GL_RGB,
+	                                     GL_RGB ) );
+	  }
+
+	  // Car rear wheel texture loading
+  	if( iNodeName == aiString( std::string( "RearWheelR" ) )
+  	 || iNodeName == aiString( std::string( "RearWheelL" ) ) )
+  	{
+
+	    // albedo
+	    textures.push_back( LoadTexture( "uTextureAlbedo",
+	                                     "rwheel_albedo.png",
+	                                     GL_RGB,
+	                                     GL_RGB ) );
+
+	    // AO
+	    textures.push_back( LoadTexture( "uTextureAO",
+	                                     "rwheel_AO.png",
+	                                     GL_R8,
+	                                     GL_RED ) );
+
+	    // roughness 
+	    textures.push_back( LoadTexture( "uTextureRoughness",
+	                                     "rwheel_roughness.png",
+	                                     GL_R8,
+	                                     GL_RED ) );
+
+	    // metalness
+	    textures.push_back( LoadTexture( "uTextureMetalness",
+	                                     "rwheel_metalness.png",
+	                                     GL_R8,
+	                                     GL_RED ) );
+	  }
+
+	  // Car front wheel texture loading
+  	if( iNodeName == aiString( std::string( "FrontWheelR" ) )
+  	 || iNodeName == aiString( std::string( "FrontWheelL" ) ) )
+  	{
+
+	    // albedo
+	    textures.push_back( LoadTexture( "uTextureAlbedo",
+	                                     "rwheel_albedo.png",
+	                                     GL_RGB,
+	                                     GL_RGB ) );
+
+	    // AO
+	    textures.push_back( LoadTexture( "uTextureAO",
+	                                     "rwheel_AO.png",
+	                                     GL_R8,
+	                                     GL_RED ) );
+
+	    // roughness 
+	    textures.push_back( LoadTexture( "uTextureRoughness",
+	                                     "rwheel_roughness.png",
+	                                     GL_R8,
+	                                     GL_RED ) );
+
+	    // metalness
+	    textures.push_back( LoadTexture( "uTextureMetalness",
+	                                     "rwheel_metalness.png",
+	                                     GL_R8,
+	                                     GL_RED ) );
+	  }
+
+	  // Car doors texture loading
+  	if( iNodeName == aiString( std::string( "DoorR" ) )
+  	 || iNodeName == aiString( std::string( "DoorL" ) ) )
+  	{
+
+	    // albedo
+	    textures.push_back( LoadTexture( "uTextureAlbedo",
+	                                     "body_albedo.png",
+	                                     GL_RGB,
+	                                     GL_RGB ) );
+
+	    // AO
+	    textures.push_back( LoadTexture( "uTextureAO",
+	                                     "body_AO.png",
+	                                     GL_R8,
+	                                     GL_RED ) );
+
+	    // roughness 
+	    textures.push_back( LoadTexture( "uTextureRoughness",
+	                                     "body_roughness.png",
+	                                     GL_R8,
+	                                     GL_RED ) );
+
+	    // metalness
+	    textures.push_back( LoadTexture( "uTextureMetalness",
+	                                     "body_metalness.png",
+	                                     GL_R8,
+	                                     GL_RED ) );
+	  }
   }
 
   return textures;
@@ -505,18 +717,18 @@ unsigned int Model::TextureFromFile( string iTexturePath,
   // Load new texture file
   // ---------------------
   float aniso;
-  glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso ); // get la valeur pour l'aniso
+  glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso );
 
   SDL_Surface * t = NULL;
 
   unsigned int textureID;
   glGenTextures( 1, &textureID );
   t = IMG_Load( iTexturePath.c_str() );
-  //std::cout << "path loaded =" << iTexturePath << std::endl;
 	  
   if( !t )
   {
-  	printf( "Loading image fail => image null\n" );
+  	std::cout << "Loading image fail => image null" << std::endl
+  						<< "Path : " << iTexturePath << std::endl;
   }
   else
   {

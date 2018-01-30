@@ -1,4 +1,4 @@
-#version 330 
+#version 330 core
 
 
 //******************************************************************************
@@ -14,8 +14,8 @@ layout ( location = 0 ) in vec3 _position;
 // Vertex input uniforms
 // ---------------------
 uniform mat4 uModelMatrix;
-uniform mat4 uViewMatrix;
 uniform mat4 uProjectionMatrix;
+uniform mat4 uViewMatrix;
 
 
 //******************************************************************************
@@ -23,6 +23,9 @@ uniform mat4 uProjectionMatrix;
 //******************************************************************************
 
 void main()
-{
-  gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4( _position, 1.0f );
-} 
+{	
+	// Vertex position calculation
+	// ---------------------------
+	gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4( _position, 1.0 );
+}
+
