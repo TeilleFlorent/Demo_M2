@@ -30,7 +30,7 @@ uniform vec3  uLightPos[ MAX_NB_LIGHTS ];
 uniform vec3  uLightColor[ MAX_NB_LIGHTS ];
 uniform float uLightIntensity[ MAX_NB_LIGHTS ];
 
-uniform vec3 uViewPos;
+uniform vec3 uViewPosition;
 
 uniform bool  uBloom;
 uniform float uBloomBrightness;
@@ -363,7 +363,7 @@ void main()
   }
 
   // Get view direction
-  vec3 view_dir = normalize( uViewPos - oFragPos );
+  vec3 view_dir = normalize( uViewPosition - oFragPos );
 
   // Get fragment normal
   vec3 normal;
@@ -390,7 +390,7 @@ void main()
 
   // Main out color
   FragColor = vec4( PBR_lighting_result, opacity );
-  //FragColor = vec4( vec3( texture( uTextureAlbedo1, oUV ).rgb ), 1.0 );
+  //FragColor = vec4( vec3( texture( uTextureNormal1, oUV ).rgb ), 1.0 );
 
   // Second out color => draw only brightest fragments
   vec3 bright_color = vec3( 0.0, 0.0, 0.0 );

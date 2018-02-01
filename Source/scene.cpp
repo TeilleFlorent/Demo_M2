@@ -41,7 +41,10 @@ Scene::Scene( Window * iParentWindow )
 
   _res_pre_brdf_texture  = 512;
   _pre_brdf_sample_count = 1024 * 1;    
-  
+
+  // Init tessellation parameters
+  _tess_patch_vertices_count = 3;
+
   // Lights volume
   _render_lights_volume = false;
 
@@ -86,8 +89,11 @@ Scene::Scene( Window * iParentWindow )
   // Init scene data 
   SceneDataInitialization();
 
-  // Init all IBL cubemap
+  // Init all IBL texture
   IBLInitialization();
+
+  // Init tesselation parameters
+  TesselationInitialization();
 
   // Init deferred rendering g-buffer
   if( _pipeline_type == DEFERRED_RENDERING )
@@ -212,10 +218,10 @@ void Scene::SceneDataInitialization()
     glm::vec2 uv2( 0.0, 0.0 );
     glm::vec2 uv3( 1.0, 0.0 );
     glm::vec2 uv4( 1.0, 1.0 );
-    uv1 *= 0.5 * _ground1->_scale[ 0 ];
-    uv2 *= 0.5 * _ground1->_scale[ 0 ];
-    uv3 *= 0.5 * _ground1->_scale[ 0 ];
-    uv4 *= 0.5 * _ground1->_scale[ 0 ];
+    uv1 *= 2.0 * _ground1->_scale[ 0 ];
+    uv2 *= 2.0 * _ground1->_scale[ 0 ];
+    uv3 *= 2.0 * _ground1->_scale[ 0 ];
+    uv4 *= 2.0 * _ground1->_scale[ 0 ];
 
     // normal vector
     glm::vec3 nm( 0.0, 0.0, 1.0 );
@@ -934,6 +940,12 @@ void Scene::ModelsLoading()
                                      3, 
                                     "CollectionCar" );
   _collection_car_model->PrintInfos();*/  
+}
+
+void Scene::TesselationInitialization()
+{ 
+  // Set size of the input patch
+  glPatchParameteri( GL_PATCH_VERTICES, _tess_patch_vertices_count );
 }
 
 void Scene::DeferredBuffersInitialization()

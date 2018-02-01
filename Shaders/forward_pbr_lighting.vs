@@ -1,7 +1,5 @@
 #version 330
 
-#define MAX_NB_LIGHTS 25
-
 
 //******************************************************************************
 //**********  Vertex shader inputs/ouputs  *************************************
@@ -19,15 +17,9 @@ layout ( location = 4 ) in vec3 _bitangent;
 
 // Vertex input uniforms
 // ---------------------
-uniform int uLightCount;
-
 uniform mat4 uModelMatrix;
 uniform mat4 uProjectionMatrix;
 uniform mat4 uViewMatrix;
-uniform float uID;
-
-uniform vec3 uViewPos;
-uniform vec3 uLightPos[ MAX_NB_LIGHTS ];
 
 
 // Vertex outputs to fragment shader	

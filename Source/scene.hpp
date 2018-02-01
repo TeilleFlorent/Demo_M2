@@ -44,6 +44,8 @@ class Scene
 
     void IBLInitialization();
 
+    void TesselationInitialization();
+
     void ModelsLoading();
 
     void DeferredBuffersInitialization();
@@ -136,6 +138,10 @@ class Scene
 
     unsigned int _res_pre_brdf_texture;
     unsigned int _pre_brdf_sample_count;
+
+    // Tessellation parameters
+    int _tess_max_patch_vertices;
+    int _tess_patch_vertices_count;
 
     // Pointer on the scene window
     Window * _window;

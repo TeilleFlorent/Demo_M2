@@ -29,6 +29,11 @@ class Shader
     void SetShaderGeometryPipeline( const char * iVertexPath,
                                     const char * iGeometryPath,
                                     const char * iFragmentPath );
+
+    void SetShaderTessellationPipeline( const char * iVertexPath,
+		                                    const char * iTessellationControlPath,
+		                                    const char * iTessellationEvaluationPath,
+		                                    const char * iFragmentPath );
     
     unsigned int _program;
     
