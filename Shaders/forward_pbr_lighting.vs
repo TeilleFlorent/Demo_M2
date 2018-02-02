@@ -53,13 +53,13 @@ void main()
 
 	// Vertex outputs calculation
 	// --------------------------
-	oFragPos = vec3( uModelMatrix * vec4( _position, 1.0f ) );
-	
-	oUV = _uv;
-
 	oTBN[ 0 ] = TBN[ 0 ];
 	oTBN[ 1 ] = TBN[ 1 ];
 	oTBN[ 2 ] = TBN[ 2 ];
+	
+	oFragPos = vec3( uModelMatrix * vec4( _position, 1.0f ) );
+	
+	oUV = _uv;
 
 	oNormal = N;
 }

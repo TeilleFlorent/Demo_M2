@@ -97,6 +97,7 @@ void Shader::SetShaderGeometryPipeline( const GLchar * iVertexPath,
   vertex_shader_file.exceptions(   std::ifstream::badbit );
   geo_shader_file.exceptions(      std::ifstream::badbit );
   fragment_shader_file.exceptions( std::ifstream::badbit );
+
   try
   {
     vertex_shader_file.open(   iVertexPath );
@@ -117,6 +118,7 @@ void Shader::SetShaderGeometryPipeline( const GLchar * iVertexPath,
   {
     std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
   }
+
   const GLchar * vertex_shader_code   = vertex_code.c_str();
   const GLchar * geo_shader_code      = geo_code.c_str();
   const GLchar * fragment_shader_code = fragment_code.c_str();
@@ -191,6 +193,7 @@ void Shader::SetShaderTessellationPipeline( const char * iVertexPath,
   tess_control_shader_file.exceptions( std::ifstream::badbit );
   tess_eval_shader_file.exceptions(    std::ifstream::badbit );
   fragment_shader_file.exceptions(     std::ifstream::badbit );
+
   try
   {
     vertex_shader_file.open(       iVertexPath );
@@ -199,25 +202,26 @@ void Shader::SetShaderTessellationPipeline( const char * iVertexPath,
     fragment_shader_file.open(     iFragmentPath );
     std::stringstream vertex_shader_stream, tess_control_shader_stream, tess_eval_shader_stream, fragment_shader_stream;
     vertex_shader_stream       << vertex_shader_file.rdbuf();
-    tess_control_shader_stream << vertex_shader_file.rdbuf();
-    tess_eval_shader_stream    << vertex_shader_file.rdbuf();
+    tess_control_shader_stream << tess_control_shader_file.rdbuf();
+    tess_eval_shader_stream    << tess_eval_shader_file.rdbuf();
     fragment_shader_stream     << fragment_shader_file.rdbuf();
     vertex_shader_file.close();
     tess_control_shader_file.close();
     tess_eval_shader_file.close();
     fragment_shader_file.close();
     vertex_code       = vertex_shader_stream.str();
-    tess_control_code = vertex_shader_stream.str();
-    tess_eval_code    = vertex_shader_stream.str();
+    tess_control_code = tess_control_shader_stream.str();
+    tess_eval_code    = tess_eval_shader_stream.str();
     fragment_code     = fragment_shader_stream.str();
   }
   catch( std::ifstream::failure e )
   {
     std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
   }
+
   const GLchar * vertex_shader_code       = vertex_code.c_str();
-  const GLchar * tess_control_shader_code = vertex_code.c_str();
-  const GLchar * tess_eval_shader_code    = vertex_code.c_str();
+  const GLchar * tess_control_shader_code = tess_control_code.c_str();
+  const GLchar * tess_eval_shader_code    = tess_eval_code.c_str();
   const GLchar * fragment_shader_code     = fragment_code.c_str();
   unsigned int vertex, tess_control, tess_eval, fragment;
   GLint success;
@@ -225,6 +229,10 @@ void Shader::SetShaderTessellationPipeline( const char * iVertexPath,
   
   // Vertex shader
   vertex = glCreateShader( GL_VERTEX_SHADER );
+  if( vertex == 0 )
+  {
+    fprintf( stderr, "Error creating shader type %d\n", GL_VERTEX_SHADER );
+  }
   glShaderSource( vertex, 1, &vertex_shader_code, NULL );
   glCompileShader( vertex );
   glGetShaderiv( vertex, GL_COMPILE_STATUS, &success );
@@ -236,6 +244,10 @@ void Shader::SetShaderTessellationPipeline( const char * iVertexPath,
 
   // Tess control shader
   tess_control = glCreateShader( GL_TESS_CONTROL_SHADER );
+  if( tess_control == 0 )
+  {
+    fprintf( stderr, "Error creating shader type %d\n", GL_TESS_CONTROL_SHADER );
+  }
   glShaderSource( tess_control, 1, &tess_control_shader_code, NULL );
   glCompileShader( tess_control );
   glGetShaderiv( tess_control, GL_COMPILE_STATUS, &success );
@@ -247,6 +259,10 @@ void Shader::SetShaderTessellationPipeline( const char * iVertexPath,
 
   // Tess eval shader
   tess_eval = glCreateShader( GL_TESS_EVALUATION_SHADER );
+  if( tess_eval == 0 )
+  {
+    fprintf( stderr, "Error creating shader type %d\n", GL_TESS_EVALUATION_SHADER );
+  }
   glShaderSource( tess_eval, 1, &tess_eval_shader_code, NULL );
   glCompileShader( tess_eval );
   glGetShaderiv( tess_eval, GL_COMPILE_STATUS, &success );
@@ -258,6 +274,10 @@ void Shader::SetShaderTessellationPipeline( const char * iVertexPath,
 
   // Fragment shader
   fragment = glCreateShader( GL_FRAGMENT_SHADER );
+  if( fragment == 0 )
+  {
+    fprintf( stderr, "Error creating shader type %d\n", GL_FRAGMENT_SHADER );
+  }
   glShaderSource( fragment, 1, &fragment_shader_code, NULL );
   glCompileShader( fragment );
   glGetShaderiv( fragment, GL_COMPILE_STATUS, &success );
@@ -273,13 +293,26 @@ void Shader::SetShaderTessellationPipeline( const char * iVertexPath,
   glAttachShader( this->_program, tess_control );
   glAttachShader( this->_program, tess_eval );
   glAttachShader( this->_program, fragment );
+
+  // Link shader program
   glLinkProgram(  this->_program );
   glGetProgramiv( this->_program, GL_LINK_STATUS, &success );
   if( !success )
   {
     glGetProgramInfoLog( this->_program, 512, NULL, infoLog );
-    std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+    std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n\n" << infoLog << std::endl;
   }
+
+  // Validate shader program
+  glValidateProgram( this->_program );
+  glGetProgramiv( this->_program, GL_VALIDATE_STATUS, &success );
+  if( !success )
+  { 
+    glGetProgramInfoLog( this->_program, 512, NULL, infoLog );
+    std::cout << "ERROR::SHADER::PROGRAM::VALIDATION_FAILED\n\n" << infoLog << std::endl;
+  }
+
+  // Free
   glDeleteShader( vertex );
   glDeleteShader( tess_control );
   glDeleteShader( tess_eval );

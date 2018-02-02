@@ -28,7 +28,8 @@ class Object
             bool      iBloom,
             float     iBloomBrightness,
             bool      iOpacityMap,
-            bool      iNormalMap );
+            bool      iNormalMap,
+            bool      iHeightMap );
 
 
     // Object class members
@@ -46,6 +47,7 @@ class Object
     float     _bloom_brightness;
     bool      _opacity_map;
     bool      _normal_map;
+    bool      _height_map;
 };
 
 #endif  // OBJECT_H

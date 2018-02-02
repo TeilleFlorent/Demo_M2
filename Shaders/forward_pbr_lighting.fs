@@ -1,4 +1,4 @@
-#version 330 
+#version 410
 
 #define MAX_NB_LIGHTS 25
 #define PI 3.14159265358979323846264338
@@ -47,7 +47,6 @@ uniform float uID;
 
 uniform sampler2D   uTextureAlbedo1; 
 uniform sampler2D   uTextureNormal1; 
-uniform sampler2D   uTextureHeight1; 
 uniform sampler2D   uTextureAO1; 
 uniform sampler2D   uTextureRoughness1; 
 uniform sampler2D   uTextureMetalness1; 
@@ -62,8 +61,8 @@ uniform sampler2D   uPreBrdfLUT;
 // ----------------------------------
 in vec2 oUV;
 in vec3 oFragPos;
-in vec3 oTBN[ 3 ];
 in vec3 oNormal;
+in vec3 oTBN[ 3 ];
 
 
 //******************************************************************************

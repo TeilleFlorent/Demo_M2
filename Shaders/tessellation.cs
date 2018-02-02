@@ -6,13 +6,13 @@
 //******************************************************************************
 
 
-// Input layout, define the number of Control Points in the output patch
+// Output layout, define the number of Control Points in the output patch
 // ---------------------------------------------------------------------                                                 
 layout ( vertices = 3 ) out;
 
 
-// Tesselation control shader input uniforms
-// -----------------------------------------
+// Control shader input uniforms
+// -----------------------------
 uniform vec3 uViewPosition;       
 
 
@@ -64,18 +64,24 @@ void main()
 {                                                                                               
 	// Set the control points of the output patch, copy of the input control point, don't need to transform them                                               
 	oFragPosToES[ gl_InvocationID ] = oFragPosToCS[ gl_InvocationID ];                          
-	oNormalToES[ gl_InvocationID ]  = oNormalToCS[ gl_InvocationID ];                            
-	oUVToES[ gl_InvocationID ] 			= oUVToCS[ gl_InvocationID ];                          
+	oNormalToES[  gl_InvocationID ] = oNormalToCS[  gl_InvocationID ];                            
+	oUVToES[ 			gl_InvocationID ]	= oUVToCS[ 			gl_InvocationID ];                          
 	                                                                                            
 	// Calculate the distance from the view position to the three control points                       
-	float ViewToVertexDistance0 = distance( uViewPosition, oFragPosToES[ 0 ] );                     
-	float ViewToVertexDistance1 = distance( uViewPosition, oFragPosToES[ 1 ] );                     
-	float ViewToVertexDistance2 = distance( uViewPosition, oFragPosToES[ 2 ] );                     
+	float ViewToVertexDistance0 = distance( uViewPosition,
+																					oFragPosToES[ 0 ] );                     
+	float ViewToVertexDistance1 = distance( uViewPosition,
+																					oFragPosToES[ 1 ] );                     
+	float ViewToVertexDistance2 = distance( uViewPosition,
+																			    oFragPosToES[ 2 ] );                     
 	                                                                                            
 	// Calculate the tessellation levels, corresponding to the segments count of each triangle edge                                                       
-	gl_TessLevelOuter[ 0 ] = GetTessellationLevel( ViewToVertexDistance1, ViewToVertexDistance2 );            
-	gl_TessLevelOuter[ 1 ] = GetTessellationLevel( ViewToVertexDistance2, ViewToVertexDistance0 );            
-	gl_TessLevelOuter[ 2 ] = GetTessellationLevel( ViewToVertexDistance0, ViewToVertexDistance1 );            
+	gl_TessLevelOuter[ 0 ] = GetTessellationLevel( ViewToVertexDistance1,
+																						     ViewToVertexDistance2 );            
+	gl_TessLevelOuter[ 1 ] = GetTessellationLevel( ViewToVertexDistance2, 
+																								 ViewToVertexDistance0 );            
+	gl_TessLevelOuter[ 2 ] = GetTessellationLevel( ViewToVertexDistance0,
+																								 ViewToVertexDistance1 );            
 	
 	// Inner level correspond to the inner triangle ring count
 	gl_TessLevelInner[ 0 ] = gl_TessLevelOuter[ 2 ];                                                

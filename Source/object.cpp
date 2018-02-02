@@ -16,7 +16,8 @@ Object::Object( int       iID,
                 bool      iBloom,
                 float     iBloomBrightness,
                 bool      iOpacityMap,
-                bool      iNormalMap )
+                bool      iNormalMap,
+                bool      iHeightMap )
 {
   _id               = iID;
   _position         = iPosition;
@@ -30,5 +31,6 @@ Object::Object( int       iID,
   _bloom_brightness = iBloomBrightness;
   _opacity_map      = iOpacityMap;
   _normal_map       = iNormalMap;
+  _height_map       = iHeightMap;
 }
 

@@ -73,6 +73,7 @@ class Scene
 
     // Shaders
     Shader _forward_pbr_shader;
+    Shader _forward_displacement_pbr_shader;
     Shader _skybox_shader;
     Shader _flat_color_shader;
     Shader _observer_shader;
@@ -93,6 +94,10 @@ class Scene
 
     // VBOs
     unsigned int _ground_VBO;
+
+    // IBOs
+    unsigned int _ground_IBO;
+    std::vector< unsigned int > _ground_indices;
 
     // Textures
     int _current_env;
