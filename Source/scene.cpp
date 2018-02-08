@@ -54,6 +54,8 @@ Scene::Scene( Window * iParentWindow )
 
   _ground_VAO = 0;
   _ground_VBO = 0;
+  _ground_IBO = 0;
+
 
   // Get pointer on the scene window
   _window = iParentWindow;
@@ -218,10 +220,10 @@ void Scene::SceneDataInitialization()
     glm::vec2 uv2( 0.0, 0.0 );
     glm::vec2 uv3( 1.0, 0.0 );
     glm::vec2 uv4( 1.0, 1.0 );
-    uv1 *= 1.0 * _ground1->_scale[ 0 ];
-    uv2 *= 1.0 * _ground1->_scale[ 0 ];
-    uv3 *= 1.0 * _ground1->_scale[ 0 ];
-    uv4 *= 1.0 * _ground1->_scale[ 0 ];
+    uv1 *= 0.008 * _ground1->_scale[ 0 ];
+    uv2 *= 0.008 * _ground1->_scale[ 0 ];
+    uv3 *= 0.008 * _ground1->_scale[ 0 ];
+    uv4 *= 0.008 * _ground1->_scale[ 0 ];
 
     // normal vector
     glm::vec3 nm( 0.0, 0.0, 1.0 );
@@ -276,13 +278,15 @@ void Scene::SceneDataInitialization()
     
     // Setup plane VAO & IBO
     glGenVertexArrays( 1, &_ground_VAO );
-    glGenBuffers( 1, &_ground_VBO );
-
     glBindVertexArray( _ground_VAO );
 
+    glGenBuffers( 1, &_ground_VBO );
     glBindBuffer( GL_ARRAY_BUFFER, _ground_VBO );
-
     glBufferData( GL_ARRAY_BUFFER, sizeof( ground_vertices ), &ground_vertices, GL_STATIC_DRAW );
+
+    glGenBuffers( 1, &_ground_IBO );
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, _ground_IBO );
+    glBufferData( GL_ELEMENT_ARRAY_BUFFER, sizeof( plane_indices ), plane_indices, GL_STATIC_DRAW );
 
     glEnableVertexAttribArray( 0 );
     glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )0 );
@@ -294,10 +298,6 @@ void Scene::SceneDataInitialization()
     //glVertexAttribPointer( 3, 3, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )( 8 * sizeof( GLfloat ) ) );
     //glEnableVertexAttribArray( 4 );
     //glVertexAttribPointer( 4, 3, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )( 11 * sizeof( GLfloat ) ) );
-
-    glGenBuffers( 1, &_ground_IBO );
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, _ground_IBO );
-    glBufferData( GL_ELEMENT_ARRAY_BUFFER, sizeof( plane_indices ), plane_indices, GL_STATIC_DRAW );
 
     glBindVertexArray( 0 );
   }
@@ -893,6 +893,19 @@ void Scene::ShadersInitialization()
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uPreBrdfLUT" ), 9 ); 
   glUseProgram( 0 );
 
+  _forward_displacement_pbr_shader.Use();
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureAlbedo1" ), 0 ) ;
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureNormal1" ), 1 );
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureHeight1" ), 2 ) ;
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureAO1" ), 3 );
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureRoughness1" ), 4 );
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureMetalness1" ), 5 );
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureOpacity1" ), 6 );
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uIrradianceCubeMap" ), 7 );
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uPreFilterCubeMap" ), 8 );
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uPreBrdfLUT" ), 9 ); 
+  glUseProgram( 0 );
+
   _geometry_pass_shader.Use();
   glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureAlbedo1" ), 0 ) ;
   glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureNormal1" ), 1 );
@@ -1111,12 +1124,12 @@ void Scene::SceneForwardRendering()
   glUseProgram( 0 );
 
 
-  //glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+  glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
 
   // Draw ground1
   // ------------
-  ( _ground1->_height_map ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
+  ( _ground1->_height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
 
   current_shader->Use();
 
@@ -1148,8 +1161,9 @@ void Scene::SceneForwardRendering()
   glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
   glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
 
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
+  glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPosition" ), 1, &_camera->_position[ 0 ] );
 
+  glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
   for( int i = 0; i < _lights.size(); i++ )
   {
     string temp = to_string( i );
@@ -1161,9 +1175,9 @@ void Scene::SceneForwardRendering()
   glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _ground1->_bloom );
   glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _ground1->_bloom_brightness );
 
-  glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPosition" ), 1, &_camera->_position[ 0 ] );
-
   glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+
+  glUniform1f( glGetUniformLocation( current_shader->_program, "uDisplacementFactor" ), 1.0f );
 
   glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
   glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _ground1->_opacity_map );
@@ -1172,12 +1186,12 @@ void Scene::SceneForwardRendering()
   glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _ground1->_id );    
 
   glBindVertexArray( _ground_VAO );
-  ( _ground1->_height_map ) ? glDrawElements( GL_PATCHES, 6, GL_UNSIGNED_INT, 0 ) : glDrawElements( GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0 );
+  ( _ground1->_height_map == true ) ? glDrawElements( GL_PATCHES, 6, GL_UNSIGNED_INT, 0 ) : glDrawElements( GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0 );
   glBindVertexArray( 0 );
   glUseProgram( 0 );
   
 
-  //glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+  glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
 
   // Enable cull facz

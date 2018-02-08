@@ -79,7 +79,7 @@ void main()
 
 	// Perform the displacement mapping of the tessellate vertex along the normal
 	float displacement = texture( uTextureHeight1, oUV ).r;
-  //oFragPos += oNormal * displacement * uDisplacementFactor;
+  oFragPos += oNormal * displacement * uDisplacementFactor;
   gl_Position = uProjectionMatrix * uViewMatrix * vec4( oFragPos, 1.0 );                                              
 }
 

@@ -47,6 +47,7 @@ uniform float uID;
 
 uniform sampler2D   uTextureAlbedo1; 
 uniform sampler2D   uTextureNormal1; 
+uniform sampler2D   uTextureHeight1; 
 uniform sampler2D   uTextureAO1; 
 uniform sampler2D   uTextureRoughness1; 
 uniform sampler2D   uTextureMetalness1; 
@@ -388,8 +389,9 @@ void main()
                                                      opacity );
 
   // Main out color
-  FragColor = vec4( PBR_lighting_result, opacity );
-  //FragColor = vec4( vec3( texture( uTextureNormal1, oUV ).rgb ), 1.0 );
+  //FragColor = vec4( PBR_lighting_result, opacity );
+  FragColor = vec4( vec3( texture( uTextureHeight1, oUV ).r ), 1.0 );
+  //FragColor = vec4( vec3( 0.0 ), 1.0 );
 
   // Second out color => draw only brightest fragments
   vec3 bright_color = vec3( 0.0, 0.0, 0.0 );
