@@ -1,6 +1,24 @@
 #version 410 core
 
 
+// Output patch structure
+struct OutputPatch                                                                              
+{                                                                                               
+	vec3 _frag_pos_B030;                                                                         
+	vec3 _frag_pos_B021;                                                                         
+	vec3 _frag_pos_B012;                                                                         
+	vec3 _frag_pos_B003;                                                                         
+	vec3 _frag_pos_B102;                                                                         
+	vec3 _frag_pos_B201;                                                                         
+	vec3 _frag_pos_B300;                                                                         
+	vec3 _frag_pos_B210;                                                                         
+	vec3 _frag_pos_B120;                                                                         
+	vec3 _frag_pos_B111;                                                                         
+	vec3 _normal[ 3 ];                                                                             
+	vec2 _uv[ 3 ];                                                                           
+}; 
+
+
 //******************************************************************************
 //**********  Evaluation shader inputs/ouputs  *********************************
 //******************************************************************************
@@ -21,9 +39,7 @@ uniform float 		uDisplacementFactor;
 
 // Attributes of the input Control Points from the Control shader                                                                  
 // --------------------------------------------------------------    
-in vec3 oFragPosToES[];                                                                      
-in vec3 oNormalToES[];      
-in vec2 oUVToES[];                                                                      
+in patch OutputPatch oPatch;                                                                    
 
 
 // Attributes of the output vertex to the fragment shader                                                               
@@ -62,20 +78,39 @@ vec3 InterpolateVec3( vec3 iVector0,
 // Main function
 // -------------
 void main()                                                                                     
-{
-	// Interpolate the attributes of the output vertex using the barycentric coordinates    
-	oFragPos = InterpolateVec3( oFragPosToES[ 0 ],
-														  oFragPosToES[ 1 ], 
-														  oFragPosToES[ 2 ] );   
+{	
+	// Get normal from interpolation
+	oNormal = InterpolateVec3( oPatch._normal[ 0 ],
+													   oPatch._normal[ 1 ],
+													   oPatch._normal[ 2 ] );            
 
-	oNormal = InterpolateVec3( oNormalToES[ 0 ],
-													   oNormalToES[ 1 ],
-													   oNormalToES[ 2 ] );            
-	oNormal = normalize( oNormal );
+	// Get UV from interpolation
+	oUV = InterpolateVec2( oPatch._uv[ 0 ],
+												 oPatch._uv[ 1 ],
+												 oPatch._uv[ 2 ] );
 
-	oUV = InterpolateVec2( oUVToES[ 0 ],
-												 oUVToES[ 1 ],
-												 oUVToES[ 2 ] );    
+	// Use bezier triangle equation with barycentric coordinates to calculate FragPos ( world space position )
+	float u = gl_TessCoord.x;
+	float v = gl_TessCoord.y;
+	float w = gl_TessCoord.z;
+
+	float uPow3 = pow( u, 3 );
+	float vPow3 = pow( v, 3 );
+	float wPow3 = pow( w, 3 );
+	float uPow2 = pow( u, 2 );
+	float vPow2 = pow( v, 2 );
+	float wPow2 = pow( w, 2 );
+
+	oFragPos = oPatch._frag_pos_B300 * wPow3 +
+             oPatch._frag_pos_B030 * uPow3 +
+             oPatch._frag_pos_B003 * vPow3 +
+             oPatch._frag_pos_B210 * 3.0 * wPow2 * u +
+             oPatch._frag_pos_B120 * 3.0 * w * uPow2 +
+             oPatch._frag_pos_B201 * 3.0 * wPow2 * v +
+             oPatch._frag_pos_B021 * 3.0 * uPow2 * v +
+             oPatch._frag_pos_B102 * 3.0 * w * vPow2 +
+             oPatch._frag_pos_B012 * 3.0 * u * vPow2 +
+             oPatch._frag_pos_B111 * 6.0 * w * u * v;
 
 	// Perform the displacement mapping of the tessellate vertex along the normal
 	float displacement = texture( uTextureHeight1, oUV ).r;

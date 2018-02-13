@@ -220,10 +220,10 @@ void Scene::SceneDataInitialization()
     glm::vec2 uv2( 0.0, 0.0 );
     glm::vec2 uv3( 1.0, 0.0 );
     glm::vec2 uv4( 1.0, 1.0 );
-    uv1 *= 0.008 * _ground1->_scale[ 0 ];
-    uv2 *= 0.008 * _ground1->_scale[ 0 ];
-    uv3 *= 0.008 * _ground1->_scale[ 0 ];
-    uv4 *= 0.008 * _ground1->_scale[ 0 ];
+    uv1 *= 1.0 * _ground1->_scale[ 0 ];
+    uv2 *= 1.0 * _ground1->_scale[ 0 ];
+    uv3 *= 1.0 * _ground1->_scale[ 0 ];
+    uv4 *= 1.0 * _ground1->_scale[ 0 ];
 
     // normal vector
     glm::vec3 nm( 0.0, 0.0, 1.0 );

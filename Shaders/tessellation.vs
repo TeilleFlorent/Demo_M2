@@ -33,6 +33,8 @@ void main()
 {
 	oFragPosToCS = ( uModelMatrix * vec4( _position, 1.0 ) ).xyz;
 	oUVToCS 		 = _uv;
-	oNormalToCS  = ( uModelMatrix * vec4( _normal, 0.0 ) ).xyz;
+
+	// normalize out normal because the tessellation control shader relies on the normal having a unit length to generate new control points
+	oNormalToCS  = normalize( ( uModelMatrix * vec4( _normal, 0.0 ) ).xyz );
 }
 
