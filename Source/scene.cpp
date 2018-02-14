@@ -242,10 +242,10 @@ void Scene::SceneDataInitialization()
         // tangent
         ground_vertices.push_back( 0.0 );
         ground_vertices.push_back( 0.0 );
-        ground_vertices.push_back( 1.0 );
+        ground_vertices.push_back( -1.0 );
 
         // bitangent
-        ground_vertices.push_back( 1.0 );
+        ground_vertices.push_back( -1.0 );
         ground_vertices.push_back( 0.0 );
         ground_vertices.push_back( 0.0 );
       } 
@@ -514,9 +514,9 @@ void Scene::LightsInitialization()
   {
     for( int column = 0; column < 1; column++ )
     {
-      _lights.push_back( PointLight( glm::vec3( -4.0 + ( row * 2.0 ), 1.0, -4.0 + ( column * 2.0 ) ),
+      _lights.push_back( PointLight( glm::vec3( -4.0 + ( row * 2.0 ), 5.0, -4.0 + ( column * 2.0 ) ),
                                      glm::vec3( 1.0, 1.0, 1.0 ),
-                                     0.2,
+                                     2.0,
                                      3.0 ) );    
     }
   }
@@ -563,7 +563,7 @@ void Scene::ObjectsInitialization()
                                false,     // bloom
                                0.7,       // bloom bright value
                                false,     // opacity map
-                               true,      // normal map
+                               true,     // normal map
                                false ) ); // height map 
   }
 
@@ -946,26 +946,30 @@ void Scene::ModelsLoading()
   // Table model loading
   _table_model = new Model( "../Models/cube/rounded_cube.fbx", 
                             0, 
-                            "Table1" );
+                            "Table1",
+                            _tables[ 0 ]._normal_map );
   _table_model->PrintInfos();
 
   // Volume sphere model loading
   _sphere_model = new Model( "../Models/volume_sphere/volume_sphere.obj", 
                              1, 
-                             "VolumeSphere" );
+                             "VolumeSphere",
+                             false );
   _sphere_model->PrintInfos();
 
   // Ink bottle model loading
   _ink_bottle_model = new Model( "../Models/ink_bottle/ink_bottle.FBX", 
                                  2, 
-                                 "InkBottle" );
+                                 "InkBottle",
+                                 _ink_bottle->_normal_map );
   _ink_bottle_model->PrintInfos();
 
   // Collection car model loading
   /*_collection_car_model = new Model( "../Models/collection_car/collection_car.FBX", 
                                      3, 
-                                    "CollectionCar" );
-  _collection_car_model->PrintInfos();*/  
+                                    "CollectionCar",
+                                    _collection_car->_normal_map );
+  _collection_car_model->PrintInfos();  */
 }
 
 void Scene::TesselationInitialization()
@@ -1169,7 +1173,7 @@ void Scene::SceneForwardRendering()
 
   glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uDisplacementFactor" ), -0.07f );
+  glUniform1f( glGetUniformLocation( current_shader->_program, "uDisplacementFactor" ), -0.075f );
 
   glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
   glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _ground1->_opacity_map );
@@ -1229,6 +1233,9 @@ void Scene::SceneForwardRendering()
 
     glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPosition" ), 1, &_camera->_position[ 0 ] );
 
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _tables[ i ]._opacity_map );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _tables[ i ]._normal_map );
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _tables[ i ]._alpha );
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _tables[ i ]._id );    
 

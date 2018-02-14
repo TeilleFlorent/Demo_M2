@@ -22,11 +22,12 @@ Mesh::Mesh( vector< Vertex > 			 iVertices,
   this->SetupMesh();
 }
 
-void Mesh::Draw( Shader      iShader,
-                 int         iModelID,
-                 int         iMeshNumber,
-                 glm::mat4   iModelMatrix,
-                 float       iOpacityDiscard ) 
+void Mesh::Draw( Shader    iShader,
+                 int       iModelID,
+                 int       iMeshNumber,
+                 glm::mat4 iModelMatrix,
+                 bool      iNormalMap,
+                 float     iOpacityDiscard ) 
 {
 	glUniform1i( glGetUniformLocation( iShader._program, "uNormalMap" ), false );
 	glUniform1i( glGetUniformLocation( iShader._program, "uOpacityMap" ), false );
@@ -48,7 +49,8 @@ void Mesh::Draw( Shader      iShader,
     if( name == "uTextureNormal" )
     {
     	n = 1;
-  		glUniform1i( glGetUniformLocation( iShader._program, "uNormalMap" ), true );
+
+  		glUniform1i( glGetUniformLocation( iShader._program, "uNormalMap" ), iNormalMap );
     }
     if( name == "uTextureHeight" )
     {
@@ -155,11 +157,13 @@ void Mesh::SetupMesh()
 Toolbox * Model::_toolbox; 
 
 Model::Model( string iPath, 
-              int iID,
-              string iName )
+              int    iID,
+              string iName,
+              bool   iNormalMap )
 {
-  _model_id = iID;
+  _model_id   = iID;
   _model_name = iName;
+  _normal_map = iNormalMap;
   LoadModel( iPath );
 }
 
@@ -173,6 +177,7 @@ void Model::Draw( Shader      iShader,
     											   this->_model_id,
     											   i,
     											   iModelMatrix,
+                             _normal_map,
     											   1.0 );
   }
 
@@ -185,6 +190,7 @@ void Model::Draw( Shader      iShader,
 	    											   this->_model_id,
 	    											   i,
 	    											   iModelMatrix,
+                               _normal_map,
 	    											   2.0 );
 	  }
   }
@@ -306,7 +312,8 @@ Mesh Model::ProcessMesh( aiMesh * 	 iMesh,
       UV_warning = true;
     }
 
-    if( _model_id != 1 )
+    if( _model_id == 2
+     || _model_id == 3 )
     { 
       // Assimp tangent
       vector.x = iMesh->mTangents[ i ].x;
@@ -334,45 +341,43 @@ Mesh Model::ProcessMesh( aiMesh * 	 iMesh,
 
   // Manually calculate vertex tangent & bi tangent
   // ----------------------------------------------
-  /*for( unsigned int i = 0; i < vertices.size(); i += 3 )
-  { 
-    if( _model_id == 1 )
-    {
-      break;
+  if( _model_id == 0 )
+  {
+    for( unsigned int i = 0; i < vertices.size(); i += 3 )
+    { 
+      // Raccourcis pour les sommets
+      glm::vec3 v0,v1,v2;
+      v0 = vertices[ i ]._position;
+      v1 = vertices[ i + 1 ]._position;
+      v2 = vertices[ i + 2 ]._position; 
+
+      // Raccourcis pour les UV
+      glm::vec2 uv0,uv1,uv2;
+      uv0 = vertices[ i ]._uv;
+      uv1 = vertices[ i + 1 ]._uv;
+      uv2 = vertices[ i + 2 ]._uv;
+
+      // Côtés du triangle : delta des positions
+      glm::vec3 deltaPos1 = v1 - v0; 
+      glm::vec3 deltaPos2 = v2 - v0; 
+
+      // delta UV
+      glm::vec2 deltaUV1 = uv1 - uv0; 
+      glm::vec2 deltaUV2 = uv2 - uv0;
+
+      float r = 1.0f / ( deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x ); 
+      glm::vec3 tangent = ( deltaPos1 * deltaUV2.y   - deltaPos2 * deltaUV1.y ) * r; 
+      glm::vec3 bitangent = ( deltaPos2 * deltaUV1.x   - deltaPos1 * deltaUV2.x ) * r;
+
+      vertices[ i ]._tangent = tangent; 
+      vertices[ i + 1 ]._tangent = tangent;
+      vertices[ i + 2 ]._tangent = tangent;
+
+      vertices[ i ]._bi_tangent = bitangent; 
+      vertices[ i + 1 ]._bi_tangent = bitangent;
+      vertices[ i + 2 ]._bi_tangent = bitangent;
     }
-
-    // Raccourcis pour les sommets
-    glm::vec3 v0,v1,v2;
-    v0 = vertices[ i ]._position;
-    v1 = vertices[ i + 1 ]._position;
-    v2 = vertices[ i + 2 ]._position; 
-
-    // Raccourcis pour les UV
-    glm::vec2 uv0,uv1,uv2;
-    uv0 = vertices[ i ]._uv;
-    uv1 = vertices[ i + 1 ]._uv;
-    uv2 = vertices[ i + 2 ]._uv;
-
-    // Côtés du triangle : delta des positions
-    glm::vec3 deltaPos1 = v1 - v0; 
-    glm::vec3 deltaPos2 = v2 - v0; 
-
-    // delta UV
-    glm::vec2 deltaUV1 = uv1 - uv0; 
-    glm::vec2 deltaUV2 = uv2 - uv0;
-
-    float r = 1.0f / ( deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x ); 
-    glm::vec3 tangent = ( deltaPos1 * deltaUV2.y   - deltaPos2 * deltaUV1.y ) * r; 
-    glm::vec3 bitangent = ( deltaPos2 * deltaUV1.x   - deltaPos1 * deltaUV2.x ) * r;
-
-    vertices[ i ]._tangent = tangent; 
-    vertices[ i + 1 ]._tangent = tangent;
-    vertices[ i + 2 ]._tangent = tangent;
-
-    vertices[ i ]._bi_tangent = bitangent; 
-    vertices[ i + 1 ]._bi_tangent = bitangent;
-    vertices[ i + 2 ]._bi_tangent = bitangent;
-  }*/
+  }
 
 
   // Get mesh indices
@@ -523,7 +528,7 @@ vector< Texture > Model::LoadMeshTextures( aiString iNodeName,
   // ----------------------------
   if( this->_model_id == 3 )
   {	
-  	std::cout << "Node name = " << iNodeName.C_Str() << std::endl;
+  	//std::cout << "Node name = " << iNodeName.C_Str() << std::endl;
 
   	// Car body texture loading
   	if( iNodeName == aiString( std::string( "Body" ) ) )

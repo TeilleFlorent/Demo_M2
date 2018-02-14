@@ -80,6 +80,7 @@ class Mesh
                int         iModelID,
                int         iMeshNumber,
                glm::mat4   iModelMatrix,
+               bool        iNormalMap,
                float       iOpacityDiscard ); 
 
     
@@ -116,12 +117,13 @@ class Model
 
     // Class functions
     // ---------------
-    Model( string      iPath,
-           int         iID,
-           string      iName );
+    Model( string iPath,
+           int    iID,
+           string iName,
+           bool   iNormalMap );
 
-    void Draw( Shader      iShader,
-               glm::mat4   iModelMatrix );   
+    void Draw( Shader    iShader,
+               glm::mat4 iModelMatrix );   
 
     void PrintInfos();
 
@@ -163,6 +165,7 @@ class Model
     Assimp::Importer  _importer;
     const aiScene *   _scene;
 
+    bool _normal_map;
 
   private:
 
