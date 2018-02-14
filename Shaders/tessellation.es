@@ -15,7 +15,9 @@ struct OutputPatch
 	vec3 _frag_pos_B120;                                                                         
 	vec3 _frag_pos_B111;                                                                         
 	vec3 _normal[ 3 ];                                                                             
-	vec2 _uv[ 3 ];                                                                           
+	vec2 _uv[ 3 ];         
+	vec3 _tangent[ 3 ];
+	vec3 _bitangent[ 3 ];                                                                  
 }; 
 
 
@@ -47,6 +49,7 @@ in patch OutputPatch oPatch;
 out vec3 oFragPos;
 out vec3 oNormal;
 out vec2 oUV;
+out vec3 oTBN[ 3 ];
 
 
 //******************************************************************************
@@ -89,18 +92,34 @@ void main()
 												 oPatch._uv[ 1 ],
 												 oPatch._uv[ 2 ] );
 
-	// Use bezier triangle equation with barycentric coordinates to calculate FragPos ( world space position )
+	// Get tangent from interpolation
+	vec3 tangent = InterpolateVec3( oPatch._tangent[ 0 ],
+															    oPatch._tangent[ 1 ],
+															    oPatch._tangent[ 2 ] );
+
+	// Get bitangent from interpolation
+	vec3 bitangent = InterpolateVec3( oPatch._bitangent[ 0 ],
+															      oPatch._bitangent[ 1 ],
+															      oPatch._bitangent[ 2 ] );
+
+	// TBN matrix calculation
+	mat3 TBN = transpose( mat3( tangent, bitangent, oNormal ) );
+	oTBN[ 0 ] = TBN[ 0 ];
+	oTBN[ 1 ] = TBN[ 1 ];
+	oTBN[ 2 ] = TBN[ 2 ];
+
+	// Get barycentric coordinates of the tessellated vertice
 	float u = gl_TessCoord.x;
 	float v = gl_TessCoord.y;
 	float w = gl_TessCoord.z;
 
+	// Use bezier triangle equation with barycentric coordinates to calculate FragPos ( world space position )
 	float uPow3 = pow( u, 3 );
 	float vPow3 = pow( v, 3 );
 	float wPow3 = pow( w, 3 );
 	float uPow2 = pow( u, 2 );
 	float vPow2 = pow( v, 2 );
 	float wPow2 = pow( w, 2 );
-
 	oFragPos = oPatch._frag_pos_B300 * wPow3 +
              oPatch._frag_pos_B030 * uPow3 +
              oPatch._frag_pos_B003 * vPow3 +
@@ -115,6 +134,8 @@ void main()
 	// Perform the displacement mapping of the tessellate vertex along the normal
 	float displacement = texture( uTextureHeight1, oUV ).r;
   oFragPos += oNormal * displacement * uDisplacementFactor;
+
+  // final vertex output
   gl_Position = uProjectionMatrix * uViewMatrix * vec4( oFragPos, 1.0 );                                              
 }
 

@@ -60,9 +60,9 @@ uniform sampler2D   uPreBrdfLUT;
 
 // Fragment inputs from vertex shader 
 // ----------------------------------
-in vec2 oUV;
 in vec3 oFragPos;
 in vec3 oNormal;
+in vec2 oUV;
 in vec3 oTBN[ 3 ];
 
 
@@ -323,7 +323,7 @@ vec3 PBRLightingCalculation( vec3 iNormal,
   // --------------------
    
   // Compute indirect irradiance
-  vec3 ambient_reflectance = IBLAmbientReflectance( N_dot_V,
+  vec3 IBL_ambient_reflectance = IBLAmbientReflectance( N_dot_V,
                                                     material,
                                                     F0,
                                                     iNormal,
@@ -333,7 +333,7 @@ vec3 PBRLightingCalculation( vec3 iNormal,
 
   // Return fragment final PBR lighting 
   // ----------------------------------
-  return ambient_reflectance + point_lights_reflectance;
+  return IBL_ambient_reflectance + point_lights_reflectance;
 }
 
 
@@ -389,9 +389,9 @@ void main()
                                                      opacity );
 
   // Main out color
-  //FragColor = vec4( PBR_lighting_result, opacity );
-  FragColor = vec4( vec3( texture( uTextureHeight1, oUV ).r ), 1.0 );
-  //FragColor = vec4( vec3( 0.0 ), 1.0 );
+  FragColor = vec4( PBR_lighting_result, opacity );
+  //FragColor = vec4( vec3( texture( uTextureAlbedo1, oUV ).r ), 1.0 );
+  //FragColor = vec4( vec3( normal ), 1.0 );
 
   // Second out color => draw only brightest fragments
   vec3 bright_color = vec3( 0.0, 0.0, 0.0 );

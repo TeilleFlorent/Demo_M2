@@ -98,7 +98,6 @@ class Scene
     // IBOs
     unsigned int _ground_IBO;
     std::vector< unsigned int > _ground_indices;
-
     // Textures
     int _current_env;
     std::vector< unsigned int > _hdr_textures;

@@ -24,10 +24,10 @@ uniform mat4 uViewMatrix;
 
 // Vertex outputs to fragment shader	
 // ---------------------------------
-out vec2 oUV;
 out vec3 oFragPos;
-out vec3 oTBN[ 3 ];
 out vec3 oNormal;
+out vec2 oUV;
+out vec3 oTBN[ 3 ];
 
 
 //******************************************************************************

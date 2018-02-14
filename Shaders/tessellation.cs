@@ -15,7 +15,9 @@ struct OutputPatch
 	vec3 _frag_pos_B120;                                                                         
 	vec3 _frag_pos_B111;                                                                         
 	vec3 _normal[ 3 ];                                                                             
-	vec2 _uv[ 3 ];                                                                           
+	vec2 _uv[ 3 ];        
+	vec3 _tangent[ 3 ];
+	vec3 _bitangent[ 3 ];                                                                   
 }; 
 
 
@@ -38,7 +40,9 @@ uniform vec3 uViewPosition;
 // -------------------------------------------------------------
 in vec3 oFragPosToCS[];                                                                       
 in vec2 oUVToCS[];                                                                       
-in vec3 oNormalToCS[];    
+in vec3 oNormalToCS[];  
+in vec3 oTangentToCS[];
+in vec3 oBiTangentToCS[];  
 
 
 // Attributes of the output Control Points send to the tessellation evaluation shader                                                               
@@ -49,6 +53,39 @@ out patch OutputPatch oPatch;
 //******************************************************************************
 //**********  Control shader functions  ****************************************
 //******************************************************************************
+
+
+// Function used to get tesselation level from the distance of the two vertices of the edge
+// ----------------------------------------------------------------------------------------
+float GetTessellationLevel( float iDistance0,
+													  float iDistance1 )                                            
+{                                                                                               
+	float average_distance = ( iDistance0 + iDistance1 ) / 2.0;                                          
+	                                                                                            
+	if( average_distance <= 3.0 )
+	{                                                                   
+		return 100.0;                                                                            
+	}                                                                                           
+	else
+	if( average_distance <= 6.0 )
+	{                                                              
+		return 40.0;                                                                             
+	}
+	else
+	if( average_distance <= 8.0 )
+	{                                                              
+		return 20.0;                                                                             
+	}
+	else
+	if( average_distance <= 10.0 )
+	{                                                              
+		return 10.0;                                                                             
+	}                                                                                           
+	else 
+	{                                                                                      
+		return 5.0;                                                                             
+	}                                                                                           
+}  
 
 
 // Function used to generate control midpoint define by th nearest vertex and its normal
@@ -150,19 +187,34 @@ void GenControlPointsPosition()
 // -------------
 void main()                                                                                     
 {                                                                                        
-	// Set normal and UV of the 3 "principal" control points of the output patch
+	// Set normal and UV of the 3 vertices of the output patch
 	for( int it = 0 ; it < 3 ; it++ )
 	{
-		oPatch._normal[ it ] = oNormalToCS[ it ];
-		oPatch._uv[ it ]     = oUVToCS[ it ];
+		oPatch._normal[ it ]    = oNormalToCS[ it ];
+		oPatch._uv[ it ]        = oUVToCS[ it ];
+		oPatch._tangent[ it ]   = oTangentToCS[ it ];
+		oPatch._bitangent[ it ] = oBiTangentToCS[ it ];
 	}
 
 	// Set all control points position 
 	GenControlPointsPosition();
 
+	// Calculate the distance from the view position to the three control points                       
+	float ViewToVertexDistance0 = distance( uViewPosition,
+																					oPatch._frag_pos_B030 );                     
+	float ViewToVertexDistance1 = distance( uViewPosition,
+																					oPatch._frag_pos_B003 );                     
+	float ViewToVertexDistance2 = distance( uViewPosition,
+																			    oPatch._frag_pos_B300 );                     
+	                                                                                            
 	// Calculate the tessellation levels, corresponding to the segments count of each triangle edge                                                       
-	gl_TessLevelOuter[ 0 ] = 2;                                               
-	gl_TessLevelOuter[ 1 ] = 2;                                                  
-	gl_TessLevelOuter[ 2 ] = 2;                                                  
-	gl_TessLevelInner[ 0 ] = 1;                                                 	                           
+	gl_TessLevelOuter[ 0 ] = GetTessellationLevel( ViewToVertexDistance1,
+																						     ViewToVertexDistance2 );            
+	gl_TessLevelOuter[ 1 ] = GetTessellationLevel( ViewToVertexDistance2, 
+																								 ViewToVertexDistance0 );            
+	gl_TessLevelOuter[ 2 ] = GetTessellationLevel( ViewToVertexDistance0,
+																								 ViewToVertexDistance1 );            
+	
+	// Inner level correspond to the inner triangle ring count
+	gl_TessLevelInner[ 0 ] = gl_TessLevelOuter[ 2 ];                                                 	                           
 }   

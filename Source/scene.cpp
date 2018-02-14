@@ -209,84 +209,77 @@ void Scene::SceneDataInitialization()
   // -----------------
   if( _ground_VAO == 0 )
   { 
-    // Positions, build 1*1 meter square
-    glm::vec3 pos1( -0.5,  0.5, 0.0 );
-    glm::vec3 pos2( -0.5, -0.5, 0.0 );
-    glm::vec3 pos3(  0.5, -0.5, 0.0 );
-    glm::vec3 pos4(  0.5,  0.5, 0.0 );
-    
-    // texture coordinates
-    glm::vec2 uv1( 0.0, 1.0 );
-    glm::vec2 uv2( 0.0, 0.0 );
-    glm::vec2 uv3( 1.0, 0.0 );
-    glm::vec2 uv4( 1.0, 1.0 );
-    uv1 *= 1.0 * _ground1->_scale[ 0 ];
-    uv2 *= 1.0 * _ground1->_scale[ 0 ];
-    uv3 *= 1.0 * _ground1->_scale[ 0 ];
-    uv4 *= 1.0 * _ground1->_scale[ 0 ];
+    unsigned int width_count  = 20;
+    unsigned int height_count = 20;
+    float width_size          = 1.0;
+    float height_size         = 1.0;
+    std::vector< float > ground_vertices;
 
-    // normal vector
-    glm::vec3 nm( 0.0, 0.0, 1.0 );
-
-    // calculate tangent/bitangent vectors of both triangles
-    glm::vec3 tangent1, bitangent1;
-    glm::vec3 tangent2, bitangent2;
-
-    // - triangle 1
-    glm::vec3 edge1 = pos2 - pos1;
-    glm::vec3 edge2 = pos3 - pos1;
-    glm::vec2 deltaUV1 = uv2 - uv1;
-    glm::vec2 deltaUV2 = uv3 - uv1;
-    GLfloat f = 1.0f / ( deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y );
-    tangent1.x = f * ( deltaUV2.y * edge1.x - deltaUV1.y * edge2.x );
-    tangent1.y = f * ( deltaUV2.y * edge1.y - deltaUV1.y * edge2.y );
-    tangent1.z = f * ( deltaUV2.y * edge1.z - deltaUV1.y * edge2.z );
-    tangent1 = glm::normalize( tangent1 );
-    bitangent1.x = f * ( -deltaUV2.x * edge1.x + deltaUV1.x * edge2.x );
-    bitangent1.y = f * ( -deltaUV2.x * edge1.y + deltaUV1.x * edge2.y );
-    bitangent1.z = f * ( -deltaUV2.x * edge1.z + deltaUV1.x * edge2.z );
-    bitangent1 = glm::normalize( bitangent1 );
-
-    // - triangle 2
-    edge1 = pos3 - pos1;
-    edge2 = pos4 - pos1;
-    deltaUV1 = uv3 - uv1;
-    deltaUV2 = uv4 - uv1;
-    f = 1.0f / ( deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y );
-    tangent2.x = f * ( deltaUV2.y * edge1.x - deltaUV1.y * edge2.x );
-    tangent2.y = f * ( deltaUV2.y * edge1.y - deltaUV1.y * edge2.y );
-    tangent2.z = f * ( deltaUV2.y * edge1.z - deltaUV1.y * edge2.z );
-    tangent2 = glm::normalize( tangent2 );
-    bitangent2.x = f * ( -deltaUV2.x * edge1.x + deltaUV1.x * edge2.x );
-    bitangent2.y = f * ( -deltaUV2.x * edge1.y + deltaUV1.x * edge2.y );
-    bitangent2.z = f * ( -deltaUV2.x * edge1.z + deltaUV1.x * edge2.z );
-    bitangent2 = glm::normalize( bitangent2 );
-
-    GLfloat ground_vertices[] =
+    // Create plane vertices
+    for( unsigned int width_it = 0; width_it < width_count; width_it ++ )
     {
-      // Positions            // normal         // TexCoords  // Tangent                          // Bitangent
-      pos1.x, pos1.y, pos1.z, nm.x, nm.y, nm.z, uv1.x, uv1.y, tangent1.x, tangent1.y, tangent1.z, bitangent1.x, bitangent1.y, bitangent1.z,
-      pos2.x, pos2.y, pos2.z, nm.x, nm.y, nm.z, uv2.x, uv2.y, tangent1.x, tangent1.y, tangent1.z, bitangent1.x, bitangent1.y, bitangent1.z,
-      pos3.x, pos3.y, pos3.z, nm.x, nm.y, nm.z, uv3.x, uv3.y, tangent1.x, tangent1.y, tangent1.z, bitangent1.x, bitangent1.y, bitangent1.z,
-      pos4.x, pos4.y, pos4.z, nm.x, nm.y, nm.z, uv4.x, uv4.y, tangent2.x, tangent2.y, tangent2.z, bitangent2.x, bitangent2.y, bitangent2.z,
-    };
+      for( unsigned int height_it = 0; height_it < height_count; height_it ++ )
+      { 
+        // position
+        float pos_x = ( ( float )width_it / ( float )( width_count - 1 ) ) * width_size;
+        float pos_y = 0.0;         
+        float pos_z = ( ( float )height_it / ( float )( height_count - 1 ) ) * height_size;
+        ground_vertices.push_back( pos_x );
+        ground_vertices.push_back( pos_y );
+        ground_vertices.push_back( pos_z );
+
+        // normal
+        ground_vertices.push_back( 0.0f );
+        ground_vertices.push_back( -1.0f );
+        ground_vertices.push_back( 0.0f );    
+
+        // uv    
+        float u = ( float )width_it / ( float )( width_count - 1 );
+        float v = ( float )height_it / ( float )( height_count - 1 );
+        ground_vertices.push_back( u * 5.0 );
+        ground_vertices.push_back( v * 5.0 );
+
+        // tangent
+        ground_vertices.push_back( 0.0 );
+        ground_vertices.push_back( 0.0 );
+        ground_vertices.push_back( 1.0 );
+
+        // bitangent
+        ground_vertices.push_back( 1.0 );
+        ground_vertices.push_back( 0.0 );
+        ground_vertices.push_back( 0.0 );
+      } 
+    }
 
     // Create plane indices
-    unsigned int plane_indices[] = { 0, 1, 2,
-                                     0, 2, 3 };
-                      
-    
+    for( unsigned int width_it = 0; width_it < width_count - 1; width_it ++ )
+    {
+      for( unsigned int height_it = 0; height_it < height_count - 1; height_it ++ )
+      { 
+        // Get base vertex index
+        unsigned int vertex_index = height_it * width_count + width_it;
+        
+        // Gen two triangles indices
+        _ground_indices.push_back( vertex_index );       
+        _ground_indices.push_back( vertex_index + width_count );
+        _ground_indices.push_back( vertex_index + width_count + 1 );
+        _ground_indices.push_back( vertex_index );
+        _ground_indices.push_back( vertex_index + width_count + 1 );
+        _ground_indices.push_back( vertex_index + 1 );     
+      }   
+    }
+
     // Setup plane VAO & IBO
     glGenVertexArrays( 1, &_ground_VAO );
     glBindVertexArray( _ground_VAO );
 
     glGenBuffers( 1, &_ground_VBO );
     glBindBuffer( GL_ARRAY_BUFFER, _ground_VBO );
-    glBufferData( GL_ARRAY_BUFFER, sizeof( ground_vertices ), &ground_vertices, GL_STATIC_DRAW );
+    glBufferData( GL_ARRAY_BUFFER, ground_vertices.size() * sizeof( GLfloat ), ground_vertices.data(), GL_STATIC_DRAW );
 
     glGenBuffers( 1, &_ground_IBO );
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, _ground_IBO );
-    glBufferData( GL_ELEMENT_ARRAY_BUFFER, sizeof( plane_indices ), plane_indices, GL_STATIC_DRAW );
+    glBufferData( GL_ELEMENT_ARRAY_BUFFER, _ground_indices.size() * sizeof( unsigned int ), _ground_indices.data(), GL_STATIC_DRAW );
 
     glEnableVertexAttribArray( 0 );
     glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )0 );
@@ -294,10 +287,10 @@ void Scene::SceneDataInitialization()
     glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )( 3 * sizeof( GLfloat ) ) );
     glEnableVertexAttribArray( 2 );
     glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )( 6 * sizeof( GLfloat ) ) );
-    //glEnableVertexAttribArray( 3 );
-    //glVertexAttribPointer( 3, 3, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )( 8 * sizeof( GLfloat ) ) );
-    //glEnableVertexAttribArray( 4 );
-    //glVertexAttribPointer( 4, 3, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )( 11 * sizeof( GLfloat ) ) );
+    glEnableVertexAttribArray( 3 );
+    glVertexAttribPointer( 3, 3, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )( 8 * sizeof( GLfloat ) ) );
+    glEnableVertexAttribArray( 4 );
+    glVertexAttribPointer( 4, 3, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )( 11 * sizeof( GLfloat ) ) );
 
     glBindVertexArray( 0 );
   }
@@ -517,13 +510,13 @@ void Scene::LightsInitialization()
   
   PointLight::SetLightsMultiplier( 30.0 );
 
-  for( int row = 0; row < 5; row++ )
+  for( int row = 0; row < 1; row++ )
   {
-    for( int column = 0; column < 5; column++ )
+    for( int column = 0; column < 1; column++ )
     {
       _lights.push_back( PointLight( glm::vec3( -4.0 + ( row * 2.0 ), 1.0, -4.0 + ( column * 2.0 ) ),
                                      glm::vec3( 1.0, 1.0, 1.0 ),
-                                     0.1,
+                                     0.2,
                                      3.0 ) );    
     }
   }
@@ -578,9 +571,9 @@ void Scene::ObjectsInitialization()
   // _ground1 object initialization
   // ------------------------------
   _ground1 = new Object( 1, // ID
-                         glm::vec3( 0.0, 0.0, 0.0 ),
+                         glm::vec3( -5.0, 0.0, -5.0 ),
                          _PI_2,
-                         glm::vec3( 10.0, 10.0, 1.0 ),
+                         glm::vec3( 10.0, 1.0, 10.0 ),
                          1.0,
                          false,
                          false,
@@ -588,7 +581,7 @@ void Scene::ObjectsInitialization()
                          false,
                          0.999,
                          false,
-                         false,
+                         true,
                          true );
 
 
@@ -1124,7 +1117,7 @@ void Scene::SceneForwardRendering()
   glUseProgram( 0 );
 
 
-  glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+  //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
 
   // Draw ground1
@@ -1135,7 +1128,6 @@ void Scene::SceneForwardRendering()
 
   model_matrix = glm::mat4();
   model_matrix = glm::translate( model_matrix, _ground1->_position );
-  model_matrix = glm::rotate( model_matrix, _ground1->_angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
   model_matrix = glm::scale( model_matrix, _ground1->_scale ); 
 
   glActiveTexture( GL_TEXTURE0 );
@@ -1177,7 +1169,7 @@ void Scene::SceneForwardRendering()
 
   glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uDisplacementFactor" ), 1.0f );
+  glUniform1f( glGetUniformLocation( current_shader->_program, "uDisplacementFactor" ), -0.07f );
 
   glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
   glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _ground1->_opacity_map );
@@ -1186,15 +1178,15 @@ void Scene::SceneForwardRendering()
   glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _ground1->_id );    
 
   glBindVertexArray( _ground_VAO );
-  ( _ground1->_height_map == true ) ? glDrawElements( GL_PATCHES, 6, GL_UNSIGNED_INT, 0 ) : glDrawElements( GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0 );
+  ( _ground1->_height_map == true ) ? glDrawElements( GL_PATCHES, _ground_indices.size(), GL_UNSIGNED_INT, 0 ) : glDrawElements( GL_TRIANGLES, _ground_indices.size(), GL_UNSIGNED_INT, 0 );
   glBindVertexArray( 0 );
   glUseProgram( 0 );
   
 
-  glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+  //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
 
-  // Enable cull facz
+  // Enable cull face
   glEnable( GL_CULL_FACE );
   glCullFace( GL_BACK );
 
