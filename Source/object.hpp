@@ -21,6 +21,7 @@ class Object
             glm::vec3 iPosition,
             float     iAngle,
             glm::vec3 iScale,
+            glm::vec2 iUvScale,
             float     iAlpha,
             bool      iGenerateShadow,
             bool      iReceivShadow,
@@ -29,7 +30,9 @@ class Object
             float     iBloomBrightness,
             bool      iOpacityMap,
             bool      iNormalMap,
-            bool      iHeightMap );
+            bool      iHeightMap,
+            float     iDisplacementFactor,
+            float     iTessellationFactor );
 
 
     // Object class members
@@ -39,6 +42,7 @@ class Object
     glm::vec3 _position;
     float     _angle;
     glm::vec3 _scale;
+    glm::vec2 _uv_scale;
     float     _alpha;
     bool      _generate_shadow;
     bool      _receiv_shadow;
@@ -48,6 +52,8 @@ class Object
     bool      _opacity_map;
     bool      _normal_map;
     bool      _height_map;
+    float     _displacement_factor;
+    float     _tessellation_factor;
 };
 
 #endif  // OBJECT_H

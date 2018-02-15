@@ -27,6 +27,7 @@ void Mesh::Draw( Shader    iShader,
                  int       iMeshNumber,
                  glm::mat4 iModelMatrix,
                  bool      iNormalMap,
+                 bool      iHeightMap,
                  float     iOpacityDiscard ) 
 {
 	glUniform1i( glGetUniformLocation( iShader._program, "uNormalMap" ), false );
@@ -49,7 +50,6 @@ void Mesh::Draw( Shader    iShader,
     if( name == "uTextureNormal" )
     {
     	n = 1;
-
   		glUniform1i( glGetUniformLocation( iShader._program, "uNormalMap" ), iNormalMap );
     }
     if( name == "uTextureHeight" )
@@ -94,13 +94,13 @@ void Mesh::Draw( Shader    iShader,
 		glEnable( GL_BLEND );
 		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
-		glDrawElements( GL_TRIANGLES, this->_indices.size(), GL_UNSIGNED_INT, 0 );
+    ( iHeightMap == true ) ? glDrawElements( GL_PATCHES, this->_indices.size(), GL_UNSIGNED_INT, 0 ) : glDrawElements( GL_TRIANGLES, this->_indices.size(), GL_UNSIGNED_INT, 0 );
 
 		glDisable( GL_BLEND );
   }
   else
   {
-		glDrawElements( GL_TRIANGLES, this->_indices.size(), GL_UNSIGNED_INT, 0 );
+    ( iHeightMap == true ) ? glDrawElements( GL_PATCHES, this->_indices.size(), GL_UNSIGNED_INT, 0 ) : glDrawElements( GL_TRIANGLES, this->_indices.size(), GL_UNSIGNED_INT, 0 );
 	}
 	
 	glBindVertexArray( 0 );
@@ -159,16 +159,19 @@ Toolbox * Model::_toolbox;
 Model::Model( string iPath, 
               int    iID,
               string iName,
-              bool   iNormalMap )
+              bool   iNormalMap,
+              bool   iHeightMap )
 {
   _model_id   = iID;
   _model_name = iName;
   _normal_map = iNormalMap;
+  _height_map = iHeightMap;
+
   LoadModel( iPath );
 }
 
-void Model::Draw( Shader      iShader,
-									glm::mat4   iModelMatrix )
+void Model::Draw( Shader    iShader,
+									glm::mat4 iModelMatrix )
 {
 	// Draw non transparent model parts
   for( unsigned int i = 0; i < this->_meshes.size(); i++ )
@@ -178,6 +181,7 @@ void Model::Draw( Shader      iShader,
     											   i,
     											   iModelMatrix,
                              _normal_map,
+                             _height_map,
     											   1.0 );
   }
 
@@ -191,6 +195,7 @@ void Model::Draw( Shader      iShader,
 	    											   i,
 	    											   iModelMatrix,
                                _normal_map,
+                               _height_map,
 	    											   2.0 );
 	  }
   }

@@ -33,7 +33,8 @@ layout ( vertices = 1 ) out;
 
 // Control shader input uniforms
 // -----------------------------
-uniform vec3 uViewPosition;       
+uniform vec3  uViewPosition;  
+uniform float uTessellationFactor;    
 
 
 // Attributes of the input Control Points from the vertex shader                                                                  
@@ -61,30 +62,33 @@ float GetTessellationLevel( float iDistance0,
 													  float iDistance1 )                                            
 {                                                                                               
 	float average_distance = ( iDistance0 + iDistance1 ) / 2.0;                                          
-	                                                                                            
-	if( average_distance <= 3.0 )
+	float level;
+
+	if( average_distance <= 2.0 )
 	{                                                                   
-		return 100.0;                                                                            
+		level = 200.0 * uTessellationFactor;                                                                            
 	}                                                                                           
+	else
+	if( average_distance <= 4.0 )
+	{                                                              
+		level = 50.0 * uTessellationFactor;                                                                             
+	}
 	else
 	if( average_distance <= 6.0 )
 	{                                                              
-		return 40.0;                                                                             
+		level = 20.0 * uTessellationFactor;                                                                             
 	}
 	else
 	if( average_distance <= 8.0 )
 	{                                                              
-		return 20.0;                                                                             
-	}
-	else
-	if( average_distance <= 10.0 )
-	{                                                              
-		return 10.0;                                                                             
+		level = 10.0 * uTessellationFactor;                                                                             
 	}                                                                                           
 	else 
 	{                                                                                      
-		return 5.0;                                                                             
-	}                                                                                           
+		level = 5.0 * uTessellationFactor;                                                                             
+	} 
+
+	return max( level, 1.0 );                                                                                          
 }  
 
 

@@ -236,8 +236,8 @@ void Scene::SceneDataInitialization()
         // uv    
         float u = ( float )width_it / ( float )( width_count - 1 );
         float v = ( float )height_it / ( float )( height_count - 1 );
-        ground_vertices.push_back( u * 5.0 );
-        ground_vertices.push_back( v * 5.0 );
+        ground_vertices.push_back( u * _ground1->_uv_scale.x );
+        ground_vertices.push_back( v * _ground1->_uv_scale.y );
 
         // tangent
         ground_vertices.push_back( 0.0 );
@@ -534,7 +534,7 @@ void Scene::ObjectsInitialization()
 
   // _tables object initialization
   // -----------------------------
-  for( int i = 0; i < 20; i++ )
+  for( int i = 0; i < 1; i++ )
   { 
 
     switch( i % 3 )
@@ -555,7 +555,8 @@ void Scene::ObjectsInitialization()
     _tables.push_back( Object( 0,         // ID
                                position,
                                0.0,       // angle
-                               glm::vec3( 0.01, 0.01, 0.01 ), 
+                               glm::vec3( 0.01, 0.01, 0.01 ),  // scale
+                               glm::vec2( 1.0, 1.0 ),          // uv scale 
                                1.0,       // alpha
                                false,     // generate shadow
                                false,     // receiv shadow
@@ -563,8 +564,10 @@ void Scene::ObjectsInitialization()
                                false,     // bloom
                                0.7,       // bloom bright value
                                false,     // opacity map
-                               true,     // normal map
-                               false ) ); // height map 
+                               true,      // normal map
+                               true,     // height map
+                               0.02,       // displacement factor
+                               0.07 ) );  // tessellation factor
   }
 
 
@@ -574,6 +577,7 @@ void Scene::ObjectsInitialization()
                          glm::vec3( -5.0, 0.0, -5.0 ),
                          _PI_2,
                          glm::vec3( 10.0, 1.0, 10.0 ),
+                         glm::vec2( 3.0, 3.0 ),
                          1.0,
                          false,
                          false,
@@ -582,15 +586,18 @@ void Scene::ObjectsInitialization()
                          0.999,
                          false,
                          true,
-                         true );
+                         true,
+                         0.23,
+                         1.0 );
 
 
   // _ink_bottle object initialization
   // ---------------------------------
   _ink_bottle = new Object( 2, // ID
-                            glm::vec3( 0.0, 0.3, 0.0 ),
+                            glm::vec3( 0.0, 0.6, 0.0 ),
                             0.0,
                             glm::vec3( 0.03, 0.03, 0.03 ),
+                            glm::vec2( 1.0, 1.0 ),
                             1.0,
                             false,
                             false,
@@ -599,7 +606,9 @@ void Scene::ObjectsInitialization()
                             0.999,
                             true,
                             true,
-                            false );
+                            false,
+                            0.0,
+                            0.0 );
 
 
   // _collection_car object initialization
@@ -608,6 +617,7 @@ void Scene::ObjectsInitialization()
                                 glm::vec3( 2.0, 0.1, 0.0 ),
                                 _PI_2,
                                 glm::vec3( 0.001, 0.001, 0.001 ),
+                                glm::vec2( 1.0, 1.0 ),
                                 1.0,
                                 false,
                                 false,
@@ -616,7 +626,9 @@ void Scene::ObjectsInitialization()
                                 0.999,
                                 false,
                                 false,
-                                false );
+                                false,
+                                0.0,
+                                0.0 );
 
 }
 
@@ -947,13 +959,15 @@ void Scene::ModelsLoading()
   _table_model = new Model( "../Models/cube/rounded_cube.fbx", 
                             0, 
                             "Table1",
-                            _tables[ 0 ]._normal_map );
+                            _tables[ 0 ]._normal_map,
+                            _tables[ 0 ]._height_map );
   _table_model->PrintInfos();
 
   // Volume sphere model loading
   _sphere_model = new Model( "../Models/volume_sphere/volume_sphere.obj", 
                              1, 
                              "VolumeSphere",
+                             false,
                              false );
   _sphere_model->PrintInfos();
 
@@ -961,14 +975,16 @@ void Scene::ModelsLoading()
   _ink_bottle_model = new Model( "../Models/ink_bottle/ink_bottle.FBX", 
                                  2, 
                                  "InkBottle",
-                                 _ink_bottle->_normal_map );
+                                 _ink_bottle->_normal_map,
+                                 _ink_bottle->_height_map );
   _ink_bottle_model->PrintInfos();
 
   // Collection car model loading
   /*_collection_car_model = new Model( "../Models/collection_car/collection_car.FBX", 
                                      3, 
                                     "CollectionCar",
-                                    _collection_car->_normal_map );
+                                    _collection_car->_normal_map,
+                                    _collection_car->_height_map );
   _collection_car_model->PrintInfos();  */
 }
 
@@ -1134,6 +1150,7 @@ void Scene::SceneForwardRendering()
   model_matrix = glm::translate( model_matrix, _ground1->_position );
   model_matrix = glm::scale( model_matrix, _ground1->_scale ); 
 
+  // Textures binding
   glActiveTexture( GL_TEXTURE0 );
   glBindTexture( GL_TEXTURE_2D, _tex_albedo_ground );  
   glActiveTexture( GL_TEXTURE1 );
@@ -1153,12 +1170,14 @@ void Scene::SceneForwardRendering()
   glActiveTexture( GL_TEXTURE9 );
   glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture );
 
+  // Matrices uniforms
   glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
   glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
   glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
 
   glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPosition" ), 1, &_camera->_position[ 0 ] );
 
+  // Point lights uniforms
   glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
   for( int i = 0; i < _lights.size(); i++ )
   {
@@ -1168,17 +1187,22 @@ void Scene::SceneForwardRendering()
     glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
   }
 
+  // Bloom uniforms
   glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _ground1->_bloom );
   glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _ground1->_bloom_brightness );
 
   glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uDisplacementFactor" ), -0.075f );
-
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _ground1->_opacity_map );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _ground1->_normal_map );
+  // Opacity uniforms
   glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _ground1->_alpha );
+  glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _ground1->_opacity_map );
+  glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
+  
+  // Displacement mapping uniforms
+  glUniform1f( glGetUniformLocation( current_shader->_program, "uDisplacementFactor" ), -_ground1->_displacement_factor );
+  glUniform1f( glGetUniformLocation( current_shader->_program, "uTessellationFactor" ), _ground1->_tessellation_factor );
+  glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _ground1->_normal_map );
+
   glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _ground1->_id );    
 
   glBindVertexArray( _ground_VAO );
@@ -1194,10 +1218,14 @@ void Scene::SceneForwardRendering()
   glEnable( GL_CULL_FACE );
   glCullFace( GL_BACK );
 
+  //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
 
   // Draw tables
   // -----------
-  _forward_pbr_shader.Use();
+ ( _tables[ 0 ]._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
+
+  current_shader->Use();
 
   for( int i = 0; i < _tables.size(); i++ )
   {
@@ -1205,6 +1233,7 @@ void Scene::SceneForwardRendering()
     model_matrix = glm::translate( model_matrix, _tables[ i ]._position );
     model_matrix = glm::scale( model_matrix, _tables[ i ]._scale ); 
 
+    // Textures binding
     glActiveTexture( GL_TEXTURE7 );
     glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
     glActiveTexture( GL_TEXTURE8 );
@@ -1212,37 +1241,46 @@ void Scene::SceneForwardRendering()
     glActiveTexture( GL_TEXTURE9 );
     glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
 
-    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
-    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+    // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
 
-    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+    glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPosition" ), 1, &_camera->_position[ 0 ] );
 
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
     for( int i = 0; i < _lights.size(); i++ )
     {
       string temp = to_string( i );
-      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
-      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
-      glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
     }
 
-    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _tables[ i ]._bloom );
-    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _tables[ i ]._bloom_brightness );
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _tables[ i ]._bloom );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _tables[ i ]._bloom_brightness );
 
-    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
-    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPosition" ), 1, &_camera->_position[ 0 ] );
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _tables[ i ]._alpha );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _tables[ i ]._opacity_map );
+    
+    // Displacement mapping uniforms
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uDisplacementFactor" ), _tables[ i ]._displacement_factor );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uTessellationFactor" ), _tables[ i ]._tessellation_factor );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _tables[ i ]._normal_map );
+    
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _tables[ i ]._id );    
 
-    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
-    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _tables[ i ]._opacity_map );
-    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _tables[ i ]._normal_map );
-    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _tables[ i ]._alpha );
-    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _tables[ i ]._id );    
-
-    _table_model->Draw( _forward_pbr_shader, model_matrix );
+    _table_model->Draw( *current_shader, model_matrix );
   } 
   glUseProgram( 0 );
 
+  glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
   // Disable cull face
   glDisable( GL_CULL_FACE );

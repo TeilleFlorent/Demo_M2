@@ -180,16 +180,16 @@ void Window::ManageEvents( Camera * iCamera )
             break;
 
           case 'a' :
+            _scene->_tables[ 0 ]._displacement_factor += 0.005;
+            std::cout << "factor = " << _scene->_tables[ 0 ]._displacement_factor << std::endl;
             break;
 
           case 'e' :
+            _scene->_tables[ 0 ]._displacement_factor -= 0.005;
+            std::cout << "factor = " << _scene->_tables[ 0 ]._displacement_factor << std::endl;
             break;
 
           case 'r' :
-            for( int i = 0 ; i < _scene->_tables.size() ; i++ )
-            {     
-              _scene->_ground1->_angle += 0.02;
-            }     
             break;
        
           case SDLK_F1 :

@@ -76,12 +76,13 @@ class Mesh
           aiString          iMeshName,
           bool              iOpacityMap );
 
-    void Draw( Shader      iShader,
-               int         iModelID,
-               int         iMeshNumber,
-               glm::mat4   iModelMatrix,
-               bool        iNormalMap,
-               float       iOpacityDiscard ); 
+    void Draw( Shader    iShader,
+               int       iModelID,
+               int       iMeshNumber,
+               glm::mat4 iModelMatrix,
+               bool      iNormalMap,
+               bool      iHeightMap,
+               float     iOpacityDiscard ); 
 
     
     // Class members
@@ -120,7 +121,8 @@ class Model
     Model( string iPath,
            int    iID,
            string iName,
-           bool   iNormalMap );
+           bool   iNormalMap,
+           bool   iHeightMap );
 
     void Draw( Shader    iShader,
                glm::mat4 iModelMatrix );   
@@ -166,6 +168,7 @@ class Model
     const aiScene *   _scene;
 
     bool _normal_map;
+    bool _height_map;
 
   private:
 
