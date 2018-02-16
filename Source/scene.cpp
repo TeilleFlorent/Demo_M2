@@ -52,10 +52,13 @@ Scene::Scene( Window * iParentWindow )
   // Scene data initialization
   // -------------------------
 
-  _ground_VAO = 0;
-  _ground_VBO = 0;
-  _ground_IBO = 0;
+  _ground1_VAO = 0;
+  _ground1_VBO = 0;
+  _ground1_IBO = 0;
 
+  _wall1_VAO = 0;
+  _wall1_VBO = 0;
+  _wall1_IBO = 0;
 
   // Get pointer on the scene window
   _window = iParentWindow;
@@ -64,7 +67,7 @@ Scene::Scene( Window * iParentWindow )
   _clock = new Clock();
 
    // Create and init scene camera
-  _camera = new Camera( glm::vec3( -7.02172, 2.42351, -6.27063 ),
+  _camera = new Camera( glm::vec3( -3, 1.0, -3 ),
                         glm::vec3( 0.724498, -0.409127, 0.554724 ),
                         glm::vec3( 0.0f, 1.0f,  0.0f ),
                         37.44,
@@ -130,30 +133,30 @@ void Scene::Quit()
     glDeleteTextures( 1, &_window->_toolbox->_final_tex_color_buffer[ 0 ] );
   if( _window->_toolbox->_final_tex_color_buffer[ 1 ] )
     glDeleteTextures( 1, &_window->_toolbox->_final_tex_color_buffer[ 1 ] );
-  if( _tex_albedo_ground )
-    glDeleteTextures( 1, &_tex_albedo_ground );
-  if( _tex_normal_ground )
-    glDeleteTextures( 1, &_tex_normal_ground );
-  if( _tex_height_ground )
-    glDeleteTextures( 1, &_tex_height_ground );
-  if( _tex_AO_ground )
-    glDeleteTextures( 1, &_tex_AO_ground );
-  if( _tex_roughness_ground )
-    glDeleteTextures( 1, &_tex_roughness_ground );
-  if( _tex_metalness_ground )
-    glDeleteTextures( 1, &_tex_metalness_ground );
+  if( _tex_albedo_ground1 )
+    glDeleteTextures( 1, &_tex_albedo_ground1 );
+  if( _tex_normal_ground1 )
+    glDeleteTextures( 1, &_tex_normal_ground1 );
+  if( _tex_height_ground1 )
+    glDeleteTextures( 1, &_tex_height_ground1 );
+  if( _tex_AO_ground1 )
+    glDeleteTextures( 1, &_tex_AO_ground1 );
+  if( _tex_roughness_ground1 )
+    glDeleteTextures( 1, &_tex_roughness_ground1 );
+  if( _tex_metalness_ground1 )
+    glDeleteTextures( 1, &_tex_metalness_ground1 );
 
 
   // Delete VAOs
   // -----------
-  if( _ground_VAO )
-    glDeleteVertexArrays( 1, &_ground_VAO );
+  if( _ground1_VAO )
+    glDeleteVertexArrays( 1, &_ground1_VAO );
   
 
   // Delete VBOs
   // -----------
-  if( _ground_VBO )
-    glDeleteBuffers( 1, &_ground_VBO );
+  if( _ground1_VBO )
+    glDeleteBuffers( 1, &_ground1_VBO );
 
 
   // Delete FBOs
@@ -207,93 +210,22 @@ void Scene::SceneDataInitialization()
 
   // Create ground VAO
   // -----------------
-  if( _ground_VAO == 0 )
-  { 
-    unsigned int width_count  = 20;
-    unsigned int height_count = 20;
-    float width_size          = 1.0;
-    float height_size         = 1.0;
-    std::vector< float > ground_vertices;
+  _window->_toolbox->CreatePlaneVAO( &_ground1_VAO,
+                                     &_ground1_VBO,
+                                     &_ground1_IBO,
+                                     &_ground1_indices,
+                                     40,
+                                     _grounds_type1[ 0 ]._uv_scale.x );
 
-    // Create plane vertices
-    for( unsigned int width_it = 0; width_it < width_count; width_it ++ )
-    {
-      for( unsigned int height_it = 0; height_it < height_count; height_it ++ )
-      { 
-        // position
-        float pos_x = ( ( float )width_it / ( float )( width_count - 1 ) ) * width_size;
-        float pos_y = 0.0;         
-        float pos_z = ( ( float )height_it / ( float )( height_count - 1 ) ) * height_size;
-        ground_vertices.push_back( pos_x );
-        ground_vertices.push_back( pos_y );
-        ground_vertices.push_back( pos_z );
 
-        // normal
-        ground_vertices.push_back( 0.0f );
-        ground_vertices.push_back( -1.0f );
-        ground_vertices.push_back( 0.0f );    
-
-        // uv    
-        float u = ( float )width_it / ( float )( width_count - 1 );
-        float v = ( float )height_it / ( float )( height_count - 1 );
-        ground_vertices.push_back( u * _ground1->_uv_scale.x );
-        ground_vertices.push_back( v * _ground1->_uv_scale.y );
-
-        // tangent
-        ground_vertices.push_back( 0.0 );
-        ground_vertices.push_back( 0.0 );
-        ground_vertices.push_back( -1.0 );
-
-        // bitangent
-        ground_vertices.push_back( -1.0 );
-        ground_vertices.push_back( 0.0 );
-        ground_vertices.push_back( 0.0 );
-      } 
-    }
-
-    // Create plane indices
-    for( unsigned int width_it = 0; width_it < width_count - 1; width_it ++ )
-    {
-      for( unsigned int height_it = 0; height_it < height_count - 1; height_it ++ )
-      { 
-        // Get base vertex index
-        unsigned int vertex_index = height_it * width_count + width_it;
-        
-        // Gen two triangles indices
-        _ground_indices.push_back( vertex_index );       
-        _ground_indices.push_back( vertex_index + width_count );
-        _ground_indices.push_back( vertex_index + width_count + 1 );
-        _ground_indices.push_back( vertex_index );
-        _ground_indices.push_back( vertex_index + width_count + 1 );
-        _ground_indices.push_back( vertex_index + 1 );     
-      }   
-    }
-
-    // Setup plane VAO & IBO
-    glGenVertexArrays( 1, &_ground_VAO );
-    glBindVertexArray( _ground_VAO );
-
-    glGenBuffers( 1, &_ground_VBO );
-    glBindBuffer( GL_ARRAY_BUFFER, _ground_VBO );
-    glBufferData( GL_ARRAY_BUFFER, ground_vertices.size() * sizeof( GLfloat ), ground_vertices.data(), GL_STATIC_DRAW );
-
-    glGenBuffers( 1, &_ground_IBO );
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, _ground_IBO );
-    glBufferData( GL_ELEMENT_ARRAY_BUFFER, _ground_indices.size() * sizeof( unsigned int ), _ground_indices.data(), GL_STATIC_DRAW );
-
-    glEnableVertexAttribArray( 0 );
-    glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )0 );
-    glEnableVertexAttribArray( 1 );
-    glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )( 3 * sizeof( GLfloat ) ) );
-    glEnableVertexAttribArray( 2 );
-    glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )( 6 * sizeof( GLfloat ) ) );
-    glEnableVertexAttribArray( 3 );
-    glVertexAttribPointer( 3, 3, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )( 8 * sizeof( GLfloat ) ) );
-    glEnableVertexAttribArray( 4 );
-    glVertexAttribPointer( 4, 3, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )( 11 * sizeof( GLfloat ) ) );
-
-    glBindVertexArray( 0 );
-  }
+  // Create wall VAO
+  // ---------------
+  _window->_toolbox->CreatePlaneVAO( &_wall1_VAO,
+                                     &_wall1_VBO,
+                                     &_wall1_IBO,
+                                     &_wall1_indices,
+                                     40,
+                                     _walls_type1[ 0 ]._uv_scale.x );
 
 
   // Create temp color buffer
@@ -396,11 +328,11 @@ void Scene::SceneDataInitialization()
   glBindTexture( GL_TEXTURE_2D, 0 );
     
 
-  // Load ground albedo texture
+  // Load ground1 albedo texture
   // --------------------------
   if( ( sdl_image_data = IMG_Load( "../Textures/ground1/albedo.png" ) ) != NULL )
   {
-    _tex_albedo_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+    _tex_albedo_ground1 = _window->_toolbox->CreateTextureFromData( sdl_image_data,
                                                                    GL_RGB,
                                                                    GL_RGB,
                                                                    true,
@@ -413,11 +345,11 @@ void Scene::SceneDataInitialization()
     fprintf( stderr, "Erreur lors du chargement de la texture\n" );
   }
 
-  // Load ground normal texture
+  // Load ground1 normal texture
   // --------------------------
   if( ( sdl_image_data = IMG_Load( "../Textures/ground1/normal.png" ) ) != NULL )
   {
-    _tex_normal_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+    _tex_normal_ground1 = _window->_toolbox->CreateTextureFromData( sdl_image_data,
                                                                    GL_RGB,
                                                                    GL_RGB,
                                                                    true,
@@ -431,11 +363,11 @@ void Scene::SceneDataInitialization()
   }
 
 
-  // Load ground height texture
+  // Load ground1 height texture
   // --------------------------
   if( ( sdl_image_data = IMG_Load( "../Textures/ground1/height.png" ) ) != NULL )
   {
-    _tex_height_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+    _tex_height_ground1 = _window->_toolbox->CreateTextureFromData( sdl_image_data,
                                                                    GL_R8,
                                                                    GL_RED,
                                                                    true,
@@ -449,11 +381,11 @@ void Scene::SceneDataInitialization()
   }
 
 
-  // Load ground AO texture
+  // Load ground1 AO texture
   // ----------------------
   if( ( sdl_image_data = IMG_Load( "../Textures/ground1/AO.png" ) ) != NULL )
   {
-    _tex_AO_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+    _tex_AO_ground1 = _window->_toolbox->CreateTextureFromData( sdl_image_data,
                                                                GL_R8,
                                                                GL_RED,
                                                                true,
@@ -467,11 +399,11 @@ void Scene::SceneDataInitialization()
   }
 
 
-  // Load ground roughness texture 
+  // Load ground1 roughness texture 
   // -----------------------------
   if( ( sdl_image_data = IMG_Load( "../Textures/ground1/roughness.png" ) ) != NULL )
   {
-    _tex_roughness_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+    _tex_roughness_ground1 = _window->_toolbox->CreateTextureFromData( sdl_image_data,
                                                                       GL_R8,
                                                                       GL_RED,
                                                                       true,
@@ -485,11 +417,11 @@ void Scene::SceneDataInitialization()
   }
 
 
-  // Load ground metalness texture  
+  // Load ground1 metalness texture  
   // -----------------------------
   if( ( sdl_image_data = IMG_Load( "../Textures/ground1/metalness.png" ) ) != NULL )
   {
-    _tex_metalness_ground = _window->_toolbox->CreateTextureFromData( sdl_image_data,
+    _tex_metalness_ground1 = _window->_toolbox->CreateTextureFromData( sdl_image_data,
                                                                       GL_R8,
                                                                       GL_RED,
                                                                       true,
@@ -510,16 +442,10 @@ void Scene::LightsInitialization()
   
   PointLight::SetLightsMultiplier( 30.0 );
 
-  for( int row = 0; row < 1; row++ )
-  {
-    for( int column = 0; column < 1; column++ )
-    {
-      _lights.push_back( PointLight( glm::vec3( -4.0 + ( row * 2.0 ), 5.0, -4.0 + ( column * 2.0 ) ),
-                                     glm::vec3( 1.0, 1.0, 1.0 ),
-                                     2.0,
-                                     3.0 ) );    
-    }
-  }
+  _lights.push_back( PointLight( glm::vec3( 0.0, 1.5, 0.0 ),
+                                 glm::vec3( 1.0, 1.0, 1.0 ),
+                                 0.5,
+                                 3.0 ) );    
 
   for( unsigned int i = 0; i < _lights.size(); i++ )
   {
@@ -530,71 +456,52 @@ void Scene::LightsInitialization()
 void Scene::ObjectsInitialization()
 {
   glm::vec3 position;
+  glm::mat4 model_matrix = glm::mat4(); 
+
+  _ground_size = 8.0;
+  _wall_size   = _ground_size / 3.0;
+  std::cout << "size = " << _wall_size << std::endl;
 
 
-  // _tables object initialization
-  // -----------------------------
-  for( int i = 0; i < 1; i++ )
-  { 
+  // _grounds type 1 object initialization
+  // -------------------------------------
+  for( int i = 0; i < 2; i ++ )
+  {
+    position = glm::vec3( -(_ground_size * 0.5 ) + 0.0, 0.0, -(_ground_size * 0.5 ) + 0.0 );
+    position += glm::vec3( _ground_size * i, i * _wall_size, 0.0 );
 
-    switch( i % 3 )
-    {
-      case 0:
-        position = glm::vec3( -1.5, 2.5, 2.0 - ( i * 0.25 ) );
-        break;
-      
-      case 1:
-        position = glm::vec3( 0.0, 2.5, 2.0 - ( i * 0.25 ) );
-        break;
+    model_matrix = glm::mat4();
+    model_matrix = glm::translate( model_matrix, position );
+    model_matrix = glm::rotate( model_matrix, ( float )_PI * ( float )i, glm::vec3( 0.0, 0.0 , 1.0 ) );
+    model_matrix = glm::scale( model_matrix, glm::vec3( _ground_size, 1.0, _ground_size ) ); 
 
-      case 2:
-        position = glm::vec3( 1.5, 2.5, 2.0 - ( i * 0.25 ) );
-        break;
-    }
+    Object temp_object( 1,              // ID
+                        model_matrix,   // model matrix
+                        position,       // position
+                        _PI_2,          // angle
+                        glm::vec3( _ground_size, 1.0, _ground_size ),   // scale
+                        glm::vec2( 6.0, 6.0 ),                          // uv scale
+                        1.0,            // alpha
+                        false,          // generate shadow
+                        false,          // receiv shadow
+                        0.75,           // shadow darkness
+                        true,           // bloom
+                        0.75,           // bloom bright value
+                        false,          // opacity map
+                        true,           // normal map
+                        true,           // height map
+                        0.12,           // displacement factor
+                        0.25 );         // tessellation factor
 
-    _tables.push_back( Object( 0,         // ID
-                               position,
-                               0.0,       // angle
-                               glm::vec3( 0.01, 0.01, 0.01 ),  // scale
-                               glm::vec2( 1.0, 1.0 ),          // uv scale 
-                               1.0,       // alpha
-                               false,     // generate shadow
-                               false,     // receiv shadow
-                               0.75,      // shadow darkness
-                               false,     // bloom
-                               0.7,       // bloom bright value
-                               false,     // opacity map
-                               true,      // normal map
-                               true,     // height map
-                               0.02,       // displacement factor
-                               0.07 ) );  // tessellation factor
+    _grounds_type1.push_back( temp_object );
   }
-
-
-  // _ground1 object initialization
-  // ------------------------------
-  _ground1 = new Object( 1, // ID
-                         glm::vec3( -5.0, 0.0, -5.0 ),
-                         _PI_2,
-                         glm::vec3( 10.0, 1.0, 10.0 ),
-                         glm::vec2( 3.0, 3.0 ),
-                         1.0,
-                         false,
-                         false,
-                         0.75,
-                         false,
-                         0.999,
-                         false,
-                         true,
-                         true,
-                         0.23,
-                         1.0 );
 
 
   // _ink_bottle object initialization
   // ---------------------------------
-  _ink_bottle = new Object( 2, // ID
-                            glm::vec3( 0.0, 0.6, 0.0 ),
+  /*_ink_bottle = new Object( 2, // ID
+                            model_matrix,
+                            glm::vec3( 1.0, 0.6, 1.0 ),
                             0.0,
                             glm::vec3( 0.03, 0.03, 0.03 ),
                             glm::vec2( 1.0, 1.0 ),
@@ -614,6 +521,7 @@ void Scene::ObjectsInitialization()
   // _collection_car object initialization
   // -------------------------------------
   _collection_car = new Object( 3, // ID
+                                model_matrix,
                                 glm::vec3( 2.0, 0.1, 0.0 ),
                                 _PI_2,
                                 glm::vec3( 0.001, 0.001, 0.001 ),
@@ -628,8 +536,78 @@ void Scene::ObjectsInitialization()
                                 false,
                                 false,
                                 0.0,
-                                0.0 );
+                                0.0 );*/
 
+
+  // _walls type 1 object initialization
+  // -----------------------------------
+  for( int i = 0; i < 12; i ++ )
+  {
+    if( i >= 0 && i < 3 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += glm::vec3( 0.0, _wall_size, 0.0 );
+      position -= glm::vec3( _wall_size - ( _wall_size * i ), 0.0, _wall_size );
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 1.0, 0.0 , 0.0 ) );
+      model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
+    }
+
+    if( i > 2 && i < 6 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += glm::vec3( _wall_size - ( _wall_size * ( i - 3 ) ), 0.0, _wall_size * 2.0 );
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( -1.0, 0.0 , 0.0 ) );
+      model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
+    }
+
+    if( i > 5 && i < 9 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += glm::vec3( _wall_size * 2.0, 0.0, _wall_size - ( _wall_size * ( i - 6 ) ) );
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0 , 1.0 ) );
+      model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
+    }
+
+    if( i > 8 && i < 12 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += glm::vec3( -_wall_size, _wall_size, _wall_size - ( _wall_size * ( i - 9 ) ) );
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0 , -1.0 ) );
+      model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
+    }
+
+    Object temp_object( 4, // ID
+                        model_matrix,
+                        position,
+                        _PI_2,
+                        glm::vec3( _wall_size, 1.0, _wall_size ),
+                        glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
+                        1.0,
+                        false,
+                        false,
+                        0.75,
+                        true,
+                        0.75,
+                        false,
+                        true,
+                        true,
+                        0.12,
+                        0.25 / 3.0 );
+
+    _walls_type1.push_back( temp_object );
+  }
 }
 
 void Scene::IBLInitialization()
@@ -956,11 +934,11 @@ void Scene::ModelsLoading()
   Model::SetToolbox( _window->_toolbox );
 
   // Table model loading
-  _table_model = new Model( "../Models/cube/rounded_cube.fbx", 
+  _table_model = new Model( "../Models/cube/cube.fbx", 
                             0, 
                             "Table1",
-                            _tables[ 0 ]._normal_map,
-                            _tables[ 0 ]._height_map );
+                            true,
+                            false );
   _table_model->PrintInfos();
 
   // Volume sphere model loading
@@ -975,8 +953,8 @@ void Scene::ModelsLoading()
   _ink_bottle_model = new Model( "../Models/ink_bottle/ink_bottle.FBX", 
                                  2, 
                                  "InkBottle",
-                                 _ink_bottle->_normal_map,
-                                 _ink_bottle->_height_map );
+                                 _ink_bottle._normal_map,
+                                 _ink_bottle._height_map );
   _ink_bottle_model->PrintInfos();
 
   // Collection car model loading
@@ -1140,90 +1118,159 @@ void Scene::SceneForwardRendering()
   //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
 
-  // Draw ground1
-  // ------------
-  ( _ground1->_height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
-
-  current_shader->Use();
-
-  model_matrix = glm::mat4();
-  model_matrix = glm::translate( model_matrix, _ground1->_position );
-  model_matrix = glm::scale( model_matrix, _ground1->_scale ); 
-
-  // Textures binding
-  glActiveTexture( GL_TEXTURE0 );
-  glBindTexture( GL_TEXTURE_2D, _tex_albedo_ground );  
-  glActiveTexture( GL_TEXTURE1 );
-  glBindTexture( GL_TEXTURE_2D, _tex_normal_ground ); 
-  glActiveTexture( GL_TEXTURE2 );
-  glBindTexture( GL_TEXTURE_2D, _tex_height_ground ); 
-  glActiveTexture( GL_TEXTURE3 );
-  glBindTexture( GL_TEXTURE_2D, _tex_AO_ground ); 
-  glActiveTexture( GL_TEXTURE4 );
-  glBindTexture( GL_TEXTURE_2D, _tex_roughness_ground ); 
-  glActiveTexture( GL_TEXTURE5 );
-  glBindTexture( GL_TEXTURE_2D, _tex_metalness_ground ); 
-  glActiveTexture( GL_TEXTURE7 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
-  glActiveTexture( GL_TEXTURE8 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); 
-  glActiveTexture( GL_TEXTURE9 );
-  glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture );
-
-  // Matrices uniforms
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
-
-  glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPosition" ), 1, &_camera->_position[ 0 ] );
-
-  // Point lights uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
-  for( int i = 0; i < _lights.size(); i++ )
+  // Draw grounds type 1
+  // -------------------
+  for( int ground_it = 0; ground_it < _grounds_type1.size(); ground_it ++ )
   {
-    string temp = to_string( i );
-    glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
-    glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
-    glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    ( _grounds_type1[ ground_it ]._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
+
+    current_shader->Use();
+
+    model_matrix = _grounds_type1[ ground_it ]._model_matrix; 
+   
+    // Textures binding
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, _tex_albedo_ground1 );  
+    glActiveTexture( GL_TEXTURE1 );
+    glBindTexture( GL_TEXTURE_2D, _tex_normal_ground1 ); 
+    glActiveTexture( GL_TEXTURE2 );
+    glBindTexture( GL_TEXTURE_2D, _tex_height_ground1 ); 
+    glActiveTexture( GL_TEXTURE3 );
+    glBindTexture( GL_TEXTURE_2D, _tex_AO_ground1 ); 
+    glActiveTexture( GL_TEXTURE4 );
+    glBindTexture( GL_TEXTURE_2D, _tex_roughness_ground1 ); 
+    glActiveTexture( GL_TEXTURE5 );
+    glBindTexture( GL_TEXTURE_2D, _tex_metalness_ground1 ); 
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture );
+
+    // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+
+    glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPosition" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _grounds_type1[ ground_it ]._bloom );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _grounds_type1[ ground_it ]._bloom_brightness );
+
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _grounds_type1[ ground_it ]._alpha );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _grounds_type1[ ground_it ]._opacity_map );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uDisplacementFactor" ), -_grounds_type1[ ground_it ]._displacement_factor );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uTessellationFactor" ), _grounds_type1[ ground_it ]._tessellation_factor );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _grounds_type1[ ground_it ]._normal_map );
+
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _grounds_type1[ ground_it ]._id );  
+
+    glBindVertexArray( _ground1_VAO );
+    ( _grounds_type1[ ground_it ]._height_map == true ) ? glDrawElements( GL_PATCHES, _ground1_indices.size(), GL_UNSIGNED_INT, 0 ) : glDrawElements( GL_TRIANGLES, _ground1_indices.size(), GL_UNSIGNED_INT, 0 );
+    glBindVertexArray( 0 );
+    glUseProgram( 0 );
   }
 
-  // Bloom uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _ground1->_bloom );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _ground1->_bloom_brightness );
 
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+  // Draw walls type 1
+  // -----------------
+  for( unsigned int wall_it = 0; wall_it < _walls_type1.size(); wall_it++ )
+  {
+    ( _walls_type1[ wall_it ]._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
 
-  // Opacity uniforms
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _ground1->_alpha );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _ground1->_opacity_map );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
+    current_shader->Use();
+
+    model_matrix = _walls_type1[ wall_it ]._model_matrix;
+
+    // Textures binding
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, _tex_albedo_ground1 );  
+    glActiveTexture( GL_TEXTURE1 );
+    glBindTexture( GL_TEXTURE_2D, _tex_normal_ground1 ); 
+    glActiveTexture( GL_TEXTURE2 );
+    glBindTexture( GL_TEXTURE_2D, _tex_height_ground1 ); 
+    glActiveTexture( GL_TEXTURE3 );
+    glBindTexture( GL_TEXTURE_2D, _tex_AO_ground1 ); 
+    glActiveTexture( GL_TEXTURE4 );
+    glBindTexture( GL_TEXTURE_2D, _tex_roughness_ground1 ); 
+    glActiveTexture( GL_TEXTURE5 );
+    glBindTexture( GL_TEXTURE_2D, _tex_metalness_ground1 ); 
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture );
+
+    // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+
+    glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPosition" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _walls_type1[ wall_it ]._bloom );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _walls_type1[ wall_it ]._bloom_brightness );
+
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _walls_type1[ wall_it ]._alpha );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _walls_type1[ wall_it ]._opacity_map );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uDisplacementFactor" ), -_walls_type1[ wall_it ]._displacement_factor );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uTessellationFactor" ), _walls_type1[ wall_it ]._tessellation_factor );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _walls_type1[ wall_it ]._normal_map );
+
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _walls_type1[ wall_it ]._id );  
+
+    glBindVertexArray( _wall1_VAO );
+    ( _walls_type1[ wall_it ]._height_map == true ) ? glDrawElements( GL_PATCHES, _wall1_indices.size(), GL_UNSIGNED_INT, 0 ) : glDrawElements( GL_TRIANGLES, _wall1_indices.size(), GL_UNSIGNED_INT, 0 );
+    glBindVertexArray( 0 );
+    glUseProgram( 0 );
+  }
   
-  // Displacement mapping uniforms
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uDisplacementFactor" ), -_ground1->_displacement_factor );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uTessellationFactor" ), _ground1->_tessellation_factor );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _ground1->_normal_map );
-
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _ground1->_id );    
-
-  glBindVertexArray( _ground_VAO );
-  ( _ground1->_height_map == true ) ? glDrawElements( GL_PATCHES, _ground_indices.size(), GL_UNSIGNED_INT, 0 ) : glDrawElements( GL_TRIANGLES, _ground_indices.size(), GL_UNSIGNED_INT, 0 );
-  glBindVertexArray( 0 );
-  glUseProgram( 0 );
-  
-
-  //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
 
   // Enable cull face
   glEnable( GL_CULL_FACE );
   glCullFace( GL_BACK );
 
-  //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-
 
   // Draw tables
   // -----------
- ( _tables[ 0 ]._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
+  /*( _tables[ 0 ]._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
 
   current_shader->Use();
 
@@ -1278,9 +1325,8 @@ void Scene::SceneForwardRendering()
 
     _table_model->Draw( *current_shader, model_matrix );
   } 
-  glUseProgram( 0 );
+  glUseProgram( 0 );*/
 
-  glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
   // Disable cull face
   glDisable( GL_CULL_FACE );
@@ -1291,8 +1337,8 @@ void Scene::SceneForwardRendering()
   _forward_pbr_shader.Use();
 
   model_matrix = glm::mat4();
-  model_matrix = glm::translate( model_matrix, _ink_bottle->_position );
-  model_matrix = glm::scale( model_matrix, _ink_bottle->_scale ); 
+  model_matrix = glm::translate( model_matrix, _ink_bottle._position );
+  model_matrix = glm::scale( model_matrix, _ink_bottle._scale ); 
 
   glActiveTexture( GL_TEXTURE7 );
   glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
@@ -1315,15 +1361,15 @@ void Scene::SceneForwardRendering()
     glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
   }
 
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _ink_bottle->_bloom );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _ink_bottle->_bloom_brightness );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _ink_bottle._bloom );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _ink_bottle._bloom_brightness );
 
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
   glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPosition" ), 1, &_camera->_position[ 0 ] );
 
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _ink_bottle->_alpha );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ink_bottle->_id );    
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _ink_bottle._alpha );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ink_bottle._id );    
 
   _ink_bottle_model->Draw( _forward_pbr_shader, model_matrix );
 
@@ -1443,54 +1489,30 @@ void Scene::DeferredGeometryPass( glm::mat4 * iProjectionMatrix,
   _geometry_pass_shader.Use();
 
   model_matrix = glm::mat4();
-  model_matrix = glm::translate( model_matrix, _ground1->_position );
-  model_matrix = glm::rotate( model_matrix, _ground1->_angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
-  model_matrix = glm::scale( model_matrix, _ground1->_scale ); 
+  model_matrix = glm::translate( model_matrix, _grounds_type1[ 0 ]._position );
+  model_matrix = glm::rotate( model_matrix, _grounds_type1[ 0 ]._angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
+  model_matrix = glm::scale( model_matrix, _grounds_type1[ 0 ]._scale ); 
 
   glActiveTexture( GL_TEXTURE0 );
-  glBindTexture( GL_TEXTURE_2D, _tex_albedo_ground );  
+  glBindTexture( GL_TEXTURE_2D, _tex_albedo_ground1 );  
   glActiveTexture( GL_TEXTURE1 );
-  glBindTexture( GL_TEXTURE_2D, _tex_normal_ground ); 
+  glBindTexture( GL_TEXTURE_2D, _tex_normal_ground1 ); 
   glActiveTexture( GL_TEXTURE3 );
-  glBindTexture( GL_TEXTURE_2D, _tex_AO_ground ); 
+  glBindTexture( GL_TEXTURE_2D, _tex_AO_ground1 ); 
   glActiveTexture( GL_TEXTURE4 );
-  glBindTexture( GL_TEXTURE_2D, _tex_roughness_ground ); 
+  glBindTexture( GL_TEXTURE_2D, _tex_roughness_ground1 ); 
   glActiveTexture( GL_TEXTURE5 );
-  glBindTexture( GL_TEXTURE_2D, _tex_metalness_ground ); 
+  glBindTexture( GL_TEXTURE_2D, _tex_metalness_ground1 ); 
 
   glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( *iViewMatrix ) );
   glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
   glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( *iProjectionMatrix ) );
 
-  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uBloom" ), _ground1->_bloom );
-  glUniform1f( glGetUniformLocation( _geometry_pass_shader._program, "uBloomBrightness" ), _ground1->_bloom_brightness );
+  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uBloom" ), _grounds_type1[ 0 ]._bloom );
+  glUniform1f( glGetUniformLocation( _geometry_pass_shader._program, "uBloomBrightness" ), _grounds_type1[ 0 ]._bloom_brightness );
 
-  glBindVertexArray( _ground_VAO );
+  glBindVertexArray( _ground1_VAO );
   glDrawArrays( GL_TRIANGLES, 0, 6 );
-  glBindVertexArray( 0 );
-  glUseProgram( 0 );
-
-
-  // Draw tables
-  // -----------
-  _geometry_pass_shader.Use();
-
-  for( int i = 0; i < _tables.size(); i++ )
-  {
-    model_matrix = glm::mat4();
-    model_matrix = glm::translate( model_matrix, _tables[ i ]._position );
-    model_matrix = glm::rotate( model_matrix, _tables[ i ]._angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
-    model_matrix = glm::scale( model_matrix, _tables[ i ]._scale ); 
-
-    glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( *iViewMatrix ) );
-    glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-    glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( *iProjectionMatrix ) );
-
-    glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uBloom" ), _tables[ i ]._bloom );
-    glUniform1f( glGetUniformLocation( _geometry_pass_shader._program, "uBloomBrightness" ), _tables[ i ]._bloom_brightness );
-
-    _table_model->Draw( _geometry_pass_shader, model_matrix );
-  } 
   glBindVertexArray( 0 );
   glUseProgram( 0 );
 

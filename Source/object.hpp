@@ -16,8 +16,10 @@ class Object
 
     // Object functions
     // ----------------
+    Object();
 
     Object( int       iID,
+            glm::mat4 iModelMatrix,
             glm::vec3 iPosition,
             float     iAngle,
             glm::vec3 iScale,
@@ -34,11 +36,14 @@ class Object
             float     iDisplacementFactor,
             float     iTessellationFactor );
 
+    void Set( Object iSourceObject );
+
 
     // Object class members
     // -------------------
     
     float     _id;
+    glm::mat4 _model_matrix;
     glm::vec3 _position;
     float     _angle;
     glm::vec3 _scale;

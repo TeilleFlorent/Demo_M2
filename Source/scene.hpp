@@ -90,14 +90,19 @@ class Scene
     Shader _empty_shader;
 
     // VAOs
-    unsigned int _ground_VAO;
+    unsigned int _ground1_VAO;
+    unsigned int _wall1_VAO;
 
     // VBOs
-    unsigned int _ground_VBO;
+    unsigned int _ground1_VBO;
+    unsigned int _wall1_VBO;
 
     // IBOs
-    unsigned int _ground_IBO;
-    std::vector< unsigned int > _ground_indices;
+    unsigned int _ground1_IBO;
+    std::vector< unsigned int > _ground1_indices;
+    unsigned int _wall1_IBO;
+    std::vector< unsigned int > _wall1_indices;
+    
     // Textures
     int _current_env;
     std::vector< unsigned int > _hdr_textures;
@@ -106,12 +111,12 @@ class Scene
     std::vector< unsigned int > _pre_filter_cubeMaps;
     unsigned int _pre_brdf_texture;
   
-    unsigned int _tex_albedo_ground;
-    unsigned int _tex_normal_ground;
-    unsigned int _tex_height_ground;
-    unsigned int _tex_AO_ground;
-    unsigned int _tex_roughness_ground;
-    unsigned int _tex_metalness_ground;
+    unsigned int _tex_albedo_ground1;
+    unsigned int _tex_normal_ground1;
+    unsigned int _tex_height_ground1;
+    unsigned int _tex_AO_ground1;
+    unsigned int _tex_roughness_ground1;
+    unsigned int _tex_metalness_ground1;
 
     std::vector< const GLchar * > _faces; // skybox textures path
 
@@ -161,13 +166,16 @@ class Scene
     bool _render_lights_volume;
 
     // Scene's objects
-    std::vector< Object > _tables;
-    Object *              _ground1;
-    Object *              _ink_bottle;
-    Object *              _collection_car;
+    std::vector< Object > _grounds_type1;
+    Object                _ink_bottle;
+    Object                _collection_car;
+    std::vector< Object > _walls_type1;
+    float                 _ground_size;
+    float                 _wall_size;
 
     // Models
     Model * _table_model;
+    Model * _table2_model;
     Model * _sphere_model;
     Model * _ink_bottle_model;
     Model * _collection_car_model;

@@ -525,3 +525,96 @@ glm::mat4 Toolbox::AssimpMatrixToGlmMatrix( const aiMatrix4x4 * iAssimpMatrix )
 
   return result_matrix;
 }
+
+void Toolbox::CreatePlaneVAO( unsigned int *                iVAO,
+                              unsigned int *                iVBO,
+                              unsigned int *                iIBO,
+                              std::vector< unsigned int > * iIndices,
+                              unsigned int                  iSideVerticeCount,
+                              float                         iUvScale )
+{
+  unsigned int width_count  = iSideVerticeCount;
+  unsigned int height_count = iSideVerticeCount;
+  float width_size          = 1.0;
+  float height_size         = 1.0;
+  std::vector< float > plane_vertices;
+
+  // Create plane vertices
+  for( unsigned int width_it = 0; width_it < width_count; width_it ++ )
+  {
+    for( unsigned int height_it = 0; height_it < height_count; height_it ++ )
+    { 
+      // position
+      float pos_x = ( ( float )width_it / ( float )( width_count - 1 ) ) * width_size;
+      float pos_y = 0.0;         
+      float pos_z = ( ( float )height_it / ( float )( height_count - 1 ) ) * height_size;
+      plane_vertices.push_back( pos_x );
+      plane_vertices.push_back( pos_y );
+      plane_vertices.push_back( pos_z );
+
+      // normal
+      plane_vertices.push_back( 0.0f );
+      plane_vertices.push_back( -1.0f );
+      plane_vertices.push_back( 0.0f );    
+
+      // uv    
+      float u = ( float )width_it / ( float )( width_count - 1 );
+      float v = ( float )height_it / ( float )( height_count - 1 );
+      plane_vertices.push_back( u * iUvScale );
+      plane_vertices.push_back( v * iUvScale );
+
+      // tangent
+      plane_vertices.push_back( -1.0 );
+      plane_vertices.push_back( 0.0 );
+      plane_vertices.push_back( 0.0 );
+
+      // bitangent
+      plane_vertices.push_back( 0.0 );
+      plane_vertices.push_back( 0.0 );
+      plane_vertices.push_back( -1.0 );
+    } 
+  }
+
+  // Create plane indices
+  for( unsigned int width_it = 0; width_it < width_count - 1; width_it ++ )
+  {
+    for( unsigned int height_it = 0; height_it < height_count - 1; height_it ++ )
+    { 
+      // Get base vertex index
+      unsigned int vertex_index = height_it * width_count + width_it;
+      
+      // Gen two triangles indices
+      iIndices->push_back( vertex_index );       
+      iIndices->push_back( vertex_index + width_count );
+      iIndices->push_back( vertex_index + width_count + 1 );
+      iIndices->push_back( vertex_index );
+      iIndices->push_back( vertex_index + width_count + 1 );
+      iIndices->push_back( vertex_index + 1 );     
+    }   
+  }
+
+  // Setup plane VAO & IBO
+  glGenVertexArrays( 1, iVAO );
+  glBindVertexArray( *iVAO );
+
+  glGenBuffers( 1, iVBO );
+  glBindBuffer( GL_ARRAY_BUFFER, *iVBO );
+  glBufferData( GL_ARRAY_BUFFER, plane_vertices.size() * sizeof( GLfloat ), plane_vertices.data(), GL_STATIC_DRAW );
+
+  glGenBuffers( 1, iIBO );
+  glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, *iIBO );
+  glBufferData( GL_ELEMENT_ARRAY_BUFFER, iIndices->size() * sizeof( unsigned int ), iIndices->data(), GL_STATIC_DRAW );
+
+  glEnableVertexAttribArray( 0 );
+  glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )0 );
+  glEnableVertexAttribArray( 1 );
+  glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )( 3 * sizeof( GLfloat ) ) );
+  glEnableVertexAttribArray( 2 );
+  glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )( 6 * sizeof( GLfloat ) ) );
+  glEnableVertexAttribArray( 3 );
+  glVertexAttribPointer( 3, 3, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )( 8 * sizeof( GLfloat ) ) );
+  glEnableVertexAttribArray( 4 );
+  glVertexAttribPointer( 4, 3, GL_FLOAT, GL_FALSE, 14 * sizeof( GLfloat ), ( GLvoid* )( 11 * sizeof( GLfloat ) ) );
+
+  glBindVertexArray( 0 );
+}

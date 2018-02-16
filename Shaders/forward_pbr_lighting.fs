@@ -337,7 +337,7 @@ vec3 PBRLightingCalculation( vec3 iNormal,
 
   // Return fragment final PBR lighting 
   // ----------------------------------
-  return IBL_ambient_reflectance + point_lights_reflectance;
+  return /*IBL_ambient_reflectance +*/ point_lights_reflectance;
 }
 
 

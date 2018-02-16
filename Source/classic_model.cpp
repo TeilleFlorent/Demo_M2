@@ -318,7 +318,8 @@ Mesh Model::ProcessMesh( aiMesh * 	 iMesh,
     }
 
     if( _model_id == 2
-     || _model_id == 3 )
+     || _model_id == 3
+     || _model_id == 0 )
     { 
       // Assimp tangent
       vector.x = iMesh->mTangents[ i ].x;
@@ -346,7 +347,7 @@ Mesh Model::ProcessMesh( aiMesh * 	 iMesh,
 
   // Manually calculate vertex tangent & bi tangent
   // ----------------------------------------------
-  if( _model_id == 0 )
+  if( false )
   {
     for( unsigned int i = 0; i < vertices.size(); i += 3 )
     { 

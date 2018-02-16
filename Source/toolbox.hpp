@@ -108,6 +108,13 @@ class Toolbox
 
     glm::mat4 AssimpMatrixToGlmMatrix( const aiMatrix4x4 * iAssimpMatrix );
 
+    void CreatePlaneVAO( unsigned int *                iVAO,
+                         unsigned int *                iVBO,
+                         unsigned int *                iIBO,
+                         std::vector< unsigned int > * iIndices,
+                         unsigned int                  iSideVerticeCount,
+                         float                         iUvScale );
+
 
     // Toolbox class members
     // ---------------------

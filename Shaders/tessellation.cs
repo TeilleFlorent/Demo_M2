@@ -66,12 +66,12 @@ float GetTessellationLevel( float iDistance0,
 
 	if( average_distance <= 2.0 )
 	{                                                                   
-		level = 200.0 * uTessellationFactor;                                                                            
+		level = 175.0 * uTessellationFactor;                                                                            
 	}                                                                                           
 	else
 	if( average_distance <= 4.0 )
 	{                                                              
-		level = 50.0 * uTessellationFactor;                                                                             
+		level = 80.0 * uTessellationFactor;                                                                             
 	}
 	else
 	if( average_distance <= 6.0 )

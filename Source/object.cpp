@@ -5,7 +5,12 @@
 //**********  Class Object  *****************************************************
 //******************************************************************************
 
+Object::Object()
+{
+}
+
 Object::Object( int       iID,
+                glm::mat4 iModelMatrix,
                 glm::vec3 iPosition,
                 float     iAngle,
                 glm::vec3 iScale,
@@ -23,6 +28,7 @@ Object::Object( int       iID,
                 float     iTessellationFactor )
 {
   _id                  = iID;
+  _model_matrix        = iModelMatrix;
   _position            = iPosition;
   _angle               = iAngle;
   _scale               = iScale;
@@ -39,4 +45,26 @@ Object::Object( int       iID,
   _displacement_factor = iDisplacementFactor;
   _tessellation_factor = iTessellationFactor;
 }
+
+void Object::Set( Object iSourceObject )
+{
+  _id                  = iSourceObject._id; 
+  _model_matrix        = iSourceObject._model_matrix;                 
+  _position            = iSourceObject._position;           
+  _angle               = iSourceObject._angle;               
+  _scale               = iSourceObject._scale;               
+  _uv_scale            = iSourceObject._uv_scale;            
+  _alpha               = iSourceObject._alpha;               
+  _generate_shadow     = iSourceObject._generate_shadow;     
+  _receiv_shadow       = iSourceObject._receiv_shadow;      
+  _shadow_darkness     = iSourceObject._shadow_darkness;     
+  _bloom               = iSourceObject._bloom;               
+  _bloom_brightness    = iSourceObject._bloom_brightness;    
+  _opacity_map         = iSourceObject._opacity_map;         
+  _normal_map          = iSourceObject._normal_map;          
+  _height_map          = iSourceObject._height_map;          
+  _displacement_factor = iSourceObject._displacement_factor; 
+  _tessellation_factor = iSourceObject._tessellation_factor; 
+}
+
 

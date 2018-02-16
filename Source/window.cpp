@@ -180,13 +180,13 @@ void Window::ManageEvents( Camera * iCamera )
             break;
 
           case 'a' :
-            _scene->_tables[ 0 ]._displacement_factor += 0.005;
-            std::cout << "factor = " << _scene->_tables[ 0 ]._displacement_factor << std::endl;
+            _scene->_grounds_type1[ 0 ]._displacement_factor += 0.005;
+            std::cout << "factor = " << _scene->_grounds_type1[ 0 ]._displacement_factor << std::endl;
             break;
 
           case 'e' :
-            _scene->_tables[ 0 ]._displacement_factor -= 0.005;
-            std::cout << "factor = " << _scene->_tables[ 0 ]._displacement_factor << std::endl;
+            _scene->_grounds_type1[ 0 ]._displacement_factor -= 0.005;
+            std::cout << "factor = " << _scene->_grounds_type1[ 0 ]._displacement_factor << std::endl;
             break;
 
           case 'r' :
