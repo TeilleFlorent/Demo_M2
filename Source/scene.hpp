@@ -50,6 +50,8 @@ class Scene
 
     void DeferredBuffersInitialization();
 
+    void SceneDepthPass();
+
     void SceneForwardRendering();
 
     void DeferredGeometryPass( glm::mat4 * iProjectionMatrix,
@@ -71,6 +73,12 @@ class Scene
     // Pipeline Type 
     int _pipeline_type;
 
+    // near far
+    float _near;
+    float _far;
+    float _shadow_near;
+    float _shadow_far;
+
     // Shaders
     Shader _forward_pbr_shader;
     Shader _forward_displacement_pbr_shader;
@@ -84,6 +92,7 @@ class Scene
     Shader _diffuse_irradiance_shader;
     Shader _specular_pre_filter_shader;
     Shader _specular_pre_brdf_shader;
+    Shader _point_shadow_depth_shader;
 
     Shader _geometry_pass_shader;
     Shader _lighting_pass_shader;
@@ -98,9 +107,9 @@ class Scene
     unsigned int _wall1_VBO;
 
     // IBOs
-    unsigned int _ground1_IBO;
+    unsigned int                _ground1_IBO;
     std::vector< unsigned int > _ground1_indices;
-    unsigned int _wall1_IBO;
+    unsigned int                _wall1_IBO;
     std::vector< unsigned int > _wall1_indices;
     
     // Textures
@@ -117,8 +126,6 @@ class Scene
     unsigned int _tex_AO_ground1;
     unsigned int _tex_roughness_ground1;
     unsigned int _tex_metalness_ground1;
-
-    std::vector< const GLchar * > _faces; // skybox textures path
 
     // Deferred rendering data
     unsigned int _g_buffer_FBO;
@@ -151,6 +158,9 @@ class Scene
     // Tessellation parameters
     int _tess_max_patch_vertices;
     int _tess_patch_vertices_count;
+
+    // Omnidirectional shadow mapping parameters
+    unsigned int _depth_cubemap_res;
 
     // Pointer on the scene window
     Window * _window;

@@ -279,20 +279,20 @@ void Window::Draw()
   // Frame drawing
   // ------------- 
   
+  // Perform scene depth pass from point light perspective
+  _scene->SceneDepthPass();
+
   // Render scene
-  glViewport( 0, 0, _width, _height );
   _scene->_pipeline_type == FORWARD_RENDERING ? _scene->SceneForwardRendering() : _scene->SceneDeferredRendering();  
 
   // Blur calculation on bloom's bright texture
   if( _scene->_bloom )
   {
-    glViewport( 0, 0, _width * _scene->_blur_downsample, _height * _scene->_blur_downsample );
     _scene->BlurProcess();
   }  
 
   //_toolbox->RenderObserver();
 
   // Post process calculations => final render
-  glViewport( 0, 0, _width, _height );
   _scene->PostProcess();
 }

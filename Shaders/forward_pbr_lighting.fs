@@ -297,8 +297,8 @@ vec3 PBRLightingCalculation( vec3 iNormal,
   // Get material inputs data
   Material material;
   
-  material._albedo    = pow( texture( uTextureAlbedo1, iUV ).rgb, vec3( 2.2 ) );
-  //material._albedo    = pow( vec3( 1.0 ), vec3( 2.2 ) );
+  //material._albedo    = pow( texture( uTextureAlbedo1, iUV ).rgb, vec3( 2.2 ) );
+  material._albedo    = pow( vec3( 1.0 ), vec3( 2.2 ) );
   material._metalness = texture( uTextureMetalness1, iUV ).r;
   material._roughness = texture( uTextureRoughness1, iUV ).r;
   material._ao        = texture( uTextureAO1, iUV ).r;

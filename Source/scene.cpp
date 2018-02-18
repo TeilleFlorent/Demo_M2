@@ -15,6 +15,12 @@ Scene::Scene( Window * iParentWindow )
   // Scene effects settings
   // ----------------------
   
+  // near far
+  _near = 0.01;
+  _far  = 100.0;
+  _shadow_near = 1.0;
+  _shadow_far  = 25.0;
+
   // Frame exposure
   _exposure           = 1.0;
 
@@ -45,6 +51,9 @@ Scene::Scene( Window * iParentWindow )
   // Init tessellation parameters
   _tess_patch_vertices_count = 3;
 
+  // Init omnidirectional shadow mapping parameters
+  _depth_cubemap_res = 1024;
+
   // Lights volume
   _render_lights_volume = false;
 
@@ -72,8 +81,8 @@ Scene::Scene( Window * iParentWindow )
                         glm::vec3( 0.0f, 1.0f,  0.0f ),
                         37.44,
                         -24.0,
-                        0.01,
-                        100.0,
+                        _near,
+                        _far,
                         45.0f,
                         ( float )_window->_width,
                         ( float )_window->_height,
@@ -199,17 +208,9 @@ void Scene::SceneDataInitialization()
     0.0f, 1.0f, 1.0f, 1.0f     
   };
 
-  // Skybox texture
-  _faces.push_back( "../Skybox/s1/front.png" );
-  _faces.push_back( "../Skybox/s1/back.png" );
-  _faces.push_back( "../Skybox/s1/top.png" );
-  _faces.push_back( "../Skybox/s1/bottom.png" );
-  _faces.push_back( "../Skybox/s1/right.png" );
-  _faces.push_back( "../Skybox/s1/left.png" );
 
-
-  // Create ground VAO
-  // -----------------
+  // Create ground type 1 VAO
+  // ------------------------
   _window->_toolbox->CreatePlaneVAO( &_ground1_VAO,
                                      &_ground1_VBO,
                                      &_ground1_IBO,
@@ -218,8 +219,8 @@ void Scene::SceneDataInitialization()
                                      _grounds_type1[ 0 ]._uv_scale.x );
 
 
-  // Create wall VAO
-  // ---------------
+  // Create wall type 1 VAO
+  // ----------------------
   _window->_toolbox->CreatePlaneVAO( &_wall1_VAO,
                                      &_wall1_VBO,
                                      &_wall1_IBO,
@@ -326,7 +327,39 @@ void Scene::SceneDataInitialization()
   }
   glBindFramebuffer( GL_FRAMEBUFFER, 0 );
   glBindTexture( GL_TEXTURE_2D, 0 );
-    
+
+
+  // Create depth cube map texture & FBO
+  // -----------------------------------
+  glGenFramebuffers( 1, &_window->_toolbox->_depth_map_FBO );
+  glGenTextures( 1, &_window->_toolbox->_depth_cubemap );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+  for( unsigned int i = 0; i < 6; i++ )
+  {
+    glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                  0,
+                  GL_DEPTH_COMPONENT,
+                  _depth_cubemap_res,
+                  _depth_cubemap_res,
+                  0,
+                  GL_DEPTH_COMPONENT,
+                  GL_FLOAT,
+                  NULL);
+  }
+  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+  glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE );
+  
+  // attach depth texture as FBO's depth buffer
+  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_depth_map_FBO );
+  glFramebufferTexture( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, _window->_toolbox->_depth_cubemap, 0 );
+  glDrawBuffer( GL_NONE );
+  glReadBuffer( GL_NONE );
+  glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+  glBindTexture( GL_TEXTURE_2D, 0 );
+
 
   // Load ground1 albedo texture
   // --------------------------
@@ -485,11 +518,11 @@ void Scene::ObjectsInitialization()
                         false,          // generate shadow
                         false,          // receiv shadow
                         0.75,           // shadow darkness
-                        true,           // bloom
-                        0.75,           // bloom bright value
+                        false,          // bloom
+                        0.99,           // bloom bright value
                         false,          // opacity map
-                        true,           // normal map
-                        true,           // height map
+                        false,           // normal map
+                        false,           // height map
                         0.12,           // displacement factor
                         0.25 );         // tessellation factor
 
@@ -499,28 +532,35 @@ void Scene::ObjectsInitialization()
 
   // _ink_bottle object initialization
   // ---------------------------------
-  /*_ink_bottle = new Object( 2, // ID
-                            model_matrix,
-                            glm::vec3( 1.0, 0.6, 1.0 ),
-                            0.0,
-                            glm::vec3( 0.03, 0.03, 0.03 ),
-                            glm::vec2( 1.0, 1.0 ),
-                            1.0,
-                            false,
-                            false,
-                            0.75,
-                            false,
-                            0.999,
-                            true,
-                            true,
-                            false,
-                            0.0,
-                            0.0 );
+  position = glm::vec3( 1.0, 0.6, 1.0 );
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2 * -1.5f, glm::vec3( 0.0, 1.0 , 0.0 ) );
+  model_matrix = glm::scale( model_matrix, glm::vec3( 0.03, 0.03, 0.03 ) );
+
+  _ink_bottle.Set( Object( 2, // ID
+                           model_matrix,
+                           glm::vec3( 1.0, 0.6, 1.0 ),
+                           0.0,
+                           glm::vec3( 0.03, 0.03, 0.03 ),
+                           glm::vec2( 1.0, 1.0 ),
+                           1.0,
+                           false,
+                           false,
+                           0.75,
+                           false,
+                           0.999,
+                           true,
+                           true,
+                           false,
+                           0.0,
+                           0.0 ) );
 
 
   // _collection_car object initialization
   // -------------------------------------
-  _collection_car = new Object( 3, // ID
+  /*_collection_car = new Object( 3, // ID
                                 model_matrix,
                                 glm::vec3( 2.0, 0.1, 0.0 ),
                                 _PI_2,
@@ -598,11 +638,11 @@ void Scene::ObjectsInitialization()
                         false,
                         false,
                         0.75,
-                        true,
-                        0.75,
                         false,
-                        true,
-                        true,
+                        0.99,
+                        false,
+                        false,
+                        false,
                         0.12,
                         0.25 / 3.0 );
 
@@ -855,6 +895,9 @@ void Scene::ShadersInitialization()
                                                                   "../Shaders/tessellation.cs",
                                                                   "../Shaders/tessellation.es",
                                                                   "../Shaders/forward_pbr_lighting.fs" );
+  _point_shadow_depth_shader.SetShaderGeometryPipeline( "../Shaders/point_shadow_depth.vs",
+                                                        "../Shaders/point_shadow_depth.gs",
+                                                        "../Shaders/point_shadow_depth.fs" );
 
   _geometry_pass_shader.SetShaderClassicPipeline(       "../Shaders/deferred_geometry_pass.vs", "../Shaders/deferred_geometry_pass.fs" );
   _lighting_pass_shader.SetShaderClassicPipeline(       "../Shaders/flat_color.vs",             "../Shaders/deferred_lighting_pass.fs" );
@@ -1048,19 +1091,64 @@ void Scene::DeferredBuffersInitialization()
   glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 }
 
+void Scene::SceneDepthPass()
+{
+  glm::mat4 model_matrix;
+
+
+  // Create depth cubemap transformation matrices
+  // --------------------------------------------
+  glm::mat4 shadow_projection_matrix = glm::perspective( glm::radians( 90.0f ), 
+                                                         (float)_depth_cubemap_res / (float)_depth_cubemap_res,
+                                                         _shadow_near,
+                                                         _shadow_far );
+  std::vector< glm::mat4 > shadow_transform_matrices;
+  shadow_transform_matrices.push_back( shadow_projection_matrix * glm::lookAt( _lights[ 0 ]._position, _lights[ 0 ]._position + glm::vec3( 1.0f, 0.0f, 0.0f ), glm::vec3( 0.0f, -1.0f, 0.0f ) ) );
+  shadow_transform_matrices.push_back( shadow_projection_matrix * glm::lookAt( _lights[ 0 ]._position, _lights[ 0 ]._position + glm::vec3( -1.0f, 0.0f, 0.0f ), glm::vec3 (0.0f, -1.0f, 0.0f ) ) );
+  shadow_transform_matrices.push_back( shadow_projection_matrix * glm::lookAt( _lights[ 0 ]._position, _lights[ 0 ]._position + glm::vec3( 0.0f, 1.0f, 0.0f ), glm::vec3( 0.0f, 0.0f, 1.0f ) ) );
+  shadow_transform_matrices.push_back( shadow_projection_matrix * glm::lookAt( _lights[ 0 ]._position, _lights[ 0 ]._position + glm::vec3( 0.0f, -1.0f, 0.0f ), glm::vec3( 0.0f, 0.0f, -1.0f ) ) );
+  shadow_transform_matrices.push_back( shadow_projection_matrix * glm::lookAt( _lights[ 0 ]._position, _lights[ 0 ]._position + glm::vec3( 0.0f, 0.0f, 1.0f ), glm::vec3( 0.0f, -1.0f, 0.0f ) ) );
+  shadow_transform_matrices.push_back( shadow_projection_matrix * glm::lookAt( _lights[ 0 ]._position, _lights[ 0 ]._position + glm::vec3( 0.0f, 0.0f, -1.0f ), glm::vec3( 0.0f, -1.0f, 0.0f ) ) );
+
+
+  // Render scene to depth cubemap
+  // -----------------------------
+  glViewport( 0, 0, _depth_cubemap_res, _depth_cubemap_res );
+  glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_depth_map_FBO );
+  glClear( GL_DEPTH_BUFFER_BIT );
+
+  _point_shadow_depth_shader.Use();   
+  // Send each shadow transform matrix to render into each cube map face
+  for( unsigned int i = 0; i < 6; i++ )
+  {
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, std::string( "uShadowTransformMatrices[" + std::to_string( i ) + "]" ).data() ), 1, GL_FALSE, glm::value_ptr( shadow_transform_matrices[ i ] ) );
+  }
+  glUniform1f( glGetUniformLocation( _point_shadow_depth_shader._program, "uFarValue" ), _shadow_far );
+  glUniform3fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uLightPosition" ), 1, &_lights[ 0 ]._position[ 0 ] );
+
+
+  // Draw ink bottle depth
+  // ---------------------
+  model_matrix = _ink_bottle._model_matrix;
+
+  glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+
+  _ink_bottle_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
+
+
+  glUseProgram( 0 );
+}
+
 void Scene::SceneForwardRendering()
 {
 
   Shader * current_shader;
-
-
-  // Matrices setting
-  // ----------------
   glm::mat4 model_matrix;
 
 
   // Bind correct buffer for drawing
   // -------------------------------
+  glViewport( 0, 0, _window->_width, _window->_height );
   glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_temp_hdr_FBO );
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
@@ -1336,9 +1424,7 @@ void Scene::SceneForwardRendering()
   // ---------------
   _forward_pbr_shader.Use();
 
-  model_matrix = glm::mat4();
-  model_matrix = glm::translate( model_matrix, _ink_bottle._position );
-  model_matrix = glm::scale( model_matrix, _ink_bottle._scale ); 
+  model_matrix = _ink_bottle._model_matrix;
 
   glActiveTexture( GL_TEXTURE7 );
   glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
@@ -1711,6 +1797,8 @@ void Scene::BlurProcess()
   bool first_ite = true;
   int horizontal = 1; 
 
+  // Bind correct FBO
+  glViewport( 0, 0, _window->_width * _blur_downsample, _window->_height * _blur_downsample );
   glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_pingpong_FBO ); 
   _blur_shader.Use();
   
@@ -1758,7 +1846,9 @@ void Scene::BlurProcess()
 }
 
 void Scene::PostProcess()
-{
+{ 
+  // Bind correct FBO
+  glViewport( 0, 0, _window->_width, _window->_height );
   glBindFramebuffer( GL_FRAMEBUFFER, 0 );
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 

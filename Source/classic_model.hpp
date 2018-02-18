@@ -82,7 +82,10 @@ class Mesh
                glm::mat4 iModelMatrix,
                bool      iNormalMap,
                bool      iHeightMap,
-               float     iOpacityDiscard ); 
+               float     iOpacityDiscard );
+
+   void DrawDepth( Shader    iShader,
+                   glm::mat4 iModelMatrix ); 
 
     
     // Class members
@@ -126,6 +129,9 @@ class Model
 
     void Draw( Shader    iShader,
                glm::mat4 iModelMatrix );   
+
+    void DrawDepth( Shader    iShader,
+                    glm::mat4 iModelMatrix );   
 
     void PrintInfos();
 

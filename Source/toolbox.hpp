@@ -139,10 +139,13 @@ class Toolbox
 
     unsigned int _pingpong_FBO;
 
+    unsigned int _depth_map_FBO;
+
     // FBO's textures
     unsigned int _pingpong_color_buffers[ 2 ];
     unsigned int _temp_tex_color_buffer[ 2 ];
     unsigned int _final_tex_color_buffer[ 2 ];
+    unsigned int _depth_cubemap;
 
 };
 

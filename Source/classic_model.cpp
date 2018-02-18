@@ -113,6 +113,25 @@ void Mesh::Draw( Shader    iShader,
   }
 }
 
+void Mesh::DrawDepth( Shader    iShader,
+                      glm::mat4 iModelMatrix )
+{
+
+  // Mesh Drawing
+  // ------------
+  glBindVertexArray( this->_VAO );
+  
+  // Perform mesh local transform
+  glm::mat4 model_matrix;
+  model_matrix = iModelMatrix * _local_transform;
+  glUniformMatrix4fv( glGetUniformLocation( iShader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+
+  // Draw
+  glDrawElements( GL_TRIANGLES, this->_indices.size(), GL_UNSIGNED_INT, 0 );
+  
+  glBindVertexArray( 0 );
+}
+
 void Mesh::SetupMesh()
 {
   glGenVertexArrays( 1, &this->_VAO );
@@ -198,6 +217,17 @@ void Model::Draw( Shader    iShader,
                                _height_map,
 	    											   2.0 );
 	  }
+  }
+}
+
+void Model::DrawDepth( Shader    iShader,
+                       glm::mat4 iModelMatrix )
+{
+  // Draw non transparent model parts
+  for( unsigned int i = 0; i < this->_meshes.size(); i++ )
+  {
+    this->_meshes[ i ].DrawDepth( iShader,
+                                  iModelMatrix );
   }
 }
 
