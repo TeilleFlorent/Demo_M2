@@ -26,26 +26,42 @@ layout ( location = 1 ) out vec4 FragColorBrightness;
 
 // Fragment input uniforms
 // -----------------------
+
+// Point lights uniforms
 uniform int   uLightCount;
 uniform vec3  uLightPos[ MAX_NB_LIGHTS ];
 uniform vec3  uLightColor[ MAX_NB_LIGHTS ];
 uniform float uLightIntensity[ MAX_NB_LIGHTS ];
 
-uniform vec3 uViewPosition;
+// View uniforms
+uniform vec3 uViewPos;
 
+// Bloom uniforms
 uniform bool  uBloom;
 uniform float uBloomBrightness;
 
+// IBL uniforms
 uniform float uMaxMipLevel;
 
-uniform bool uOpacityMap;
+// Opacity uniforms
+uniform bool  uOpacityMap;
+uniform float uOpacityDiscard;
+uniform float uAlpha;
+
+// Normal mapping uniforms
 uniform bool uNormalMap;
 
-uniform float uOpacityDiscard;
+// Shadow uniforms
+uniform bool  uReceivShadow;
+uniform float uShadowFar;
+uniform int   uLightSourceIt;
+uniform float uShadowBias;
+uniform float uShadowDarkness;
 
-uniform float uAlpha;
+// Scene object ID uniform
 uniform float uID;
 
+// Textures uniforms
 uniform sampler2D   uTextureAlbedo1; 
 uniform sampler2D   uTextureNormal1; 
 uniform sampler2D   uTextureHeight1; 
@@ -57,6 +73,8 @@ uniform sampler2D   uTextureOpacity1;
 uniform samplerCube uIrradianceCubeMap;
 uniform samplerCube uPreFilterCubeMap;
 uniform sampler2D   uPreBrdfLUT;
+
+uniform samplerCube uDepthCubeMap;
 
 
 // Fragment inputs from vertex shader 
@@ -89,6 +107,57 @@ vec3 NormalMappingCalculation( vec2 iUV )
   return ( res_normal * TBN );
 }
 
+// PCF preset offset directions use to sample the depth cubemap
+vec3 PCF_offset_directions[ 20 ] = vec3[]
+(
+  vec3( 1, 1,  1 ), vec3(  1, -1,  1 ), vec3( -1, -1,  1 ), vec3( -1, 1,  1 ), 
+  vec3( 1, 1, -1 ), vec3(  1, -1, -1 ), vec3( -1, -1, -1 ), vec3( -1, 1, -1 ),
+  vec3( 1, 1,  0 ), vec3(  1, -1,  0 ), vec3( -1, -1,  0 ), vec3( -1, 1,  0 ),
+  vec3( 1, 0,  1 ), vec3( -1,  0,  1 ), vec3(  1,  0, -1 ), vec3( -1, 0, -1 ),
+  vec3( 0, 1,  1 ), vec3(  0, -1,  1 ), vec3(  0, -1, -1 ), vec3(  0, 1, -1 )
+);
+
+// Omnidirectional shadow mapping calculation
+float ShadowMappingCalcualtion( vec3 iViewToFrag )
+{
+  // Get vector between fragment position and light position
+  vec3 frag_to_light = oFragPos - uLightPos[ uLightSourceIt ];
+
+  // Get depht of the current fragment
+  float frag_depth = length( frag_to_light );
+  
+  // PCF sample count, corresponding the array of offset direction size
+  int samples_count = 20;  
+
+  // Get distance from ViewPos to FragPos
+  float frag_view_distance = length( iViewToFrag );
+
+  // Set radius of the disk use to scale PCF offset directions
+  float sample_disk_radius = ( 1.0 + ( ( frag_view_distance / uShadowFar ) * 75.0 ) ) / 400.0;
+
+  // Init shadow value accumulator
+  float shadow = 0.0;
+
+  // Perform PCF with specific offset
+  for( int sample_it = 0; sample_it < samples_count; sample_it ++ ) 
+  { 
+    // Get closest depth with corresponding direction offset from the preset offset array 
+    float closest_depth = texture( uDepthCubeMap, frag_to_light + PCF_offset_directions[ sample_it ] * sample_disk_radius ).r;
+
+    // Undo mapping [ 0 ; 1 ]
+    closest_depth *= uShadowFar;
+
+    // Shadow depth test   
+    if( ( frag_depth - uShadowBias ) > closest_depth )
+    {
+      shadow += 1.0;
+    }
+  }
+  shadow /= float( samples_count );
+
+  return ( 1.0 - ( shadow * uShadowDarkness ) );
+  //return texture( uDepthCubeMap, frag_to_light ).r;
+}
 
 // Cook torrance D function
 float DistributionGGX( vec3  iNormal,
@@ -292,13 +361,14 @@ vec3 IBLAmbientReflectance( float    iNormalDotViewDir,
 vec3 PBRLightingCalculation( vec3 iNormal,
                              vec3 iViewDir,  
                              vec2 iUV,
-                             float iOpacity )
+                             float iOpacity,
+                             float iShadowFactor )
 {
   // Get material inputs data
   Material material;
   
-  //material._albedo    = pow( texture( uTextureAlbedo1, iUV ).rgb, vec3( 2.2 ) );
-  material._albedo    = pow( vec3( 1.0 ), vec3( 2.2 ) );
+  material._albedo    = pow( texture( uTextureAlbedo1, iUV ).rgb, vec3( 2.2 ) );
+  //material._albedo    = pow( vec3( 1.0 ), vec3( 2.2 ) );
   material._metalness = texture( uTextureMetalness1, iUV ).r;
   material._roughness = texture( uTextureRoughness1, iUV ).r;
   material._ao        = texture( uTextureAO1, iUV ).r;
@@ -337,7 +407,7 @@ vec3 PBRLightingCalculation( vec3 iNormal,
 
   // Return fragment final PBR lighting 
   // ----------------------------------
-  return /*IBL_ambient_reflectance +*/ point_lights_reflectance;
+  return IBL_ambient_reflectance + ( point_lights_reflectance * iShadowFactor );
 }
 
 
@@ -367,7 +437,8 @@ void main()
   }
 
   // Get view direction
-  vec3 view_dir = normalize( uViewPosition - oFragPos );
+  vec3 view_to_frag = uViewPos - oFragPos;
+  vec3 view_dir = normalize( view_to_frag );
 
   // Get fragment normal
   vec3 normal;
@@ -386,14 +457,23 @@ void main()
     normal *= -1.0;
   }
 
+  // Omnidirectional shadow mapping calculation
+  float shadow_factor = 1.0;
+  //if( uReceivShadow )
+  //{
+  shadow_factor = ShadowMappingCalcualtion( view_to_frag );
+  //}
+
   // PBR lighting calculation 
   vec3 PBR_lighting_result = PBRLightingCalculation( normal,
                                                      view_dir,  
                                                      oUV,
-                                                     opacity );
+                                                     opacity,
+                                                     shadow_factor );
 
   // Main out color
   FragColor = vec4( PBR_lighting_result, opacity );
+  //FragColor = vec4( vec3( shadow_factor ), 1.0 );
   //FragColor = vec4( vec3( texture( uTextureAO1, oUV ).r ), 1.0 );
   //FragColor = vec4( vec3( normal ), 1.0 );
 

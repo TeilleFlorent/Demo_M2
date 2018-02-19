@@ -66,6 +66,7 @@ class Scene
 
     void PostProcess();
 
+    void renderCube();
 
     // Scene class members
     // -------------------

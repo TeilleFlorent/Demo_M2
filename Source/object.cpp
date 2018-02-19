@@ -19,6 +19,7 @@ Object::Object( int       iID,
                 bool      iGenerateShadow,
                 bool      iReceivShadow,
                 float     iShadowDarkness,
+                float     iShadowBias,
                 bool      iBloom,
                 float     iBloomBrightness,
                 bool      iOpacityMap,
@@ -37,6 +38,7 @@ Object::Object( int       iID,
   _generate_shadow     = iGenerateShadow;
   _receiv_shadow       = iReceivShadow;
   _shadow_darkness     = iShadowDarkness;
+  _shadow_bias         = iShadowBias;
   _bloom               = iBloom;
   _bloom_brightness    = iBloomBrightness;
   _opacity_map         = iOpacityMap;
@@ -57,7 +59,8 @@ void Object::Set( Object iSourceObject )
   _alpha               = iSourceObject._alpha;               
   _generate_shadow     = iSourceObject._generate_shadow;     
   _receiv_shadow       = iSourceObject._receiv_shadow;      
-  _shadow_darkness     = iSourceObject._shadow_darkness;     
+  _shadow_darkness     = iSourceObject._shadow_darkness;
+  _shadow_bias         = iSourceObject._shadow_bias;     
   _bloom               = iSourceObject._bloom;               
   _bloom_brightness    = iSourceObject._bloom_brightness;    
   _opacity_map         = iSourceObject._opacity_map;         

@@ -180,13 +180,15 @@ void Window::ManageEvents( Camera * iCamera )
             break;
 
           case 'a' :
-            _scene->_grounds_type1[ 0 ]._displacement_factor += 0.005;
-            std::cout << "factor = " << _scene->_grounds_type1[ 0 ]._displacement_factor << std::endl;
+            _scene->_lights[ 0 ]._position.x += 0.1;
+            //_scene->_ink_bottle._shadow_bias += 0.005;
+            //std::cout << "_shadow_bias = " << _scene->_ink_bottle._shadow_bias << std::endl;
             break;
 
           case 'e' :
-            _scene->_grounds_type1[ 0 ]._displacement_factor -= 0.005;
-            std::cout << "factor = " << _scene->_grounds_type1[ 0 ]._displacement_factor << std::endl;
+            _scene->_lights[ 0 ]._position.x -= 0.1;
+            //_scene->_ink_bottle._shadow_bias -= 0.005;
+            //std::cout << "_shadow_bias = " << _scene->_ink_bottle._shadow_bias << std::endl;
             break;
 
           case 'r' :
@@ -267,6 +269,7 @@ void Window::ManageEvents( Camera * iCamera )
           }
         }
         break;
+
       case SDL_QUIT:
         exit( 0 );
     }
@@ -285,13 +288,13 @@ void Window::Draw()
   // Render scene
   _scene->_pipeline_type == FORWARD_RENDERING ? _scene->SceneForwardRendering() : _scene->SceneDeferredRendering();  
 
+  //_toolbox->RenderObserver();
+
   // Blur calculation on bloom's bright texture
   if( _scene->_bloom )
   {
     _scene->BlurProcess();
   }  
-
-  //_toolbox->RenderObserver();
 
   // Post process calculations => final render
   _scene->PostProcess();

@@ -28,7 +28,7 @@ out vec4 oFragPos;
 
 void main()
 {
-	for( int face_it = 0; face_it < 6; face_it )
+	for( int face_it = 0; face_it < 6; face_it++ )
 	{	
 		// Specify which face we are rendering using this built-in variable
 		gl_Layer = face_it; 
@@ -36,7 +36,7 @@ void main()
 		// For each triangle's vertices
 		for( int i = 0; i < 3; i++ ) 
 		{
-		  oFragPos = gl_in[i].gl_Position;
+		  oFragPos = gl_in[ i ].gl_Position;
 		  gl_Position = uShadowTransformMatrices[ face_it ] * oFragPos;
 		  EmitVertex();
 		}    

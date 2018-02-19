@@ -28,6 +28,7 @@ class Object
             bool      iGenerateShadow,
             bool      iReceivShadow,
             float     iShadowDarkness,
+            float     iShadowBias,
             bool      iBloom,
             float     iBloomBrightness,
             bool      iOpacityMap,
@@ -52,6 +53,7 @@ class Object
     bool      _generate_shadow;
     bool      _receiv_shadow;
     float     _shadow_darkness;
+    float     _shadow_bias;
     bool      _bloom;
     float     _bloom_brightness;
     bool      _opacity_map;

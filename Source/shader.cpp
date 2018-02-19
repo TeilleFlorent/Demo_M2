@@ -171,6 +171,8 @@ void Shader::SetShaderGeometryPipeline( const GLchar * iVertexPath,
     glGetProgramInfoLog( this->_program, 512, NULL, infoLog );
     std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
   }
+
+  // Free
   glDeleteShader( vertex );
   glDeleteShader( geo );
   glDeleteShader( fragment );

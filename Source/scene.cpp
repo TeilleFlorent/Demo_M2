@@ -16,10 +16,10 @@ Scene::Scene( Window * iParentWindow )
   // ----------------------
   
   // near far
-  _near = 0.01;
-  _far  = 100.0;
-  _shadow_near = 1.0;
-  _shadow_far  = 25.0;
+  _near = 0.1;
+  _far  = 30.0;
+  _shadow_near = 0.1;
+  _shadow_far  = 30.0;
 
   // Frame exposure
   _exposure           = 1.0;
@@ -52,7 +52,7 @@ Scene::Scene( Window * iParentWindow )
   _tess_patch_vertices_count = 3;
 
   // Init omnidirectional shadow mapping parameters
-  _depth_cubemap_res = 1024;
+  _depth_cubemap_res = 2048;
 
   // Lights volume
   _render_lights_volume = false;
@@ -332,6 +332,7 @@ void Scene::SceneDataInitialization()
   // Create depth cube map texture & FBO
   // -----------------------------------
   glGenFramebuffers( 1, &_window->_toolbox->_depth_map_FBO );
+
   glGenTextures( 1, &_window->_toolbox->_depth_cubemap );
   glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
   for( unsigned int i = 0; i < 6; i++ )
@@ -344,7 +345,7 @@ void Scene::SceneDataInitialization()
                   0,
                   GL_DEPTH_COMPONENT,
                   GL_FLOAT,
-                  NULL);
+                  NULL );
   }
   glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
   glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
@@ -352,7 +353,7 @@ void Scene::SceneDataInitialization()
   glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
   glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE );
   
-  // attach depth texture as FBO's depth buffer
+  // Attach depth texture as FBO's depth buffer
   glBindFramebuffer( GL_FRAMEBUFFER, _window->_toolbox->_depth_map_FBO );
   glFramebufferTexture( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, _window->_toolbox->_depth_cubemap, 0 );
   glDrawBuffer( GL_NONE );
@@ -466,7 +467,6 @@ void Scene::SceneDataInitialization()
   {
     fprintf( stderr, "Erreur lors du chargement de la texture\n" );
   }
-
 }
 
 void Scene::LightsInitialization()
@@ -493,12 +493,11 @@ void Scene::ObjectsInitialization()
 
   _ground_size = 8.0;
   _wall_size   = _ground_size / 3.0;
-  std::cout << "size = " << _wall_size << std::endl;
 
 
   // _grounds type 1 object initialization
   // -------------------------------------
-  for( int i = 0; i < 2; i ++ )
+  for( int i = 0; i < 1; i ++ )
   {
     position = glm::vec3( -(_ground_size * 0.5 ) + 0.0, 0.0, -(_ground_size * 0.5 ) + 0.0 );
     position += glm::vec3( _ground_size * i, i * _wall_size, 0.0 );
@@ -506,25 +505,27 @@ void Scene::ObjectsInitialization()
     model_matrix = glm::mat4();
     model_matrix = glm::translate( model_matrix, position );
     model_matrix = glm::rotate( model_matrix, ( float )_PI * ( float )i, glm::vec3( 0.0, 0.0 , 1.0 ) );
+    glm::vec3 scale( _ground_size, 1.0, _ground_size );
     model_matrix = glm::scale( model_matrix, glm::vec3( _ground_size, 1.0, _ground_size ) ); 
 
     Object temp_object( 1,              // ID
                         model_matrix,   // model matrix
                         position,       // position
                         _PI_2,          // angle
-                        glm::vec3( _ground_size, 1.0, _ground_size ),   // scale
+                        scale,          // scale
                         glm::vec2( 6.0, 6.0 ),                          // uv scale
                         1.0,            // alpha
                         false,          // generate shadow
-                        false,          // receiv shadow
-                        0.75,           // shadow darkness
+                        true,           // receiv shadow
+                        1.0,            // shadow darkness
+                        0.035,          // shadow bias
                         false,          // bloom
                         0.99,           // bloom bright value
                         false,          // opacity map
-                        false,           // normal map
-                        false,           // height map
+                        true,           // normal map
+                        true,          // height map
                         0.12,           // displacement factor
-                        0.25 );         // tessellation factor
+                        0.15 );         // tessellation factor
 
     _grounds_type1.push_back( temp_object );
   }
@@ -537,18 +538,20 @@ void Scene::ObjectsInitialization()
   model_matrix = glm::mat4();
   model_matrix = glm::translate( model_matrix, position );
   model_matrix = glm::rotate( model_matrix, ( float )_PI_2 * -1.5f, glm::vec3( 0.0, 1.0 , 0.0 ) );
-  model_matrix = glm::scale( model_matrix, glm::vec3( 0.03, 0.03, 0.03 ) );
+  glm::vec3 scale( 0.03, 0.03, 0.03 );
+  model_matrix = glm::scale( model_matrix, scale );
 
   _ink_bottle.Set( Object( 2, // ID
                            model_matrix,
                            glm::vec3( 1.0, 0.6, 1.0 ),
                            0.0,
-                           glm::vec3( 0.03, 0.03, 0.03 ),
+                           scale,
                            glm::vec2( 1.0, 1.0 ),
                            1.0,
-                           false,
-                           false,
-                           0.75,
+                           true,
+                           true,
+                           1.0,
+                           0.035,
                            false,
                            0.999,
                            true,
@@ -569,7 +572,8 @@ void Scene::ObjectsInitialization()
                                 1.0,
                                 false,
                                 false,
-                                0.75,
+                                1.0,
+                                0.035,
                                 false,
                                 0.999,
                                 false,
@@ -637,7 +641,8 @@ void Scene::ObjectsInitialization()
                         1.0,
                         false,
                         false,
-                        0.75,
+                        1.0,
+                        0.035,
                         false,
                         0.99,
                         false,
@@ -907,47 +912,49 @@ void Scene::ShadersInitialization()
   // Set texture uniform location
   // ----------------------------
   _forward_pbr_shader.Use();
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureAlbedo1" ), 0 ) ;
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureNormal1" ), 1 );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureHeight1" ), 2 ) ;
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureAO1" ), 3 );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureAlbedo1" ),    0 ) ;
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureNormal1" ),    1 );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureHeight1" ),    2 ) ;
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureAO1" ),        3 );
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureRoughness1" ), 4 );
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureMetalness1" ), 5 );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureOpacity1" ), 6 );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uTextureOpacity1" ),   6 );
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIrradianceCubeMap" ), 7 );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uPreFilterCubeMap" ), 8 );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uPreBrdfLUT" ), 9 ); 
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uPreFilterCubeMap" ),  8 );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uPreBrdfLUT" ),        9 );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uDepthCubeMap" ),      10 ); 
   glUseProgram( 0 );
 
   _forward_displacement_pbr_shader.Use();
-  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureAlbedo1" ), 0 ) ;
-  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureNormal1" ), 1 );
-  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureHeight1" ), 2 ) ;
-  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureAO1" ), 3 );
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureAlbedo1" ),    0 ) ;
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureNormal1" ),    1 );
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureHeight1" ),    2 ) ;
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureAO1" ),        3 );
   glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureRoughness1" ), 4 );
   glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureMetalness1" ), 5 );
-  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureOpacity1" ), 6 );
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uTextureOpacity1" ),   6 );
   glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uIrradianceCubeMap" ), 7 );
-  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uPreFilterCubeMap" ), 8 );
-  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uPreBrdfLUT" ), 9 ); 
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uPreFilterCubeMap" ),  8 );
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uPreBrdfLUT" ),        9 ); 
+  glUniform1i( glGetUniformLocation( _forward_displacement_pbr_shader._program, "uDepthCubeMap" ),      10 ); 
   glUseProgram( 0 );
 
   _geometry_pass_shader.Use();
-  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureAlbedo1" ), 0 ) ;
-  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureNormal1" ), 1 );
-  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureHeight1" ), 2 ) ;
-  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureAO1" ), 3 );
+  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureAlbedo1" ),    0 ) ;
+  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureNormal1" ),    1 );
+  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureHeight1" ),    2 ) ;
+  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureAO1" ),        3 );
   glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureRoughness1" ), 4 );
   glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureMetalness1" ), 5 );
-  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureSpecular1" ), 6 );
+  glUniform1i( glGetUniformLocation( _geometry_pass_shader._program, "uTextureSpecular1" ),  6 );
   glUseProgram( 0 );
 
   _lighting_pass_shader.Use();
-  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uGbufferPositionAndBloom" ), 0 ) ;
+  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uGbufferPositionAndBloom" ),         0 ) ;
   glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uGbufferNormalAndBloomBrightness" ), 1 );
-  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uGbufferAlbedo" ), 2 ) ;
-  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uGbufferRougnessMetalnessAO" ), 3 );
-  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uIrradianceCubeMap" ), 4 ); 
+  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uGbufferAlbedo" ),                   2 ) ;
+  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uGbufferRougnessMetalnessAO" ),      3 );
+  glUniform1i( glGetUniformLocation( _lighting_pass_shader._program, "uIrradianceCubeMap" ),               4 ); 
   glUseProgram( 0 );
 
   _skybox_shader.Use();
@@ -1118,25 +1125,98 @@ void Scene::SceneDepthPass()
   glClear( GL_DEPTH_BUFFER_BIT );
 
   _point_shadow_depth_shader.Use();   
+
   // Send each shadow transform matrix to render into each cube map face
   for( unsigned int i = 0; i < 6; i++ )
   {
     glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, std::string( "uShadowTransformMatrices[" + std::to_string( i ) + "]" ).data() ), 1, GL_FALSE, glm::value_ptr( shadow_transform_matrices[ i ] ) );
   }
-  glUniform1f( glGetUniformLocation( _point_shadow_depth_shader._program, "uFarValue" ), _shadow_far );
+  glUniform1f( glGetUniformLocation( _point_shadow_depth_shader._program, "uShadowFar" ), _shadow_far );
   glUniform3fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uLightPosition" ), 1, &_lights[ 0 ]._position[ 0 ] );
 
 
   // Draw ink bottle depth
   // ---------------------
   model_matrix = _ink_bottle._model_matrix;
-
   glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-
   _ink_bottle_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
 
 
   glUseProgram( 0 );
+  glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+}
+
+unsigned int cubeVAO = 0;
+unsigned int cubeVBO = 0;
+void Scene::renderCube()
+{
+    // initialize (if necessary)
+    if (cubeVAO == 0)
+    {
+        float vertices[] = {
+            // back face
+            -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
+             1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
+             1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f, // bottom-right         
+             1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
+            -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
+            -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f, // top-left
+            // front face
+            -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
+             1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f, // bottom-right
+             1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
+             1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
+            -1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f, // top-left
+            -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
+            // left face
+            -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
+            -1.0f,  1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-left
+            -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
+            -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
+            -1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-right
+            -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
+            // right face
+             1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
+             1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
+             1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-right         
+             1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
+             1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
+             1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left     
+            // bottom face
+            -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+             1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
+             1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+             1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+            -1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
+            -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+            // top face
+            -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
+             1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+             1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right     
+             1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+            -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
+            -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left        
+        };
+        glGenVertexArrays(1, &cubeVAO);
+        glGenBuffers(1, &cubeVBO);
+        // fill buffer
+        glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        // link vertex attributes
+        glBindVertexArray(cubeVAO);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
+    // render Cube
+    glBindVertexArray(cubeVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glBindVertexArray(0);
 }
 
 void Scene::SceneForwardRendering()
@@ -1157,11 +1237,11 @@ void Scene::SceneForwardRendering()
   // -----------
   glDepthMask( GL_FALSE ); // desactivé juste pour draw la skybox
   _skybox_shader.Use();   
-  glm::mat4 Skyboxview_matrix = glm::mat4( glm::mat3( _camera->_view_matrix ) );  // Remove any translation component of the view matrix
+  glm::mat4 skybox_view_matrix = glm::mat4( glm::mat3( _camera->_view_matrix ) );  // Remove any translation component of the view matrix
 
   model_matrix = glm::mat4( 1.0f );
   glUniformMatrix4fv( glGetUniformLocation( _skybox_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( _skybox_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( Skyboxview_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _skybox_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( skybox_view_matrix ) );
   glUniformMatrix4fv( glGetUniformLocation( _skybox_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
   glUniform1f( glGetUniformLocation( _skybox_shader._program, "uAlpha" ), 1.0 );
 
@@ -1169,9 +1249,9 @@ void Scene::SceneForwardRendering()
   glUniform1f( glGetUniformLocation( _skybox_shader._program, "uBloomBrightness" ), 1.0 );
 
   glActiveTexture( GL_TEXTURE0 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _env_cubeMaps[ _current_env ] ); // bind les 6 textures du cube map 
-  //glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] ); // bind les 6 textures du cube map 
-  //glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); // bind les 6 textures du cube map 
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _env_cubeMaps[ _current_env ] ); 
+  //glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] ); 
+  //glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] );
 
   _window->_toolbox->RenderCube();
 
@@ -1188,11 +1268,11 @@ void Scene::SceneForwardRendering()
     model_matrix= glm::mat4();
     model_matrix = glm::translate( model_matrix, _lights[ i ]._position );
     model_matrix = glm::scale( model_matrix, glm::vec3( 0.04f ) ); 
-    glm::vec3 lampColor = _lights[ i ]._color * _lights[ i ]._intensity;
+    glm::vec3 lamp_color = _lights[ i ]._color * _lights[ i ]._intensity;
     glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uViewMatrix" ) , 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
     glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
     glUniformMatrix4fv( glGetUniformLocation( _flat_color_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
-    glUniform3f( glGetUniformLocation( _flat_color_shader._program, "uColor" ), lampColor.x, lampColor.y, lampColor.z );
+    glUniform3f( glGetUniformLocation( _flat_color_shader._program, "uColor" ), lamp_color.x, lamp_color.y, lamp_color.z );
 
     glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), true );
     glUniform1f( glGetUniformLocation( _flat_color_shader._program, "uBloomBrightness" ), 1.0f );
@@ -1201,9 +1281,6 @@ void Scene::SceneForwardRendering()
   }
   glBindVertexArray( 0 );
   glUseProgram( 0 );
-
-
-  //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
 
   // Draw grounds type 1
@@ -1235,13 +1312,15 @@ void Scene::SceneForwardRendering()
     glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); 
     glActiveTexture( GL_TEXTURE9 );
     glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture );
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
 
     // Matrices uniforms
     glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
     glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
     glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
 
-    glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPosition" ), 1, &_camera->_position[ 0 ] );
+    glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
     // Point lights uniforms
     glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
@@ -1268,6 +1347,13 @@ void Scene::SceneForwardRendering()
     glUniform1f( glGetUniformLocation( current_shader->_program, "uDisplacementFactor" ), -_grounds_type1[ ground_it ]._displacement_factor );
     glUniform1f( glGetUniformLocation( current_shader->_program, "uTessellationFactor" ), _grounds_type1[ ground_it ]._tessellation_factor );
     glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _grounds_type1[ ground_it ]._normal_map );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uReceivShadow" ), _grounds_type1[ ground_it ]._receiv_shadow );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightSourceIt" ), 0 );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowBias" ), _grounds_type1[ ground_it ]._shadow_bias );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _grounds_type1[ ground_it ]._shadow_darkness );
 
     glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _grounds_type1[ ground_it ]._id );  
 
@@ -1307,13 +1393,15 @@ void Scene::SceneForwardRendering()
     glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); 
     glActiveTexture( GL_TEXTURE9 );
     glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture );
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
 
     // Matrices uniforms
     glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
     glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
     glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
 
-    glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPosition" ), 1, &_camera->_position[ 0 ] );
+    glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
     // Point lights uniforms
     glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
@@ -1341,84 +1429,19 @@ void Scene::SceneForwardRendering()
     glUniform1f( glGetUniformLocation( current_shader->_program, "uTessellationFactor" ), _walls_type1[ wall_it ]._tessellation_factor );
     glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _walls_type1[ wall_it ]._normal_map );
 
+    // Omnidirectional shadow mapping uniforms
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uReceivShadow" ), _walls_type1[ wall_it ]._receiv_shadow );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightSourceIt" ), 0 );
+
     glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _walls_type1[ wall_it ]._id );  
 
     glBindVertexArray( _wall1_VAO );
-    ( _walls_type1[ wall_it ]._height_map == true ) ? glDrawElements( GL_PATCHES, _wall1_indices.size(), GL_UNSIGNED_INT, 0 ) : glDrawElements( GL_TRIANGLES, _wall1_indices.size(), GL_UNSIGNED_INT, 0 );
+    //( _walls_type1[ wall_it ]._height_map == true ) ? glDrawElements( GL_PATCHES, _wall1_indices.size(), GL_UNSIGNED_INT, 0 ) : glDrawElements( GL_TRIANGLES, _wall1_indices.size(), GL_UNSIGNED_INT, 0 );
     glBindVertexArray( 0 );
     glUseProgram( 0 );
   }
   
-
-
-  // Enable cull face
-  glEnable( GL_CULL_FACE );
-  glCullFace( GL_BACK );
-
-
-  // Draw tables
-  // -----------
-  /*( _tables[ 0 ]._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
-
-  current_shader->Use();
-
-  for( int i = 0; i < _tables.size(); i++ )
-  {
-    model_matrix = glm::mat4();
-    model_matrix = glm::translate( model_matrix, _tables[ i ]._position );
-    model_matrix = glm::scale( model_matrix, _tables[ i ]._scale ); 
-
-    // Textures binding
-    glActiveTexture( GL_TEXTURE7 );
-    glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
-    glActiveTexture( GL_TEXTURE8 );
-    glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); 
-    glActiveTexture( GL_TEXTURE9 );
-    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
-
-    // Matrices uniforms
-    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
-    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
-
-    glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPosition" ), 1, &_camera->_position[ 0 ] );
-
-    // Point lights uniforms
-    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
-    for( int i = 0; i < _lights.size(); i++ )
-    {
-      string temp = to_string( i );
-      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
-      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
-      glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
-    }
-
-    // Bloom uniforms
-    glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _tables[ i ]._bloom );
-    glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _tables[ i ]._bloom_brightness );
-
-    glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
-
-    // Opacity uniforms
-    glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _tables[ i ]._alpha );
-    glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
-    glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _tables[ i ]._opacity_map );
-    
-    // Displacement mapping uniforms
-    glUniform1f( glGetUniformLocation( current_shader->_program, "uDisplacementFactor" ), _tables[ i ]._displacement_factor );
-    glUniform1f( glGetUniformLocation( current_shader->_program, "uTessellationFactor" ), _tables[ i ]._tessellation_factor );
-    glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _tables[ i ]._normal_map );
-    
-    glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _tables[ i ]._id );    
-
-    _table_model->Draw( *current_shader, model_matrix );
-  } 
-  glUseProgram( 0 );*/
-
-
-  // Disable cull face
-  glDisable( GL_CULL_FACE );
-
 
   // Draw ink bottle
   // ---------------
@@ -1432,13 +1455,18 @@ void Scene::SceneForwardRendering()
   glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); 
   glActiveTexture( GL_TEXTURE9 );
   glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+  glActiveTexture( GL_TEXTURE10 );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
 
+  // Matrices uniforms
   glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
   glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
 
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+  glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
+  // Point lights uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
   for( int i = 0; i < _lights.size(); i++ )
   {
     string temp = to_string( i );
@@ -1447,15 +1475,29 @@ void Scene::SceneForwardRendering()
     glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
   }
 
+  // Bloom uniforms
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _ink_bottle._bloom );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _ink_bottle._bloom_brightness );
 
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
-  glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPosition" ), 1, &_camera->_position[ 0 ] );
-
+  // Opacity uniforms
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _ink_bottle._alpha );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ink_bottle._id );    
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _ink_bottle._opacity_map );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+  
+  // Displacement mapping uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _ink_bottle._normal_map );
+
+  // Omnidirectional shadow mapping uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _ink_bottle._receiv_shadow );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), 0 );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _ink_bottle._shadow_bias );
+  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _ink_bottle._shadow_darkness );
+  
+
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ink_bottle._id );      
 
   _ink_bottle_model->Draw( _forward_pbr_shader, model_matrix );
 
@@ -1498,7 +1540,7 @@ void Scene::SceneForwardRendering()
 
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
-  glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPosition" ), 1, &_camera->_position[ 0 ] );
+  glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _collection_car->_alpha );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _collection_car->_id );    
