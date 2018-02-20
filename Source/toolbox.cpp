@@ -618,3 +618,65 @@ void Toolbox::CreatePlaneVAO( unsigned int *                iVAO,
 
   glBindVertexArray( 0 );
 }
+
+unsigned int Toolbox::GenIrradianceCubeMap( unsigned int iEnvCubeMap,
+                                            unsigned int iResCubeMap,
+                                            Shader       iIrradianceShader,
+                                            float        iIrradianceSampleDelta )
+{
+  unsigned int capture_FBO;
+  unsigned int capture_RBO;
+
+
+  // Gen irradiance cube map textures
+  // --------------------------------
+  unsigned int irradiance_cubemap = _window->_toolbox->CreateCubeMapTexture( iResCubeMap,
+                                                                             false );
+
+
+  // Gen FBO and RBO to render hdr tex into cube map tex
+  // ---------------------------------------------------
+  glGenFramebuffers( 1, &capture_FBO );
+  glGenRenderbuffers( 1, &capture_RBO );
+  glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
+  glBindRenderbuffer( GL_RENDERBUFFER, capture_RBO );
+  glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, iResCubeMap, iResCubeMap );
+  glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, capture_RBO );
+
+
+  // Create 6 matrix to each cube map face
+  // -------------------------------------
+  glm::mat4 capture_projection_matrix = glm::perspective( glm::radians( 90.0f ), 1.0f, 0.1f, 10.0f );
+  glm::mat4 capture_view_matrices[] =
+  {
+    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  1.0f,  0.0f,  0.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) ),
+    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3( -1.0f,  0.0f,  0.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) ),
+    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f,  1.0f,  0.0f ), glm::vec3( 0.0f,  0.0f,  1.0f ) ),
+    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f, -1.0f,  0.0f ), glm::vec3( 0.0f,  0.0f, -1.0f ) ),
+    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f,  0.0f,  1.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) ),
+    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f,  0.0f, -1.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) )
+  };
+
+  // Compute diffuse irradiance cube map  
+  // -----------------------------------
+  iIrradianceShader.Use();
+  glUniformMatrix4fv( glGetUniformLocation( iIrradianceShader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_projection_matrix ) );
+  glUniform1f( glGetUniformLocation( iIrradianceShader._program, "uSampleDelta" ), iIrradianceSampleDelta );
+  glUniform1i( glGetUniformLocation( iIrradianceShader._program, "uEnvironmentMap" ), 0 );
+
+  glActiveTexture( GL_TEXTURE0 );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, iEnvCubeMap );
+  
+  glViewport( 0, 0, iResCubeMap, iResCubeMap ); // don't forget to configure the viewport to the capture dimensions.
+  glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
+  for( unsigned int i = 0; i < 6; ++i )
+  {
+    glUniformMatrix4fv( glGetUniformLocation( iIrradianceShader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_view_matrices[ i ] ) );
+    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradiance_cubemap, 0 );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    RenderCube();
+  }
+  glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+
+  return irradiance_cubemap;
+}

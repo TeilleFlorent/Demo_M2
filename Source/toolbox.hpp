@@ -115,6 +115,11 @@ class Toolbox
                          unsigned int                  iSideVerticeCount,
                          float                         iUvScale );
 
+    unsigned int GenIrradianceCubeMap( unsigned int iEnvCubeMap,
+                                       unsigned int iResCubeMap,
+                                       Shader       iIrradianceShader,
+                                       float        iIrradianceSampleDelta );
+
 
     // Toolbox class members
     // ---------------------

@@ -347,7 +347,7 @@ vec3 IBLAmbientReflectance( float    iNormalDotViewDir,
   // Compute final ambient IBL lighting
   // ----------------------------------
   vec3 ambient = ( diffuse + specular ); 
-  
+
   // No ambient occlusion for transparent object
   if( iOpacity == 1.0 )
   {
@@ -407,7 +407,7 @@ vec3 PBRLightingCalculation( vec3 iNormal,
 
   // Return fragment final PBR lighting 
   // ----------------------------------
-  return IBL_ambient_reflectance + ( point_lights_reflectance * iShadowFactor );
+  return /*IBL_ambient_reflectance +*/ ( point_lights_reflectance * iShadowFactor );
 }
 
 
@@ -459,10 +459,10 @@ void main()
 
   // Omnidirectional shadow mapping calculation
   float shadow_factor = 1.0;
-  //if( uReceivShadow )
-  //{
-  shadow_factor = ShadowMappingCalcualtion( view_to_frag );
-  //}
+  if( uReceivShadow )
+  {
+    shadow_factor = ShadowMappingCalcualtion( view_to_frag );
+  }
 
   // PBR lighting calculation 
   vec3 PBR_lighting_result = PBRLightingCalculation( normal,

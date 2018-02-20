@@ -16,9 +16,9 @@ Scene::Scene( Window * iParentWindow )
   // ----------------------
   
   // near far
-  _near = 0.1;
+  _near = 0.01;
   _far  = 30.0;
-  _shadow_near = 0.1;
+  _shadow_near = 0.01;
   _shadow_far  = 30.0;
 
   // Frame exposure
@@ -497,7 +497,7 @@ void Scene::ObjectsInitialization()
 
   // _grounds type 1 object initialization
   // -------------------------------------
-  for( int i = 0; i < 1; i ++ )
+  for( int i = 0; i < 2; i ++ )
   {
     position = glm::vec3( -(_ground_size * 0.5 ) + 0.0, 0.0, -(_ground_size * 0.5 ) + 0.0 );
     position += glm::vec3( _ground_size * i, i * _wall_size, 0.0 );
@@ -523,7 +523,7 @@ void Scene::ObjectsInitialization()
                         0.99,           // bloom bright value
                         false,          // opacity map
                         true,           // normal map
-                        true,          // height map
+                        true,           // height map
                         0.12,           // displacement factor
                         0.15 );         // tessellation factor
 
@@ -553,7 +553,7 @@ void Scene::ObjectsInitialization()
                            1.0,
                            0.035,
                            false,
-                           0.999,
+                           0.99,
                            true,
                            true,
                            false,
@@ -640,16 +640,16 @@ void Scene::ObjectsInitialization()
                         glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
                         1.0,
                         false,
-                        false,
+                        true,
                         1.0,
                         0.035,
                         false,
                         0.99,
                         false,
-                        false,
-                        false,
+                        true,
+                        true,
                         0.12,
-                        0.25 / 3.0 );
+                        0.15 / 3.0 );
 
     _walls_type1.push_back( temp_object );
   }
@@ -893,7 +893,7 @@ void Scene::ShadersInitialization()
   _post_process_shader.SetShaderClassicPipeline(        "../Shaders/observer.vs",             "../Shaders/post_process.fs" );
   _MS_blit_shader.SetShaderClassicPipeline(             "../Shaders/observer.vs",             "../Shaders/multisample_blit.fs" );
   _cube_map_converter_shader.SetShaderClassicPipeline(  "../Shaders/cube_map_converter.vs",   "../Shaders/cube_map_converter.fs" );
-  _diffuse_irradiance_shader.SetShaderClassicPipeline(  "../Shaders/cube_map_converter.vs",   "../Shaders/IBL_diffuse_irradiance.fs" );
+  _diffuse_irradiance_shader.SetShaderClassicPipeline(  "../Shaders/cube_map_converter.vs",   "../Shaders/IBL_diffuse_pre_irradiance.fs" );
   _specular_pre_filter_shader.SetShaderClassicPipeline( "../Shaders/cube_map_converter.vs",   "../Shaders/IBL_specular_pre_filter.fs" );
   _specular_pre_brdf_shader.SetShaderClassicPipeline(   "../Shaders/observer.vs",             "../Shaders/IBL_specular_pre_brdf.fs" );
   _forward_displacement_pbr_shader.SetShaderTessellationPipeline( "../Shaders/tessellation.vs",
@@ -1430,14 +1430,16 @@ void Scene::SceneForwardRendering()
     glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _walls_type1[ wall_it ]._normal_map );
 
     // Omnidirectional shadow mapping uniforms
-    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
     glUniform1i( glGetUniformLocation( current_shader->_program, "uReceivShadow" ), _walls_type1[ wall_it ]._receiv_shadow );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
     glUniform1i( glGetUniformLocation( current_shader->_program, "uLightSourceIt" ), 0 );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowBias" ), _walls_type1[ wall_it ]._shadow_bias );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _walls_type1[ wall_it ]._shadow_darkness );
 
     glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _walls_type1[ wall_it ]._id );  
 
     glBindVertexArray( _wall1_VAO );
-    //( _walls_type1[ wall_it ]._height_map == true ) ? glDrawElements( GL_PATCHES, _wall1_indices.size(), GL_UNSIGNED_INT, 0 ) : glDrawElements( GL_TRIANGLES, _wall1_indices.size(), GL_UNSIGNED_INT, 0 );
+    ( _walls_type1[ wall_it ]._height_map == true ) ? glDrawElements( GL_PATCHES, _wall1_indices.size(), GL_UNSIGNED_INT, 0 ) : glDrawElements( GL_TRIANGLES, _wall1_indices.size(), GL_UNSIGNED_INT, 0 );
     glBindVertexArray( 0 );
     glUseProgram( 0 );
   }
@@ -1495,7 +1497,7 @@ void Scene::SceneForwardRendering()
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), 0 );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _ink_bottle._shadow_bias );
   glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _ink_bottle._shadow_darkness );
-  
+
 
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ink_bottle._id );      
 
