@@ -561,28 +561,6 @@ void Scene::ObjectsInitialization()
                            0.0 ) );
 
 
-  // _collection_car object initialization
-  // -------------------------------------
-  /*_collection_car = new Object( 3, // ID
-                                model_matrix,
-                                glm::vec3( 2.0, 0.1, 0.0 ),
-                                _PI_2,
-                                glm::vec3( 0.001, 0.001, 0.001 ),
-                                glm::vec2( 1.0, 1.0 ),
-                                1.0,
-                                false,
-                                false,
-                                1.0,
-                                0.035,
-                                false,
-                                0.999,
-                                false,
-                                false,
-                                false,
-                                0.0,
-                                0.0 );*/
-
-
   // _walls type 1 object initialization
   // -----------------------------------
   for( int i = 0; i < 12; i ++ )
@@ -696,7 +674,7 @@ void Scene::ObjectsInitialization()
 
   // _walls type 3 object initialization
   // -----------------------------------
-  for( int i = 0; i < 1; i ++ )
+  for( int i = 0; i < 0; i ++ )
   { 
     glm::vec3 scale( _wall_size, 1.0, _wall_size );
 
@@ -732,6 +710,36 @@ void Scene::ObjectsInitialization()
 
     _walls_type1.push_back( temp_object );
   }
+
+
+  // _revolving_door object initialization
+  // ---------------------------------
+  position = glm::vec3( 1.0, 0.6, 0.0 );
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( -1.0, 0.0 ,0.0 ) );
+  scale = glm::vec3( 0.03, 0.03, 0.03 );
+  model_matrix = glm::scale( model_matrix, scale );
+
+  _revolving_door.Set( Object( 7, // ID
+                               model_matrix,
+                               position,
+                               0.0,
+                               scale,
+                               glm::vec2( 1.0, 1.0 ),
+                               1.0,
+                               true,
+                               true,
+                               1.0,
+                               0.035,
+                               false,
+                               0.99,
+                               true,
+                               true,
+                               false,
+                               0.0,
+                               0.0 ) );
 }
 
 void Scene::IBLInitialization()
@@ -1027,13 +1035,13 @@ void Scene::ModelsLoading()
                                  _ink_bottle._height_map );
   _ink_bottle_model->PrintInfos();
 
-  // Collection car model loading
-  /*_collection_car_model = new Model( "../Models/collection_car/collection_car.FBX", 
+  // revolving door model loading
+  _revolving_door_model = new Model( "../Models/revolving_door/RevolvingDoor.FBX", 
                                      3, 
-                                    "CollectionCar",
-                                    _collection_car->_normal_map,
-                                    _collection_car->_height_map );
-  _collection_car_model->PrintInfos();  */
+                                     "RevolvingDoor",
+                                     _revolving_door._normal_map,
+                                     _revolving_door._height_map );
+  _revolving_door_model->PrintInfos();
 }
 
 void Scene::TesselationInitialization()
@@ -1162,81 +1170,15 @@ void Scene::SceneDepthPass()
   _ink_bottle_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
 
 
+  // Draw revolving door depth
+  // -------------------------
+  model_matrix = _revolving_door._model_matrix;
+  glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+  _revolving_door_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
+
+
   glUseProgram( 0 );
   glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-}
-
-unsigned int cubeVAO = 0;
-unsigned int cubeVBO = 0;
-void Scene::renderCube()
-{
-    // initialize (if necessary)
-    if (cubeVAO == 0)
-    {
-        float vertices[] = {
-            // back face
-            -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
-             1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
-             1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f, // bottom-right         
-             1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
-            -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
-            -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f, // top-left
-            // front face
-            -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
-             1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f, // bottom-right
-             1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
-             1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
-            -1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f, // top-left
-            -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
-            // left face
-            -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
-            -1.0f,  1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-left
-            -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
-            -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
-            -1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-right
-            -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
-            // right face
-             1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
-             1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
-             1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-right         
-             1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
-             1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
-             1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left     
-            // bottom face
-            -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
-             1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
-             1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
-             1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
-            -1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
-            -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
-            // top face
-            -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
-             1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
-             1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right     
-             1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
-            -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
-            -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left        
-        };
-        glGenVertexArrays(1, &cubeVAO);
-        glGenBuffers(1, &cubeVBO);
-        // fill buffer
-        glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-        // link vertex attributes
-        glBindVertexArray(cubeVAO);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-    }
-    // render Cube
-    glBindVertexArray(cubeVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    glBindVertexArray(0);
 }
 
 void Scene::SceneForwardRendering()
@@ -1518,7 +1460,6 @@ void Scene::SceneForwardRendering()
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _ink_bottle._shadow_bias );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _ink_bottle._shadow_darkness );
 
-
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ink_bottle._id );      
 
   _ink_bottle_model->Draw( _forward_pbr_shader, model_matrix );
@@ -1526,15 +1467,13 @@ void Scene::SceneForwardRendering()
   glUseProgram( 0 );
 
 
-  // Draw collection car
+  // Draw revolving door
   // -------------------
-  /*_forward_pbr_shader.Use();
+  glEnable( GL_CULL_FACE );
+  glCullFace( GL_BACK );
+  _forward_pbr_shader.Use();
 
-  model_matrix = glm::mat4();
-  model_matrix = glm::translate( model_matrix, _collection_car->_position );
-  model_matrix = glm::rotate( model_matrix, _collection_car->_angle, glm::vec3( -1.0, 0.0 , 0.0 ) );
-  model_matrix = glm::rotate( model_matrix, _collection_car->_angle * 2.0f, glm::vec3( 0.0, 0.0 , 1.0 ) );
-  model_matrix = glm::scale( model_matrix, _collection_car->_scale ); 
+  model_matrix = _revolving_door._model_matrix;
 
   glActiveTexture( GL_TEXTURE7 );
   glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
@@ -1542,13 +1481,18 @@ void Scene::SceneForwardRendering()
   glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); 
   glActiveTexture( GL_TEXTURE9 );
   glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+  glActiveTexture( GL_TEXTURE10 );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
 
+  // Matrices uniforms
   glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
   glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
 
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+  glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
+  // Point lights uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
   for( int i = 0; i < _lights.size(); i++ )
   {
     string temp = to_string( i );
@@ -1557,19 +1501,34 @@ void Scene::SceneForwardRendering()
     glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
   }
 
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _collection_car->_bloom );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _collection_car->_bloom_brightness );
+  // Bloom uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _revolving_door._bloom );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _revolving_door._bloom_brightness );
 
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
-  glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+  // Opacity uniforms
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _revolving_door._alpha );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _revolving_door._opacity_map );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+  
+  // Displacement mapping uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _revolving_door._normal_map );
 
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _collection_car->_alpha );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _collection_car->_id );    
+  // Omnidirectional shadow mapping uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _revolving_door._receiv_shadow );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), 0 );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _revolving_door._shadow_bias );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _revolving_door._shadow_darkness );
 
-  _collection_car_model->Draw( _forward_pbr_shader, model_matrix );
 
-  glUseProgram( 0 );*/
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _revolving_door._id );      
+
+  _revolving_door_model->Draw( _forward_pbr_shader, model_matrix );
+
+  glUseProgram( 0 );
+  glDisable( GL_CULL_FACE );
 
 
   // Unbind current FBO
@@ -1712,7 +1671,7 @@ void Scene::DeferredLightingPass( glm::mat4 * iProjectionMatrix,
     glUniformMatrix4fv( glGetUniformLocation( _empty_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
     glUniformMatrix4fv( glGetUniformLocation( _empty_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( *iProjectionMatrix ) );
 
-    _sphere_model->Draw( _empty_shader, model_matrix );
+    //_sphere_model->Draw( _empty_shader, model_matrix );
     glBindVertexArray( 0 );
     
     glUseProgram( 0 );
@@ -1765,7 +1724,7 @@ void Scene::DeferredLightingPass( glm::mat4 * iProjectionMatrix,
     glUniform1f(  glGetUniformLocation( _lighting_pass_shader._program, "uLightMaxDistance" ), _lights[ i ]._max_lighting_distance );
     glUniform2fv( glGetUniformLocation( _lighting_pass_shader._program, "uScreenSize" ), 1, screen_size );
 
-    _sphere_model->Draw( _lighting_pass_shader, model_matrix );
+    //_sphere_model->Draw( _lighting_pass_shader, model_matrix );
     glBindVertexArray( 0 );
 
     glUseProgram( 0 );
@@ -1824,7 +1783,7 @@ void Scene::SceneDeferredRendering()
     glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), true );
     glUniform1f( glGetUniformLocation( _flat_color_shader._program, "uBloomBrightness" ), 1.0f );
 
-    _sphere_model->Draw( _flat_color_shader, model_matrix );
+    //_sphere_model->Draw( _flat_color_shader, model_matrix );
   }
   glUseProgram( 0 );
   
@@ -1847,7 +1806,7 @@ void Scene::SceneDeferredRendering()
 
       glUniform1i( glGetUniformLocation( _flat_color_shader._program, "uBloom" ), false );
 
-      _sphere_model->Draw( _flat_color_shader, model_matrix );
+      //_sphere_model->Draw( _flat_color_shader, model_matrix );
     }
     glUseProgram( 0 );
   }

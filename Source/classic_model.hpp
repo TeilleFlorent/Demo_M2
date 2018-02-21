@@ -143,8 +143,9 @@ class Model
                       aiMatrix4x4 iLocalTransform,
                       aiString    iNodeName  );
 
-    vector< Texture > LoadMeshTextures( aiString iMeshName,
-                                        bool *   oOpacityMap );
+    vector< Texture > LoadMeshTextures( aiString     iNodeName,
+                                        bool *       oOpacityMap,
+                                        unsigned int iMaterialIndex );
 
     Texture LoadTexture( string iTextureType,
                          string iTextureName,

@@ -66,7 +66,6 @@ class Scene
 
     void PostProcess();
 
-    void renderCube();
 
     // Scene class members
     // -------------------
@@ -181,7 +180,7 @@ class Scene
     std::vector< Object > _walls_type2;
     std::vector< Object > _grounds_type1;
     Object                _ink_bottle;
-    Object                _collection_car;
+    Object                _revolving_door;
     float                 _ground_size;
     float                 _wall_size;
 
@@ -190,7 +189,7 @@ class Scene
     Model * _table2_model;
     Model * _sphere_model;
     Model * _ink_bottle_model;
-    Model * _collection_car_model;
+    Model * _revolving_door_model;
 };
 
 #endif  // SCENE_H

@@ -181,14 +181,14 @@ void Window::ManageEvents( Camera * iCamera )
 
           case 'a' :
             _scene->_lights[ 0 ]._position.x += 0.1;
-            //_scene->_ink_bottle._shadow_bias += 0.005;
-            //std::cout << "_shadow_bias = " << _scene->_ink_bottle._shadow_bias << std::endl;
+            //_scene->_mesh_num += 1;
+            //std::cout << "_mesh_num = " << _scene->_mesh_num << std::endl;
             break;
 
           case 'e' :
             _scene->_lights[ 0 ]._position.x -= 0.1;
-            //_scene->_ink_bottle._shadow_bias -= 0.005;
-            //std::cout << "_shadow_bias = " << _scene->_ink_bottle._shadow_bias << std::endl;
+            //_scene->_mesh_num -= 1;
+            //std::cout << "_mesh_num = " << _scene->_mesh_num << std::endl;
             break;
 
           case 'r' :

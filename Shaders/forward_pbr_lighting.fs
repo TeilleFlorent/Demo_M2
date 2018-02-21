@@ -373,6 +373,15 @@ vec3 PBRLightingCalculation( vec3 iNormal,
   material._roughness = texture( uTextureRoughness1, iUV ).r;
   material._ao        = texture( uTextureAO1, iUV ).r;
 
+  if( uID == 7.0 )
+  {
+    material._albedo    = pow( texture( uTextureAlbedo1, iUV ).rgb, vec3( 2.2 ) );
+    //material._albedo    = pow( vec3( 1.0 ), vec3( 2.2 ) );
+    material._metalness = texture( uTextureMetalness1, iUV ).r;
+    material._roughness = 1.0 - texture( uTextureMetalness1, iUV ).a;
+    material._ao        = 1.0;    
+  }
+
   // Get surface base reflectivity value
   vec3 F0 = vec3( 0.04 ); 
   F0 = mix( F0, material._albedo, material._metalness );  
@@ -407,7 +416,7 @@ vec3 PBRLightingCalculation( vec3 iNormal,
 
   // Return fragment final PBR lighting 
   // ----------------------------------
-  return /*IBL_ambient_reflectance +*/ ( point_lights_reflectance * iShadowFactor );
+  return IBL_ambient_reflectance + ( point_lights_reflectance * iShadowFactor );
 }
 
 
@@ -476,6 +485,12 @@ void main()
   //FragColor = vec4( vec3( shadow_factor ), 1.0 );
   //FragColor = vec4( vec3( texture( uTextureAO1, oUV ).r ), 1.0 );
   //FragColor = vec4( vec3( normal ), 1.0 );
+
+  if( uID == 7 )
+  {
+    //FragColor = vec4( vec3( normal ), 1.0 );
+    //FragColor = vec4( vec3( ( texture( uTexture, oUV ).a ) ), 1.0 );
+  }
 
   // Second out color => draw only brightest fragments
   vec3 bright_color = vec3( 0.0, 0.0, 0.0 );

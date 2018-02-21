@@ -101,7 +101,7 @@ void Mesh::Draw( Shader    iShader,
   else
   {
     ( iHeightMap == true ) ? glDrawElements( GL_PATCHES, this->_indices.size(), GL_UNSIGNED_INT, 0 ) : glDrawElements( GL_TRIANGLES, this->_indices.size(), GL_UNSIGNED_INT, 0 );
-	}
+  }
 	
 	glBindVertexArray( 0 );
 
@@ -194,7 +194,7 @@ void Model::Draw( Shader    iShader,
 {
 	// Draw non transparent model parts
   for( unsigned int i = 0; i < this->_meshes.size(); i++ )
-  {
+  { 
     this->_meshes[ i ].Draw( iShader,
     											   this->_model_id,
     											   i,
@@ -280,16 +280,10 @@ void Model::LoadModel( string iPath )
   	// delete [ 1 ]
   	_meshes.erase( _meshes.begin() + 1 );
   }
-
-  if( _model_id == 3 )
-  {	
-  	// delete [ 1 ]
-  	_meshes.erase( _meshes.begin() + 1 );
-  }
 }
 
 void Model::ProcessNode( aiNode * iNode )
-{
+{ 
   for( unsigned int i = 0; i < iNode->mNumMeshes; i++ )
   {
     aiMesh * mesh = _scene->mMeshes[ iNode->mMeshes[ i ] ]; 
@@ -432,7 +426,8 @@ Mesh Model::ProcessMesh( aiMesh * 	 iMesh,
   // -------------------
   bool opacity_map = false;
   vector< Texture > model_textures = this->LoadMeshTextures( iNodeName,
-  																											     &opacity_map );
+  																											     &opacity_map,
+                                                             iMesh->mMaterialIndex );
   textures.insert( textures.end(), model_textures.begin(), model_textures.end() );
 	
 
@@ -469,8 +464,9 @@ Texture Model::LoadTexture( string iTextureType,
   return result_texture;
 }
 
-vector< Texture > Model::LoadMeshTextures( aiString iNodeName,
-																					 bool *   oOpacityMap )
+vector< Texture > Model::LoadMeshTextures( aiString     iNodeName,
+																					 bool *       oOpacityMap,
+                                           unsigned int iMaterialIndex )
 {
   vector< Texture > textures;
 
@@ -560,180 +556,53 @@ vector< Texture > Model::LoadMeshTextures( aiString iNodeName,
   }
 
 
-  // Load collection car textures 
+  // Load revolving door textures 
   // ----------------------------
   if( this->_model_id == 3 )
-  {	
-  	//std::cout << "Node name = " << iNodeName.C_Str() << std::endl;
+  { 
+    // normal
+    std::string texture_name = ( iMaterialIndex == 0 ) ? std::string( "normal1.png" ) : std::string( "normal2.png" );
+    if( iMaterialIndex != 2 )
+    {
+      textures.push_back( LoadTexture( "uTextureNormal",
+                                       texture_name,
+                                       GL_RGB,
+                                       GL_RGB ) );
+    }
 
-  	// Car body texture loading
-  	if( iNodeName == aiString( std::string( "Body" ) ) )
-  	{
+    // albedo
+    texture_name = ( iMaterialIndex == 0 ) ? std::string( "albedo1.png" ) : std::string( "albedo2.png" );
+    if( iMaterialIndex == 2 )
+    {
+      texture_name = std::string( "albedo3.png" );      
+    }
+    textures.push_back( LoadTexture( "uTextureAlbedo",
+                                     texture_name,
+                                     GL_RGB,
+                                     GL_RGB ) );
 
-	    // albedo
-	    textures.push_back( LoadTexture( "uTextureAlbedo",
-	                                     "body_albedo.png",
-	                                     GL_RGB,
-	                                     GL_RGB ) );
+    // metalness & roughness
+    texture_name = ( iMaterialIndex == 0 ) ? std::string( "MetaRough1.png" ) : std::string( "MetaRough2.png" );
+    if( iMaterialIndex == 2 )
+    {
+      texture_name = std::string( "MetaRough3.png" );
+    }
 
-	    // AO
-	    textures.push_back( LoadTexture( "uTextureAO",
-	                                     "body_AO.png",
-	                                     GL_R8,
-	                                     GL_RED ) );
+    textures.push_back( LoadTexture( "uTextureMetalness",
+                                     texture_name,
+                                     GL_RGBA,
+                                     GL_RGBA ) );
 
-	    // roughness 
-	    textures.push_back( LoadTexture( "uTextureRoughness",
-	                                     "body_roughness.png",
-	                                     GL_R8,
-	                                     GL_RED ) );
+    // opacity
+    if( iMaterialIndex == 2 )
+    {
+      textures.push_back( LoadTexture( "uTextureOpacity",
+                                       "opacity.png",
+                                       GL_R8,
+                                       GL_RED ) );
 
-	    // metalness
-	    textures.push_back( LoadTexture( "uTextureMetalness",
-	                                     "body_metalness.png",
-	                                     GL_R8,
-	                                     GL_RED ) );
-
-	    // opacity
-	    textures.push_back( LoadTexture( "uTextureOpacity",
-	                                     "body_opacity.png",
-	                                     GL_R8,
-	                                     GL_RED ) );
-
-	    *oOpacityMap = true;
-	  }
-
-	  // Car roof texture loading
-  	if( iNodeName == aiString( std::string( "roof" ) ) )
-  	{
-
-	    // albedo
-	    textures.push_back( LoadTexture( "uTextureAlbedo",
-	                                     "roof_albedo.png",
-	                                     GL_RGB,
-	                                     GL_RGB ) );
-
-	    // AO
-	    textures.push_back( LoadTexture( "uTextureAO",
-	                                     "roof_AO.png",
-	                                     GL_R8,
-	                                     GL_RED ) );
-
-	    // roughness 
-	    textures.push_back( LoadTexture( "uTextureRoughness",
-	                                     "roof_roughness.png",
-	                                     GL_R8,
-	                                     GL_RED ) );
-
-	    // metalness
-	    textures.push_back( LoadTexture( "uTextureMetalness",
-	                                     "roof_metalness.png",
-	                                     GL_R8,
-	                                     GL_RED ) );
-
-	    // opacity
-	    textures.push_back( LoadTexture( "uTextureOpacity",
-	                                     "roof_opacity.png",
-	                                     GL_R8,
-	                                     GL_RED ) );
-	    *oOpacityMap = true;
-
-	    // normal
-	    textures.push_back( LoadTexture( "uTextureNormal",
-	                                     "roof_normal.png",
-	                                     GL_RGB,
-	                                     GL_RGB ) );
-	  }
-
-	  // Car rear wheel texture loading
-  	if( iNodeName == aiString( std::string( "RearWheelR" ) )
-  	 || iNodeName == aiString( std::string( "RearWheelL" ) ) )
-  	{
-
-	    // albedo
-	    textures.push_back( LoadTexture( "uTextureAlbedo",
-	                                     "rwheel_albedo.png",
-	                                     GL_RGB,
-	                                     GL_RGB ) );
-
-	    // AO
-	    textures.push_back( LoadTexture( "uTextureAO",
-	                                     "rwheel_AO.png",
-	                                     GL_R8,
-	                                     GL_RED ) );
-
-	    // roughness 
-	    textures.push_back( LoadTexture( "uTextureRoughness",
-	                                     "rwheel_roughness.png",
-	                                     GL_R8,
-	                                     GL_RED ) );
-
-	    // metalness
-	    textures.push_back( LoadTexture( "uTextureMetalness",
-	                                     "rwheel_metalness.png",
-	                                     GL_R8,
-	                                     GL_RED ) );
-	  }
-
-	  // Car front wheel texture loading
-  	if( iNodeName == aiString( std::string( "FrontWheelR" ) )
-  	 || iNodeName == aiString( std::string( "FrontWheelL" ) ) )
-  	{
-
-	    // albedo
-	    textures.push_back( LoadTexture( "uTextureAlbedo",
-	                                     "rwheel_albedo.png",
-	                                     GL_RGB,
-	                                     GL_RGB ) );
-
-	    // AO
-	    textures.push_back( LoadTexture( "uTextureAO",
-	                                     "rwheel_AO.png",
-	                                     GL_R8,
-	                                     GL_RED ) );
-
-	    // roughness 
-	    textures.push_back( LoadTexture( "uTextureRoughness",
-	                                     "rwheel_roughness.png",
-	                                     GL_R8,
-	                                     GL_RED ) );
-
-	    // metalness
-	    textures.push_back( LoadTexture( "uTextureMetalness",
-	                                     "rwheel_metalness.png",
-	                                     GL_R8,
-	                                     GL_RED ) );
-	  }
-
-	  // Car doors texture loading
-  	if( iNodeName == aiString( std::string( "DoorR" ) )
-  	 || iNodeName == aiString( std::string( "DoorL" ) ) )
-  	{
-
-	    // albedo
-	    textures.push_back( LoadTexture( "uTextureAlbedo",
-	                                     "body_albedo.png",
-	                                     GL_RGB,
-	                                     GL_RGB ) );
-
-	    // AO
-	    textures.push_back( LoadTexture( "uTextureAO",
-	                                     "body_AO.png",
-	                                     GL_R8,
-	                                     GL_RED ) );
-
-	    // roughness 
-	    textures.push_back( LoadTexture( "uTextureRoughness",
-	                                     "body_roughness.png",
-	                                     GL_R8,
-	                                     GL_RED ) );
-
-	    // metalness
-	    textures.push_back( LoadTexture( "uTextureMetalness",
-	                                     "body_metalness.png",
-	                                     GL_R8,
-	                                     GL_RED ) );
-	  }
+      *oOpacityMap = true;
+    }
   }
 
   return textures;
