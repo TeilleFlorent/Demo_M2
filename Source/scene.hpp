@@ -177,10 +177,11 @@ class Scene
     bool _render_lights_volume;
 
     // Scene's objects
+    std::vector< Object > _walls_type1;
+    std::vector< Object > _walls_type2;
     std::vector< Object > _grounds_type1;
     Object                _ink_bottle;
     Object                _collection_car;
-    std::vector< Object > _walls_type1;
     float                 _ground_size;
     float                 _wall_size;
 

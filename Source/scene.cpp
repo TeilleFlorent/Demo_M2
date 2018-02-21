@@ -523,7 +523,7 @@ void Scene::ObjectsInitialization()
                         0.99,           // bloom bright value
                         false,          // opacity map
                         true,           // normal map
-                        true,           // height map
+                        false,           // height map
                         0.12,           // displacement factor
                         0.15 );         // tessellation factor
 
@@ -647,6 +647,85 @@ void Scene::ObjectsInitialization()
                         0.99,
                         false,
                         true,
+                        false,
+                        0.12,
+                        0.15 / 3.0 );
+
+    if( i != 7 && i != 10 )
+    {
+      _walls_type1.push_back( temp_object );
+    }
+  }
+
+
+  // _walls type 2 object initialization
+  // -----------------------------------
+  for( int i = 0; i < 1; i ++ )
+  {
+    position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+    position += glm::vec3( -( _wall_size * 2.0 ), 0.0, 0.0 );
+
+    glm::vec3 scale( _wall_size, 1.0, _wall_size );
+
+    model_matrix = glm::mat4();
+    model_matrix = glm::translate( model_matrix, position );
+    model_matrix = glm::scale( model_matrix, scale );
+
+    Object temp_object( 5, // ID
+                        model_matrix,
+                        position,
+                        _PI_2,
+                        scale,
+                        glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
+                        1.0,
+                        false,
+                        true,
+                        1.0,
+                        0.035,
+                        false,
+                        0.99,
+                        false,
+                        true,
+                        false,
+                        0.12,
+                        0.15 / 3.0 );
+
+    _walls_type1.push_back( temp_object );
+  }
+
+
+  // _walls type 3 object initialization
+  // -----------------------------------
+  for( int i = 0; i < 1; i ++ )
+  { 
+    glm::vec3 scale( _wall_size, 1.0, _wall_size );
+
+    if( i == 0 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += glm::vec3( 0.0, _wall_size, 0.0 );
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 1.0, 0.0 , 0.0 ) );
+      model_matrix = glm::scale( model_matrix, scale );
+    }
+
+    Object temp_object( 6, // ID
+                        model_matrix,
+                        position,
+                        _PI_2,
+                        scale,
+                        glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
+                        1.0,
+                        false,
+                        true,
+                        1.0,
+                        0.035,
+                        false,
+                        0.99,
+                        false,
+                        true,
                         true,
                         0.12,
                         0.15 / 3.0 );
@@ -668,9 +747,9 @@ void Scene::IBLInitialization()
   for( unsigned int cube_map_it = 0; cube_map_it < hdr_texture_paths.size(); cube_map_it++ )
   {
     unsigned int hdr_texture;
-    unsigned int env_cubeMap;
-    unsigned int irradiance_cubeMap;
-    unsigned int pre_filter_cubeMap;
+    unsigned int env_cubemap;
+    unsigned int irradiance_cubemap;
+    unsigned int pre_filter_cubemap;
 
 
     // Load hdr skybox texture
@@ -707,8 +786,8 @@ void Scene::IBLInitialization()
 
     // Gen cubemap textures
     // --------------------
-    glGenTextures( 1, &env_cubeMap );
-    glBindTexture( GL_TEXTURE_CUBE_MAP, env_cubeMap );
+    glGenTextures( 1, &env_cubemap );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, env_cubemap );
     for( unsigned int i = 0; i < 6; ++i )
     {
       glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
@@ -755,92 +834,33 @@ void Scene::IBLInitialization()
     for( unsigned int i = 0; i < 6; ++i )
     {
       glUniformMatrix4fv( glGetUniformLocation( _cube_map_converter_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_view_matrices[ i ] ) );
-      glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, env_cubeMap, 0 );
+      glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, env_cubemap, 0 );
       glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
       _window->_toolbox->RenderCube();
     }
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 
-    glBindTexture( GL_TEXTURE_CUBE_MAP, env_cubeMap );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, env_cubemap );
     glGenerateMipmap( GL_TEXTURE_CUBE_MAP ); // generate mipmaps from first mip face (combatting visible dots artifact)
 
     
-    // Gen irradiance cube map textures
-    // --------------------------------
-    irradiance_cubeMap = _window->_toolbox->CreateCubeMapTexture( _res_irradiance_cubeMap,
-                                                                  false );
-
-    glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
-    glBindRenderbuffer( GL_RENDERBUFFER, capture_RBO );
-    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, _res_irradiance_cubeMap, _res_irradiance_cubeMap );
-
-
-    // Compute diffuse irradiance cube map  
-    // -----------------------------------
-    _diffuse_irradiance_shader.Use();
-    glUniformMatrix4fv( glGetUniformLocation( _diffuse_irradiance_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_projection_matrix ) );
-    glUniform1f( glGetUniformLocation( _diffuse_irradiance_shader._program, "uSampleDelta" ), _irradiance_sample_delta );
-    glUniform1i( glGetUniformLocation( _diffuse_irradiance_shader._program, "uEnvironmentMap" ), 0 );
-
-    glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_CUBE_MAP, env_cubeMap );
-    
-    glViewport( 0, 0, _res_irradiance_cubeMap, _res_irradiance_cubeMap ); // don't forget to configure the viewport to the capture dimensions.
-    glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
-    for( unsigned int i = 0; i < 6; ++i )
-    {
-      glUniformMatrix4fv( glGetUniformLocation( _diffuse_irradiance_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_view_matrices[ i ] ) );
-      glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradiance_cubeMap, 0 );
-      glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-      _window->_toolbox->RenderCube();
-    }
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+    // Gen & compute irradiance cube map textures
+    // ------------------------------------------
+    irradiance_cubemap = _window->_toolbox->GenIrradianceCubeMap( env_cubemap,
+                                                                  _res_irradiance_cubeMap,
+                                                                  _diffuse_irradiance_shader,
+                                                                  _irradiance_sample_delta );
 
     
-    // Create pre filter cube map textures
-    // -----------------------------------
-    pre_filter_cubeMap = _window->_toolbox->CreateCubeMapTexture( _res_pre_filter_cubeMap,
-                                                                  true );
+    // Gen & compute specular pre filter cube map textures
+    // ---------------------------------------------------
+    pre_filter_cubemap = _window->_toolbox->GenPreFilterCubeMap( env_cubemap,
+                                                                 _res_pre_filter_cubeMap,
+                                                                 _specular_pre_filter_shader,
+                                                                 _pre_filter_sample_count,
+                                                                 _pre_filter_max_mip_Level );
 
 
-    // Compute specular pre filter cube map
-    // ------------------------------------
-    _specular_pre_filter_shader.Use();
-    glUniform1i( glGetUniformLocation( _specular_pre_filter_shader._program, "uEnvironmentMap" ), 0 );
-    glUniformMatrix4fv( glGetUniformLocation( _specular_pre_filter_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_projection_matrix ) );
-    glUniform1f( glGetUniformLocation( _specular_pre_filter_shader._program, "uCubeMapRes" ), _res_pre_filter_cubeMap );
-    glUniform1ui( glGetUniformLocation( _specular_pre_filter_shader._program, "uSampleCount" ), _pre_filter_sample_count );
-
-    glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_CUBE_MAP, env_cubeMap );
-
-    glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
-
-    for( unsigned int mip = 0; mip < _pre_filter_max_mip_Level; mip++ )
-    {
-      // Reisze framebuffer according to mip-level size.
-      unsigned int mip_width  = _res_pre_filter_cubeMap * std::pow( 0.5, mip );
-      unsigned int mip_height = mip_width;
-      glBindRenderbuffer( GL_RENDERBUFFER, capture_RBO );
-      glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mip_width, mip_height );
-      glViewport( 0, 0, mip_width, mip_height );
-
-      // Set roughness level for wich we need to render
-      float roughness = ( float )mip / ( float )( _pre_filter_max_mip_Level - 1 );
-      glUniform1f( glGetUniformLocation( _specular_pre_filter_shader._program, "uRoughness" ), roughness );
-
-      // Compute pre filter cube map for a given mip level and roughness level
-      for( unsigned int i = 0; i < 6; i++ )
-      {
-        glUniformMatrix4fv( glGetUniformLocation( _specular_pre_filter_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_view_matrices[ i ] ) );
-        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, pre_filter_cubeMap, mip );
-        glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-        _window->_toolbox->RenderCube();
-      }
-    }
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
-    
     // Gen specular pre brdf texture
     // -----------------------------    
     _pre_brdf_texture = _window->_toolbox->CreateEmptyTexture( _res_pre_brdf_texture,
@@ -874,9 +894,9 @@ void Scene::IBLInitialization()
     // Save texture IDs
     // ----------------
     _hdr_textures.push_back( hdr_texture );
-    _env_cubeMaps.push_back( env_cubeMap);
-    _irradiance_cubeMaps.push_back( irradiance_cubeMap );
-    _pre_filter_cubeMaps.push_back( pre_filter_cubeMap );
+    _env_cubeMaps.push_back( env_cubemap);
+    _irradiance_cubeMaps.push_back( irradiance_cubemap );
+    _pre_filter_cubeMaps.push_back( pre_filter_cubemap );
   }
 }
 
@@ -1496,7 +1516,7 @@ void Scene::SceneForwardRendering()
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), 0 );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _ink_bottle._shadow_bias );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _ink_bottle._shadow_darkness );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _ink_bottle._shadow_darkness );
 
 
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ink_bottle._id );      

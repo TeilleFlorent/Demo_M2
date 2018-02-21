@@ -33,7 +33,7 @@ layout ( vertices = 1 ) out;
 
 // Control shader input uniforms
 // -----------------------------
-uniform vec3  uViewPosition;  
+uniform vec3  uViewPos;  
 uniform float uTessellationFactor;    
 
 
@@ -204,11 +204,11 @@ void main()
 	GenControlPointsPosition();
 
 	// Calculate the distance from the view position to the three control points                       
-	float ViewToVertexDistance0 = distance( uViewPosition,
+	float ViewToVertexDistance0 = distance( uViewPos,
 																					oPatch._frag_pos_B030 );                     
-	float ViewToVertexDistance1 = distance( uViewPosition,
+	float ViewToVertexDistance1 = distance( uViewPos,
 																					oPatch._frag_pos_B003 );                     
-	float ViewToVertexDistance2 = distance( uViewPosition,
+	float ViewToVertexDistance2 = distance( uViewPos,
 																			    oPatch._frag_pos_B300 );                     
 	                                                                                            
 	// Calculate the tessellation levels, corresponding to the segments count of each triangle edge                                                       

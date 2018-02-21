@@ -657,6 +657,7 @@ unsigned int Toolbox::GenIrradianceCubeMap( unsigned int iEnvCubeMap,
     glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f,  0.0f, -1.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) )
   };
 
+
   // Compute diffuse irradiance cube map  
   // -----------------------------------
   iIrradianceShader.Use();
@@ -678,5 +679,88 @@ unsigned int Toolbox::GenIrradianceCubeMap( unsigned int iEnvCubeMap,
   }
   glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 
+
+  // return computed irradiance cubemap
+  // ----------------------------------
   return irradiance_cubemap;
 }
+
+unsigned int Toolbox::GenPreFilterCubeMap( unsigned int iEnvCubeMap,
+                                           unsigned int iResCubeMap,
+                                           Shader       iPrefilterShader,
+                                           unsigned int iPrefilterSampleCount,
+                                           unsigned int iPrefilterMaxMipLevel )
+{
+  unsigned int capture_FBO;
+  unsigned int capture_RBO;
+
+
+  // Create pre filter cube map textures
+  // -----------------------------------
+  unsigned int pre_filter_cubemap = CreateCubeMapTexture( iResCubeMap,
+                                                          true );
+
+
+  // Gen FBO and RBO to render hdr tex into cube map tex
+  // ---------------------------------------------------
+  glGenFramebuffers( 1, &capture_FBO );
+  glGenRenderbuffers( 1, &capture_RBO );
+  glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, capture_RBO );
+
+
+  // Create 6 matrix to each cube map face
+  // -------------------------------------
+  glm::mat4 capture_projection_matrix = glm::perspective( glm::radians( 90.0f ), 1.0f, 0.1f, 10.0f );
+  glm::mat4 capture_view_matrices[] =
+  {
+    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  1.0f,  0.0f,  0.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) ),
+    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3( -1.0f,  0.0f,  0.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) ),
+    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f,  1.0f,  0.0f ), glm::vec3( 0.0f,  0.0f,  1.0f ) ),
+    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f, -1.0f,  0.0f ), glm::vec3( 0.0f,  0.0f, -1.0f ) ),
+    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f,  0.0f,  1.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) ),
+    glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f,  0.0f, -1.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) )
+  };
+
+
+  // Compute specular pre filter cube map
+  // ------------------------------------
+  iPrefilterShader.Use();
+  glUniform1i( glGetUniformLocation( iPrefilterShader._program, "uEnvironmentMap" ), 0 );
+  glUniformMatrix4fv( glGetUniformLocation( iPrefilterShader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_projection_matrix ) );
+  glUniform1f( glGetUniformLocation( iPrefilterShader._program, "uCubeMapRes" ), iResCubeMap );
+  glUniform1ui( glGetUniformLocation( iPrefilterShader._program, "uSampleCount" ), iPrefilterSampleCount );
+
+  glActiveTexture( GL_TEXTURE0 );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, iEnvCubeMap );
+
+  glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
+
+  for( unsigned int mip = 0; mip < iPrefilterMaxMipLevel; mip++ )
+  {
+    // Reise framebuffer according to mip-level size.
+    unsigned int mip_width  = iResCubeMap * std::pow( 0.5, mip );
+    unsigned int mip_height = mip_width;
+    glBindRenderbuffer( GL_RENDERBUFFER, capture_RBO );
+    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mip_width, mip_height );
+    glViewport( 0, 0, mip_width, mip_height );
+
+    // Set roughness level for wich we need to render
+    float roughness = ( float )mip / ( float )( iPrefilterMaxMipLevel - 1 );
+    glUniform1f( glGetUniformLocation( iPrefilterShader._program, "uRoughness" ), roughness );
+
+    // Compute pre filter cube map for a given mip level and roughness level
+    for( unsigned int i = 0; i < 6; i++ )
+    {
+      glUniformMatrix4fv( glGetUniformLocation( iPrefilterShader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_view_matrices[ i ] ) );
+      glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, pre_filter_cubemap, mip );
+      glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+      RenderCube();
+    }
+  }
+  glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+
+
+  return pre_filter_cubemap;
+}
+
+

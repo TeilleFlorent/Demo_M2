@@ -120,6 +120,12 @@ class Toolbox
                                        Shader       iIrradianceShader,
                                        float        iIrradianceSampleDelta );
 
+    unsigned int GenPreFilterCubeMap( unsigned int iEnvCubeMap,
+                                      unsigned int iResCubeMap,
+                                      Shader       iPrefilterShader,
+                                      unsigned int iPrefilterSampleCount,
+                                      unsigned int iPrefilterMaxMipLevel );
+
 
     // Toolbox class members
     // ---------------------
