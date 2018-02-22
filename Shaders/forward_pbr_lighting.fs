@@ -133,7 +133,7 @@ float ShadowMappingCalcualtion( vec3 iViewToFrag )
   float frag_view_distance = length( iViewToFrag );
 
   // Set radius of the disk use to scale PCF offset directions
-  float sample_disk_radius = ( 1.0 + ( ( frag_view_distance / uShadowFar ) * 75.0 ) ) / 400.0;
+  float sample_disk_radius = ( 1.0 + ( ( frag_view_distance / uShadowFar ) * 30.0 ) ) / 500.0;
 
   // Init shadow value accumulator
   float shadow = 0.0;
@@ -416,7 +416,7 @@ vec3 PBRLightingCalculation( vec3 iNormal,
 
   // Return fragment final PBR lighting 
   // ----------------------------------
-  return IBL_ambient_reflectance + ( point_lights_reflectance * iShadowFactor );
+  return IBL_ambient_reflectance * 1.0 + ( point_lights_reflectance * iShadowFactor );
 }
 
 
@@ -485,12 +485,6 @@ void main()
   //FragColor = vec4( vec3( shadow_factor ), 1.0 );
   //FragColor = vec4( vec3( texture( uTextureAO1, oUV ).r ), 1.0 );
   //FragColor = vec4( vec3( normal ), 1.0 );
-
-  if( uID == 7 )
-  {
-    //FragColor = vec4( vec3( normal ), 1.0 );
-    //FragColor = vec4( vec3( ( texture( uTexture, oUV ).a ) ), 1.0 );
-  }
 
   // Second out color => draw only brightest fragments
   vec3 bright_color = vec3( 0.0, 0.0, 0.0 );

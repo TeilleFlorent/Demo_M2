@@ -180,15 +180,15 @@ void Window::ManageEvents( Camera * iCamera )
             break;
 
           case 'a' :
-            _scene->_lights[ 0 ]._position.x += 0.1;
-            //_scene->_mesh_num += 1;
-            //std::cout << "_mesh_num = " << _scene->_mesh_num << std::endl;
+            //_scene->_lights[ 0 ]._position.x += 0.1;
+            _scene->_revolving_door._shadow_bias += 0.001;
+            std::cout << "_bias = " << _scene->_revolving_door._shadow_bias << std::endl;
             break;
 
           case 'e' :
-            _scene->_lights[ 0 ]._position.x -= 0.1;
-            //_scene->_mesh_num -= 1;
-            //std::cout << "_mesh_num = " << _scene->_mesh_num << std::endl;
+            //_scene->_lights[ 0 ]._position.x -= 0.1;
+            _scene->_revolving_door._shadow_bias -= 0.001;
+            std::cout << "_bias = " << _scene->_revolving_door._shadow_bias << std::endl;
             break;
 
           case 'r' :
@@ -223,6 +223,11 @@ void Window::ManageEvents( Camera * iCamera )
               _scene->_exposure += 0.01;
             std::cout << std::endl << "Exposure value : " << _scene->_exposure << std::endl
                                    << "----------------" << std::endl;
+            break;
+
+          case SDLK_F6 :
+            _scene->_door_open ? _scene->_door_open = false : _scene->_door_open = true;
+            std::cout << " _door_open = " << _scene->_door_open << std::endl; 
             break;
 
           default:
@@ -278,6 +283,12 @@ void Window::ManageEvents( Camera * iCamera )
 
 void Window::Draw() 
 { 
+
+  // Animation(s) update
+  // -------------------
+
+  _scene->AnimationsUpdate();
+
 
   // Frame drawing
   // ------------- 

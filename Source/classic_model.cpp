@@ -175,44 +175,122 @@ void Mesh::SetupMesh()
 
 Toolbox * Model::_toolbox; 
 
-Model::Model( string iPath, 
-              int    iID,
-              string iName,
-              bool   iNormalMap,
-              bool   iHeightMap )
+Model::Model( string  iPath, 
+              int     iID,
+              string  iName,
+              bool    iNormalMap,
+              bool    iHeightMap,
+              Scene * iScene )
 {
   _model_id   = iID;
   _model_name = iName;
   _normal_map = iNormalMap;
   _height_map = iHeightMap;
+  _scene      = iScene;
 
   LoadModel( iPath );
 }
 
 void Model::Draw( Shader    iShader,
 									glm::mat4 iModelMatrix )
-{
+{ 
+  glm::mat4 * model_matrix;
+  glm::mat4 rotation_matrix;
+  glm::mat4 rotation_matrix1;
+  glm::mat4 rotation_matrix2;
+
+  
+  // Set revolving door rotation
+  if( _model_id == 3 )
+  { 
+    rotation_matrix  = iModelMatrix * _scene->_door_rotation_matrix;
+    rotation_matrix1 = iModelMatrix * _scene->_door1_rotation_matrix;
+    rotation_matrix2 = iModelMatrix * _scene->_door2_rotation_matrix;
+  }
+
 	// Draw non transparent model parts
   for( unsigned int i = 0; i < this->_meshes.size(); i++ )
-  { 
+  {  
+    model_matrix = &iModelMatrix;
+
+    // Perform revolving door rotations
+    if( _model_id == 3 )
+    {
+      if( i > 14 && i < 18 )
+      {
+        model_matrix = &rotation_matrix;
+      }
+
+      if( i > 2 && i < 6 )
+      {
+        model_matrix = &rotation_matrix1;
+      }
+
+      if( i > 5 && i < 9 )
+      {
+        model_matrix = &rotation_matrix1;
+      }
+
+      if( i > 8 && i < 12 )
+      {
+        model_matrix = &rotation_matrix2;
+      }
+
+      if( i > 11 && i < 15 )
+      {
+        model_matrix = &rotation_matrix2;
+      }
+    }
+
     this->_meshes[ i ].Draw( iShader,
     											   this->_model_id,
     											   i,
-    											   iModelMatrix,
+    											   *model_matrix,
                              _normal_map,
                              _height_map,
     											   1.0 );
   }
 
 	// Draw transparent model parts
-  for( unsigned int i = 0; i < this->_meshes.size(); i++ )
+  for( int i = this->_meshes.size() - 1; i >= 0.0; --i )
   {	
+    model_matrix = &iModelMatrix;
+
+    // Perform revolving door rotations
+    if( _model_id == 3 )
+    {
+      if( i > 14 && i < 18 )
+      {
+        model_matrix = &rotation_matrix;
+      }
+
+      if( i > 2 && i < 6 )
+      {
+        model_matrix = &rotation_matrix1;
+      }
+
+      if( i > 5 && i < 9 )
+      {
+        model_matrix = &rotation_matrix1;
+      }
+
+      if( i > 8 && i < 12 )
+      {
+        model_matrix = &rotation_matrix2;
+      }
+
+      if( i > 11 && i < 15 )
+      {
+        model_matrix = &rotation_matrix2;
+      }
+    }
+    
   	if( this->_meshes[ i ]._opacity_map )
   	{
 	    this->_meshes[ i ].Draw( iShader,
 	    											   this->_model_id,
 	    											   i,
-	    											   iModelMatrix,
+	    											   *model_matrix,
                                _normal_map,
                                _height_map,
 	    											   2.0 );
@@ -223,11 +301,41 @@ void Model::Draw( Shader    iShader,
 void Model::DrawDepth( Shader    iShader,
                        glm::mat4 iModelMatrix )
 {
-  // Draw non transparent model parts
-  for( unsigned int i = 0; i < this->_meshes.size(); i++ )
+  // Revolving door depth drawing
+  if( _model_id == 3 )
+  { 
+    glm::mat4 * model_matrix;
+
+    // Set revolving door rotation
+    glm::mat4 rotation_matrix = iModelMatrix * _scene->_door_rotation_matrix;
+
+    for( unsigned int i = 0; i < this->_meshes.size(); i++ )
+    { 
+      // Perform revolving door rotation
+      if( i > 14
+       && i < 18 )
+      {
+        model_matrix = &rotation_matrix;
+      }
+      else
+      {
+        model_matrix = &iModelMatrix;
+      }
+
+      if( !this->_meshes[ i ]._opacity_map )
+      {
+        this->_meshes[ i ].DrawDepth( iShader,
+                                      *model_matrix );
+      }
+    }
+  }
+  else
   {
-    this->_meshes[ i ].DrawDepth( iShader,
-                                  iModelMatrix );
+    for( unsigned int i = 0; i < this->_meshes.size(); i++ )
+    { 
+      this->_meshes[ i ].DrawDepth( iShader,
+                                    iModelMatrix );
+    }
   }
 }
 
@@ -261,16 +369,16 @@ void Model::LoadModel( string iPath )
 
   // Load model scene and process all nodes hierarchy
   // ------------------------------------------------
-  _scene = _importer.ReadFile( iPath, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace );
+  _assimp_scene = _importer.ReadFile( iPath, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace );
 
-  if( !_scene || _scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !_scene->mRootNode )
+  if( !_assimp_scene || _assimp_scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !_assimp_scene->mRootNode )
   {
     cout << "\n\nASSIMP ERROR => LoadModel() function\n\n" << _importer.GetErrorString() << endl;
     return;
   }
 
   this->_directory = iPath.substr( 0, iPath.find_last_of( '/' ) );
-  this->ProcessNode( _scene->mRootNode );
+  this->ProcessNode( _assimp_scene->mRootNode );
 
 
   // Erase unwanted mesh
@@ -286,7 +394,7 @@ void Model::ProcessNode( aiNode * iNode )
 { 
   for( unsigned int i = 0; i < iNode->mNumMeshes; i++ )
   {
-    aiMesh * mesh = _scene->mMeshes[ iNode->mMeshes[ i ] ]; 
+    aiMesh * mesh = _assimp_scene->mMeshes[ iNode->mMeshes[ i ] ]; 
     this->_meshes.push_back( this->ProcessMesh( mesh,
     																				    iNode->mTransformation,
     																				    iNode->mName ) );  

@@ -112,6 +112,7 @@ class Mesh
 //******************************************************************************
 
 class Toolbox;
+class Scene;
 
 class Model 
 {
@@ -121,11 +122,12 @@ class Model
 
     // Class functions
     // ---------------
-    Model( string iPath,
-           int    iID,
-           string iName,
-           bool   iNormalMap,
-           bool   iHeightMap );
+    Model( string  iPath,
+           int     iID,
+           string  iName,
+           bool    iNormalMap,
+           bool    iHeightMap,
+           Scene * iScene );
 
     void Draw( Shader    iShader,
                glm::mat4 iModelMatrix );   
@@ -172,7 +174,10 @@ class Model
 
     vector< Texture > _textures_loaded;
     Assimp::Importer  _importer;
-    const aiScene *   _scene;
+    const aiScene *   _assimp_scene;
+
+    // Pointer on the scene where this model is render
+    Scene *           _scene;
 
     bool _normal_map;
     bool _height_map;

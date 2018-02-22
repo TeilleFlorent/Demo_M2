@@ -26,9 +26,9 @@ Scene::Scene( Window * iParentWindow )
 
   // Init bloom parameters
   _bloom              = true;
-  _blur_downsample    = 0.5;
+  _blur_downsample    = 1.0;
   _blur_pass_count    = 6;
-  _blur_offset_factor = 0.5;
+  _blur_offset_factor = 1.0;
 
   // Init multi sample parameters
   _multi_sample    = false;
@@ -56,6 +56,10 @@ Scene::Scene( Window * iParentWindow )
 
   // Lights volume
   _render_lights_volume = false;
+
+  // Revolving door
+  _door_angle = 0.0;
+  _door_open  = false;
 
 
   // Scene data initialization
@@ -495,8 +499,8 @@ void Scene::ObjectsInitialization()
   _wall_size   = _ground_size / 3.0;
 
 
-  // _grounds type 1 object initialization
-  // -------------------------------------
+  // _grounds type 1 object initialization ( room 1 ground & roof )
+  // --------------------------------------------------------------
   for( int i = 0; i < 2; i ++ )
   {
     position = glm::vec3( -(_ground_size * 0.5 ) + 0.0, 0.0, -(_ground_size * 0.5 ) + 0.0 );
@@ -561,8 +565,8 @@ void Scene::ObjectsInitialization()
                            0.0 ) );
 
 
-  // _walls type 1 object initialization
-  // -----------------------------------
+  // _walls type 1 object initialization ( room 1 walls )
+  // ----------------------------------------------------
   for( int i = 0; i < 12; i ++ )
   {
     if( i >= 0 && i < 3 )
@@ -629,25 +633,51 @@ void Scene::ObjectsInitialization()
                         0.12,
                         0.15 / 3.0 );
 
-    if( i != 7 && i != 10 )
+    if( i != 1 && i != 10 )
     {
       _walls_type1.push_back( temp_object );
     }
   }
 
 
-  // _walls type 2 object initialization
-  // -----------------------------------
-  for( int i = 0; i < 1; i ++ )
+  // _walls type 2 object initialization ( entrance corridor ground & roof )
+  // -----------------------------------------------------------------------
+  for( int i = 0; i < 6; i ++ )
   {
-    position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
-    position += glm::vec3( -( _wall_size * 2.0 ), 0.0, 0.0 );
-
     glm::vec3 scale( _wall_size, 1.0, _wall_size );
 
-    model_matrix = glm::mat4();
-    model_matrix = glm::translate( model_matrix, position );
-    model_matrix = glm::scale( model_matrix, scale );
+    if( i == 0 || i == 1 || i == 2 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += glm::vec3( -( _wall_size * ( 2.0 + i ) ), 0.0, 0.0 );
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::scale( model_matrix, scale );
+    }
+
+    if( i == 3 || i == 4 || i == 5 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += glm::vec3( -_wall_size, _wall_size, 0.0 );
+
+      if( i == 4 )
+      {
+        position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+        position += glm::vec3( -_wall_size * 2, _wall_size, 0.0 );
+      }
+
+      if( i == 5 )
+      {
+        position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+        position += glm::vec3( -_wall_size * 3, _wall_size, 0.0 );
+      }
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI, glm::vec3( 0.0, 0.0 , 1.0 ) );
+      model_matrix = glm::scale( model_matrix, scale );
+    }
 
     Object temp_object( 5, // ID
                         model_matrix,
@@ -672,20 +702,42 @@ void Scene::ObjectsInitialization()
   }
 
 
-  // _walls type 3 object initialization
-  // -----------------------------------
-  for( int i = 0; i < 0; i ++ )
+  // _walls type 3 object initialization ( entrance corridor walls )
+  // --------------------------------------------------------------
+  for( int i = 0; i < 7; i ++ )
   { 
     glm::vec3 scale( _wall_size, 1.0, _wall_size );
 
-    if( i == 0 )
+    if( i == 0 || i == 1 || i == 2 )
     {
       position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
-      position += glm::vec3( 0.0, _wall_size, 0.0 );
-
+      position += glm::vec3( -_wall_size * ( 2.0 + i ), _wall_size, 0.0 );
+      
       model_matrix = glm::mat4();
       model_matrix = glm::translate( model_matrix, position );
       model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 1.0, 0.0 , 0.0 ) );
+      model_matrix = glm::scale( model_matrix, scale );
+    }
+
+    if( i == 3 || i == 4 || i == 5 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += glm::vec3( -_wall_size * ( 2.0 + ( i - 3 ) ), 0.0, _wall_size );
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( -1.0, 0.0 , 0.0 ) );
+      model_matrix = glm::scale( model_matrix, scale );
+    }
+
+    if( i == 6 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += glm::vec3( -_wall_size * 4.0, _wall_size, 0.0 );
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0 , -1.0 ) );
       model_matrix = glm::scale( model_matrix, scale );
     }
 
@@ -704,7 +756,7 @@ void Scene::ObjectsInitialization()
                         0.99,
                         false,
                         true,
-                        true,
+                        false,
                         0.12,
                         0.15 / 3.0 );
 
@@ -714,12 +766,13 @@ void Scene::ObjectsInitialization()
 
   // _revolving_door object initialization
   // ---------------------------------
-  position = glm::vec3( 1.0, 0.6, 0.0 );
+  position = glm::vec3( -7.0, 0.05, 0.0 );
 
   model_matrix = glm::mat4();
   model_matrix = glm::translate( model_matrix, position );
-  model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( -1.0, 0.0 ,0.0 ) );
-  scale = glm::vec3( 0.03, 0.03, 0.03 );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( -1.0, 0.0, 0.0 ) );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0, 1.0 ) );
+  scale = glm::vec3( 0.11, 0.11, 0.11 );
   model_matrix = glm::scale( model_matrix, scale );
 
   _revolving_door.Set( Object( 7, // ID
@@ -732,7 +785,7 @@ void Scene::ObjectsInitialization()
                                true,
                                true,
                                1.0,
-                               0.035,
+                               0.015,
                                false,
                                0.99,
                                true,
@@ -1016,7 +1069,8 @@ void Scene::ModelsLoading()
                             0, 
                             "Table1",
                             true,
-                            false );
+                            false,
+                            this );
   _table_model->PrintInfos();
 
   // Volume sphere model loading
@@ -1024,7 +1078,8 @@ void Scene::ModelsLoading()
                              1, 
                              "VolumeSphere",
                              false,
-                             false );
+                             false,
+                             this );
   _sphere_model->PrintInfos();
 
   // Ink bottle model loading
@@ -1032,7 +1087,8 @@ void Scene::ModelsLoading()
                                  2, 
                                  "InkBottle",
                                  _ink_bottle._normal_map,
-                                 _ink_bottle._height_map );
+                                 _ink_bottle._height_map,
+                                 this );
   _ink_bottle_model->PrintInfos();
 
   // revolving door model loading
@@ -1040,7 +1096,8 @@ void Scene::ModelsLoading()
                                      3, 
                                      "RevolvingDoor",
                                      _revolving_door._normal_map,
-                                     _revolving_door._height_map );
+                                     _revolving_door._height_map,
+                                     this );
   _revolving_door_model->PrintInfos();
 }
 
@@ -1907,3 +1964,34 @@ void Scene::PostProcess()
 
   glUseProgram( 0 );
 }
+
+void Scene::AnimationsUpdate()
+{ 
+
+  // Revolving door rotation matrix update
+  // -------------------------------------
+  _door_rotation_matrix = glm::mat4();
+  _door_rotation_matrix = glm::rotate( _door_rotation_matrix, _clock->GetCurrentTime() * 0.25f, glm::vec3( 0.0, 0.0, 1.0 ) );
+
+  _door1_rotation_matrix = glm::mat4();
+  _door1_rotation_matrix = glm::rotate( _door1_rotation_matrix, _door_angle, glm::vec3( 0.0, 0.0, -1.0 ) );
+
+  _door2_rotation_matrix = glm::mat4();
+  _door2_rotation_matrix = glm::rotate( _door2_rotation_matrix, _door_angle, glm::vec3( 0.0, 0.0, 1.0 ) );
+
+  DoorOpeningScript();
+}
+
+void Scene::DoorOpeningScript()
+{
+  if( _door_open && _door_angle < 0.53 )
+  {
+    _door_angle += 0.1 * _clock->GetDeltaTime();
+  }
+
+  if( !_door_open )
+  {
+    _door_angle = 0.0;
+  }
+}
+

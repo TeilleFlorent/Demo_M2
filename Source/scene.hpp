@@ -66,6 +66,10 @@ class Scene
 
     void PostProcess();
 
+    void AnimationsUpdate();
+
+    void DoorOpeningScript();
+
 
     // Scene class members
     // -------------------
@@ -190,6 +194,13 @@ class Scene
     Model * _sphere_model;
     Model * _ink_bottle_model;
     Model * _revolving_door_model;
+
+    // Revolving rotation matrix
+    glm::mat4 _door_rotation_matrix;
+    glm::mat4 _door1_rotation_matrix;
+    glm::mat4 _door2_rotation_matrix;
+    float     _door_angle;
+    bool      _door_open;
 };
 
 #endif  // SCENE_H
