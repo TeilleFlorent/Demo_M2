@@ -183,8 +183,8 @@ class Scene
     std::vector< Object > _walls_type1;
     std::vector< Object > _walls_type2;
     std::vector< Object > _grounds_type1;
+    std::vector< Object > _revolving_door;
     Object                _ink_bottle;
-    Object                _revolving_door;
     float                 _ground_size;
     float                 _wall_size;
 

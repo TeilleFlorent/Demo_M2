@@ -90,7 +90,7 @@ Scene::Scene( Window * iParentWindow )
                         45.0f,
                         ( float )_window->_width,
                         ( float )_window->_height,
-                        1.5 );
+                        6.0 );
 
   // Create and init all shaders
   ShadersInitialization();
@@ -479,7 +479,7 @@ void Scene::LightsInitialization()
   
   PointLight::SetLightsMultiplier( 30.0 );
 
-  _lights.push_back( PointLight( glm::vec3( 0.0, 1.5, 0.0 ),
+  _lights.push_back( PointLight( glm::vec3( -2.0, 2.0, 0.0 ),
                                  glm::vec3( 1.0, 1.0, 1.0 ),
                                  0.5,
                                  3.0 ) );    
@@ -703,7 +703,7 @@ void Scene::ObjectsInitialization()
 
 
   // _walls type 3 object initialization ( entrance corridor walls )
-  // --------------------------------------------------------------
+  // ---------------------------------------------------------------
   for( int i = 0; i < 7; i ++ )
   { 
     glm::vec3 scale( _wall_size, 1.0, _wall_size );
@@ -765,34 +765,606 @@ void Scene::ObjectsInitialization()
 
 
   // _revolving_door object initialization
-  // ---------------------------------
-  position = glm::vec3( -7.0, 0.05, 0.0 );
+  // -------------------------------------
+  for( int i = 0; i < 3; i ++ )
+  {   
+    scale = glm::vec3( 0.105, 0.105, 0.105 );
+    
+    if( i == 0 )
+    {
+      position = glm::vec3( -4.8, 0.03, 0.0 );
+    }
+
+    if( i == 1 )
+    {
+      position = glm::vec3( 0.0, 0.03, -13.8 );
+    }
+
+    if( i == 2 )
+    {
+      position = glm::vec3( 13.8, 0.03, -_ground_size - ( _wall_size * 4 ) );
+    }
+
+    model_matrix = glm::mat4();
+    model_matrix = glm::translate( model_matrix, position );
+    model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( -1.0, 0.0, 0.0 ) );
+    
+    if( i != 1 )
+    {
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0, 1.0 ) );
+    }
+
+    model_matrix = glm::scale( model_matrix, scale );
+
+    _revolving_door.push_back( Object( 7, // ID
+                                       model_matrix,
+                                       position,
+                                       0.0,
+                                       scale,
+                                       glm::vec2( 1.0, 1.0 ),
+                                       1.0,
+                                       true,
+                                       true,
+                                       1.0,
+                                       0.015,
+                                       true,
+                                       0.99,
+                                       true,
+                                       true,
+                                       false,
+                                       0.0,
+                                       0.0 ) );
+  }
+
+
+  // _walls type 4 object initialization ( corridor room 1 to room 2 ground )
+  // ------------------------------------------------------------------------
+  for( int i = 0; i < 4; i ++ )
+  { 
+    glm::vec3 scale( _wall_size, 1.0, _wall_size );
+
+    position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+    position += glm::vec3( 0.0, 0.0, -_wall_size * ( 2 + i ) );
+    
+    model_matrix = glm::mat4();
+    model_matrix = glm::translate( model_matrix, position );
+    //model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 1.0, 0.0 , 0.0 ) );
+    model_matrix = glm::scale( model_matrix, scale );
+
+    Object temp_object( 8, // ID
+                        model_matrix,
+                        position,
+                        _PI_2,
+                        scale,
+                        glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
+                        1.0,
+                        false,
+                        true,
+                        1.0,
+                        0.035,
+                        false,
+                        0.99,
+                        false,
+                        true,
+                        false,
+                        0.12,
+                        0.15 / 3.0 );
+
+    _walls_type1.push_back( temp_object );
+  }
+
+
+  // _walls type 5 object initialization ( corridor room 1 to room 2 roof )
+  // ----------------------------------------------------------------------
+  for( int i = 0; i < 4; i ++ )
+  { 
+    glm::vec3 scale( _wall_size, 1.0, _wall_size );
+
+    position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+    position += glm::vec3( 0.0, _wall_size, -_wall_size * ( i + 1 ) );
+    
+    model_matrix = glm::mat4();
+    model_matrix = glm::translate( model_matrix, position );
+    model_matrix = glm::rotate( model_matrix, ( float )_PI, glm::vec3( 1.0, 0.0 , 0.0 ) );
+    model_matrix = glm::scale( model_matrix, scale );
+
+    Object temp_object( 9, // ID
+                        model_matrix,
+                        position,
+                        _PI_2,
+                        scale,
+                        glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
+                        1.0,
+                        false,
+                        true,
+                        1.0,
+                        0.035,
+                        false,
+                        0.99,
+                        false,
+                        true,
+                        false,
+                        0.12,
+                        0.15 / 3.0 );
+
+    _walls_type1.push_back( temp_object );
+  }
+
+
+  // _walls type 6 object initialization ( corridor room 1 to room 2 walls )
+  // -----------------------------------------------------------------------
+  for( int i = 0; i < 8; i ++ )
+  { 
+    glm::vec3 scale( _wall_size, 1.0, _wall_size );
+
+    if( i < 4 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += glm::vec3( _wall_size, 0.0, -_wall_size * ( 2 + i ) );
+      
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0 , 1.0 ) );
+      model_matrix = glm::scale( model_matrix, scale );
+    }
+
+    if( i > 3 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += glm::vec3( 0.0, _wall_size, -_wall_size * ( 2 + ( i - 4 ) ) );
+      
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0 , -1.0 ) );
+      model_matrix = glm::scale( model_matrix, scale );
+    }
+
+    Object temp_object( 10, // ID
+                        model_matrix,
+                        position,
+                        _PI_2,
+                        scale,
+                        glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
+                        1.0,
+                        false,
+                        true,
+                        1.0,
+                        0.035,
+                        false,
+                        0.99,
+                        false,
+                        true,
+                        false,
+                        0.12,
+                        0.15 / 3.0 );
+
+    _walls_type1.push_back( temp_object );
+  }
+
+
+  // _grounds type 2 object initialization ( room 2 ground )
+  // ------------------------------------------------------
+  scale = glm::vec3( _ground_size, 1.0, _ground_size );
+
+  position = glm::vec3( -(_ground_size * 0.5 ) + 0.0, 0.0, -(_ground_size * 0.5 ) + 0.0 );
+  position += glm::vec3( 0.0, 0.0, -_ground_size - ( _wall_size * 4 ) );
 
   model_matrix = glm::mat4();
   model_matrix = glm::translate( model_matrix, position );
-  model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( -1.0, 0.0, 0.0 ) );
-  model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0, 1.0 ) );
-  scale = glm::vec3( 0.11, 0.11, 0.11 );
-  model_matrix = glm::scale( model_matrix, scale );
+  model_matrix = glm::scale( model_matrix, glm::vec3( _ground_size, 1.0, _ground_size ) ); 
 
-  _revolving_door.Set( Object( 7, // ID
-                               model_matrix,
-                               position,
-                               0.0,
-                               scale,
-                               glm::vec2( 1.0, 1.0 ),
-                               1.0,
-                               true,
-                               true,
-                               1.0,
-                               0.015,
-                               false,
-                               0.99,
-                               true,
-                               true,
-                               false,
-                               0.0,
-                               0.0 ) );
+  Object temp_object( 11,              // ID
+                      model_matrix,   // model matrix
+                      position,       // position
+                      _PI_2,          // angle
+                      scale,          // scale
+                      glm::vec2( 6.0, 6.0 ),                          // uv scale
+                      1.0,            // alpha
+                      false,          // generate shadow
+                      true,           // receiv shadow
+                      1.0,            // shadow darkness
+                      0.035,          // shadow bias
+                      false,          // bloom
+                      0.99,           // bloom bright value
+                      false,          // opacity map
+                      true,           // normal map
+                      false,           // height map
+                      0.12,           // displacement factor
+                      0.15 );         // tessellation factor
+
+  _grounds_type1.push_back( temp_object );
+
+
+  // _grounds type 3 object initialization ( room 2 roof )
+  // ------------------------------------------------------
+  scale = glm::vec3( _ground_size, 1.0, _ground_size );
+
+  position = glm::vec3( -(_ground_size * 0.5 ) + 0.0, 0.0, -(_ground_size * 0.5 ) + 0.0 );
+  position += glm::vec3( 0.0, _wall_size, -_wall_size * 4 );
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI, glm::vec3( 1.0, 0.0 , 0.0 ) );
+  model_matrix = glm::scale( model_matrix, glm::vec3( _ground_size, 1.0, _ground_size ) );
+
+  temp_object = Object( 12,              // ID
+                        model_matrix,   // model matrix
+                        position,       // position
+                        _PI_2,          // angle
+                        scale,          // scale
+                        glm::vec2( 6.0, 6.0 ),                          // uv scale
+                        1.0,            // alpha
+                        false,          // generate shadow
+                        true,           // receiv shadow
+                        1.0,            // shadow darkness
+                        0.035,          // shadow bias
+                        false,          // bloom
+                        0.99,           // bloom bright value
+                        false,          // opacity map
+                        true,           // normal map
+                        false,           // height map
+                        0.12,           // displacement factor
+                        0.15 );         // tessellation factor
+
+  _grounds_type1.push_back( temp_object );
+
+
+  // _walls type 7 object initialization ( room 2 walls )
+  // ----------------------------------------------------
+  glm::vec3 room2_offset_position( 0.0, 0.0, -_ground_size - (_wall_size * 4 ) );
+  for( int i = 0; i < 12; i ++ )
+  {
+    if( i >= 0 && i < 3 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += glm::vec3( 0.0, _wall_size, 0.0 );
+      position -= glm::vec3( _wall_size - ( _wall_size * i ), 0.0, _wall_size );
+      position += room2_offset_position;
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 1.0, 0.0 , 0.0 ) );
+      model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
+    }
+
+    if( i > 2 && i < 6 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += glm::vec3( _wall_size - ( _wall_size * ( i - 3 ) ), 0.0, _wall_size * 2.0 );
+      position += room2_offset_position;
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( -1.0, 0.0 , 0.0 ) );
+      model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
+    }
+
+    if( i > 5 && i < 9 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += glm::vec3( _wall_size * 2.0, 0.0, _wall_size - ( _wall_size * ( i - 6 ) ) );
+      position += room2_offset_position;
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0 , 1.0 ) );
+      model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
+    }
+
+    if( i > 8 && i < 12 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += glm::vec3( -_wall_size, _wall_size, _wall_size - ( _wall_size * ( i - 9 ) ) );
+      position += room2_offset_position;
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0 , -1.0 ) );
+      model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
+    }
+
+    Object temp_object( 13, // ID
+                        model_matrix,
+                        position,
+                        _PI_2,
+                        glm::vec3( _wall_size, 1.0, _wall_size ),
+                        glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
+                        1.0,
+                        false,
+                        true,
+                        1.0,
+                        0.035,
+                        false,
+                        0.99,
+                        false,
+                        true,
+                        false,
+                        0.12,
+                        0.15 / 3.0 );
+
+    if( i != 4 && i != 7 )
+    {
+      _walls_type1.push_back( temp_object );
+    }
+  }
+
+
+  // _walls type 8 object initialization ( corridor room 2 to room 3 ground )
+  // ------------------------------------------------------------------------
+  for( int i = 0; i < 4; i ++ )
+  { 
+    glm::vec3 scale( _wall_size, 1.0, _wall_size );
+
+    position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+    position += room2_offset_position;
+    position += glm::vec3( _wall_size * ( 2 + i ), 0.0, 0.0 );
+        
+    model_matrix = glm::mat4();
+    model_matrix = glm::translate( model_matrix, position );
+    //model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 1.0, 0.0 , 0.0 ) );
+    model_matrix = glm::scale( model_matrix, scale );
+
+    Object temp_object( 14, // ID
+                        model_matrix,
+                        position,
+                        _PI_2,
+                        scale,
+                        glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
+                        1.0,
+                        false,
+                        true,
+                        1.0,
+                        0.035,
+                        false,
+                        0.99,
+                        false,
+                        true,
+                        false,
+                        0.12,
+                        0.15 / 3.0 );
+
+    _walls_type1.push_back( temp_object );
+  }
+
+
+  // _walls type 9 object initialization ( corridor room 2 to room 3 roof )
+  // ----------------------------------------------------------------------
+  for( int i = 0; i < 4; i ++ )
+  { 
+    glm::vec3 scale( _wall_size, 1.0, _wall_size );
+
+    position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+    position += room2_offset_position;
+    position += glm::vec3( _wall_size * ( 3 + i ), _wall_size, 0.0 );
+        
+    model_matrix = glm::mat4();
+    model_matrix = glm::translate( model_matrix, position );
+    model_matrix = glm::rotate( model_matrix, ( float )_PI, glm::vec3( 0.0, 0.0 , 1.0 ) );
+    model_matrix = glm::scale( model_matrix, scale );
+
+    Object temp_object( 15, // ID
+                        model_matrix,
+                        position,
+                        _PI_2,
+                        scale,
+                        glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
+                        1.0,
+                        false,
+                        true,
+                        1.0,
+                        0.035,
+                        false,
+                        0.99,
+                        false,
+                        true,
+                        false,
+                        0.12,
+                        0.15 / 3.0 );
+
+    _walls_type1.push_back( temp_object );
+  }
+
+
+  // _walls type 10 object initialization ( corridor room 2 to room 3 walls )
+  // ------------------------------------------------------------------------
+  for( int i = 0; i < 8; i ++ )
+  { 
+    glm::vec3 scale( _wall_size, 1.0, _wall_size );
+
+    if( i < 4 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += room2_offset_position;
+      position += glm::vec3( _wall_size * ( 2 + i ), _wall_size, 0.0 );
+      
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 1.0, 0.0 , 0.0 ) );
+      model_matrix = glm::scale( model_matrix, scale );
+    }
+
+    if( i > 3 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += room2_offset_position;
+      position += glm::vec3( _wall_size * ( 2 + ( i - 4 ) ), 0.0, _wall_size );
+      
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( -1.0, 0.0 , 0.0 ) );
+      model_matrix = glm::scale( model_matrix, scale );
+    }
+
+    Object temp_object( 16, // ID
+                        model_matrix,
+                        position,
+                        _PI_2,
+                        scale,
+                        glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
+                        1.0,
+                        false,
+                        true,
+                        1.0,
+                        0.035,
+                        false,
+                        0.99,
+                        false,
+                        true,
+                        false,
+                        0.12,
+                        0.15 / 3.0 );
+
+    _walls_type1.push_back( temp_object );
+  }
+
+
+  // _grounds type 4 object initialization ( room 3 ground )
+  // -------------------------------------------------------
+  glm::vec3 room3_offset_position = room2_offset_position + glm::vec3( _ground_size + ( _wall_size * 4 ), 0.0, 0.0 );
+
+  scale = glm::vec3( _ground_size, 1.0, _ground_size );
+
+  position = glm::vec3( -(_ground_size * 0.5 ) + 0.0, 0.0, -(_ground_size * 0.5 ) + 0.0 );
+  position += room3_offset_position;
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::scale( model_matrix, glm::vec3( _ground_size, 1.0, _ground_size ) ); 
+
+  temp_object = Object( 17,              // ID
+                        model_matrix,   // model matrix
+                        position,       // position
+                        _PI_2,          // angle
+                        scale,          // scale
+                        glm::vec2( 6.0, 6.0 ),                          // uv scale
+                        1.0,            // alpha
+                        false,          // generate shadow
+                        true,           // receiv shadow
+                        1.0,            // shadow darkness
+                        0.035,          // shadow bias
+                        false,          // bloom
+                        0.99,           // bloom bright value
+                        false,          // opacity map
+                        true,           // normal map
+                        false,           // height map
+                        0.12,           // displacement factor
+                        0.15 );         // tessellation factor
+
+  _grounds_type1.push_back( temp_object );
+
+
+  // _grounds type 5 object initialization ( room 3 roof )
+  // -----------------------------------------------------
+  scale = glm::vec3( _ground_size, 1.0, _ground_size );
+
+  position = glm::vec3( -(_ground_size * 0.5 ) + 0.0, 0.0, -(_ground_size * 0.5 ) + 0.0 );
+  position += room3_offset_position;
+  position += glm::vec3( 0.0, _wall_size, _ground_size );
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI, glm::vec3( 1.0, 0.0 , 0.0 ) );
+  model_matrix = glm::scale( model_matrix, glm::vec3( _ground_size, 1.0, _ground_size ) ); 
+
+  temp_object = Object( 18,              // ID
+                        model_matrix,   // model matrix
+                        position,       // position
+                        _PI_2,          // angle
+                        scale,          // scale
+                        glm::vec2( 6.0, 6.0 ),                          // uv scale
+                        1.0,            // alpha
+                        false,          // generate shadow
+                        true,           // receiv shadow
+                        1.0,            // shadow darkness
+                        0.035,          // shadow bias
+                        false,          // bloom
+                        0.99,           // bloom bright value
+                        false,          // opacity map
+                        true,           // normal map
+                        false,           // height map
+                        0.12,           // displacement factor
+                        0.15 );         // tessellation factor
+
+  _grounds_type1.push_back( temp_object );
+
+
+  // _walls type 11 object initialization ( room 3 walls )
+  // -----------------------------------------------------
+  for( int i = 0; i < 12; i ++ )
+  {
+    if( i >= 0 && i < 3 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += room3_offset_position;
+      position += glm::vec3( 0.0, _wall_size, 0.0 );
+      position -= glm::vec3( _wall_size - ( _wall_size * i ), 0.0, _wall_size );
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 1.0, 0.0 , 0.0 ) );
+      model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
+    }
+
+    if( i > 2 && i < 6 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += room3_offset_position;
+      position += glm::vec3( _wall_size - ( _wall_size * ( i - 3 ) ), 0.0, _wall_size * 2.0 );
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( -1.0, 0.0 , 0.0 ) );
+      model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
+    }
+
+    if( i > 5 && i < 9 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += room3_offset_position;
+      position += glm::vec3( _wall_size * 2.0, 0.0, _wall_size - ( _wall_size * ( i - 6 ) ) );
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0 , 1.0 ) );
+      model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
+    }
+
+    if( i > 8 && i < 12 )
+    {
+      position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
+      position += room3_offset_position;
+      position += glm::vec3( -_wall_size, _wall_size, _wall_size - ( _wall_size * ( i - 9 ) ) );
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0 , -1.0 ) );
+      model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
+    }
+
+    Object temp_object( 19, // ID
+                        model_matrix,
+                        position,
+                        _PI_2,
+                        glm::vec3( _wall_size, 1.0, _wall_size ),
+                        glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
+                        1.0,
+                        false,
+                        true,
+                        1.0,
+                        0.035,
+                        false,
+                        0.99,
+                        false,
+                        true,
+                        false,
+                        0.12,
+                        0.15 / 3.0 );
+
+    if( i != 10 )
+    {
+      _walls_type1.push_back( temp_object );
+    }
+  }
 }
 
 void Scene::IBLInitialization()
@@ -1095,8 +1667,8 @@ void Scene::ModelsLoading()
   _revolving_door_model = new Model( "../Models/revolving_door/RevolvingDoor.FBX", 
                                      3, 
                                      "RevolvingDoor",
-                                     _revolving_door._normal_map,
-                                     _revolving_door._height_map,
+                                     _revolving_door[ 0 ]._normal_map,
+                                     _revolving_door[ 0 ]._height_map,
                                      this );
   _revolving_door_model->PrintInfos();
 }
@@ -1229,7 +1801,7 @@ void Scene::SceneDepthPass()
 
   // Draw revolving door depth
   // -------------------------
-  model_matrix = _revolving_door._model_matrix;
+  model_matrix = _revolving_door[ 0 ]._model_matrix;
   glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
   _revolving_door_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
 
@@ -1524,13 +2096,11 @@ void Scene::SceneForwardRendering()
   glUseProgram( 0 );
 
 
-  // Draw revolving door
-  // -------------------
+  // Draw revolving doors
+  // --------------------
   glEnable( GL_CULL_FACE );
   glCullFace( GL_BACK );
   _forward_pbr_shader.Use();
-
-  model_matrix = _revolving_door._model_matrix;
 
   glActiveTexture( GL_TEXTURE7 );
   glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
@@ -1543,9 +2113,7 @@ void Scene::SceneForwardRendering()
 
   // Matrices uniforms
   glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
   glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
-
   glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
   // Point lights uniforms
@@ -1558,31 +2126,38 @@ void Scene::SceneForwardRendering()
     glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
   }
 
-  // Bloom uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _revolving_door._bloom );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _revolving_door._bloom_brightness );
-
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
-  // Opacity uniforms
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _revolving_door._alpha );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _revolving_door._opacity_map );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
-  
-  // Displacement mapping uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _revolving_door._normal_map );
+  for( int door_it = 0; door_it < _revolving_door.size(); door_it++ )
+  { 
+    model_matrix = _revolving_door[ door_it ]._model_matrix;
 
-  // Omnidirectional shadow mapping uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _revolving_door._receiv_shadow );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), 0 );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _revolving_door._shadow_bias );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _revolving_door._shadow_darkness );
+    // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
 
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _revolving_door[ door_it ]._bloom );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _revolving_door[ door_it ]._bloom_brightness );
 
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _revolving_door._id );      
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _revolving_door[ door_it ]._alpha );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _revolving_door[ door_it ]._opacity_map );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _revolving_door[ door_it ]._normal_map );
 
-  _revolving_door_model->Draw( _forward_pbr_shader, model_matrix );
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _revolving_door[ door_it ]._receiv_shadow );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), 0 );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _revolving_door[ door_it ]._shadow_bias );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _revolving_door[ door_it ]._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _revolving_door[ door_it ]._id );      
+
+    _revolving_door_model->Draw( _forward_pbr_shader, model_matrix );
+  }
 
   glUseProgram( 0 );
   glDisable( GL_CULL_FACE );

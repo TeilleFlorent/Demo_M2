@@ -181,14 +181,14 @@ void Window::ManageEvents( Camera * iCamera )
 
           case 'a' :
             //_scene->_lights[ 0 ]._position.x += 0.1;
-            _scene->_revolving_door._shadow_bias += 0.001;
-            std::cout << "_bias = " << _scene->_revolving_door._shadow_bias << std::endl;
+            _scene->_blur_offset_factor += 0.1;
+            std::cout << "_bias = " << _scene->_blur_offset_factor << std::endl;
             break;
 
           case 'e' :
             //_scene->_lights[ 0 ]._position.x -= 0.1;
-            _scene->_revolving_door._shadow_bias -= 0.001;
-            std::cout << "_bias = " << _scene->_revolving_door._shadow_bias << std::endl;
+            _scene->_blur_offset_factor -= 0.1;
+            std::cout << "_bias = " << _scene->_blur_offset_factor << std::endl;
             break;
 
           case 'r' :

@@ -301,41 +301,60 @@ void Model::Draw( Shader    iShader,
 void Model::DrawDepth( Shader    iShader,
                        glm::mat4 iModelMatrix )
 {
-  // Revolving door depth drawing
+  
+  glm::mat4 * model_matrix;
+  glm::mat4 rotation_matrix;
+  glm::mat4 rotation_matrix1;
+  glm::mat4 rotation_matrix2;
+
+  // Set revolving door rotation
   if( _model_id == 3 )
   { 
-    glm::mat4 * model_matrix;
+    rotation_matrix  = iModelMatrix * _scene->_door_rotation_matrix;
+    rotation_matrix1 = iModelMatrix * _scene->_door1_rotation_matrix;
+    rotation_matrix2 = iModelMatrix * _scene->_door2_rotation_matrix;
+  }
 
-    // Set revolving door rotation
-    glm::mat4 rotation_matrix = iModelMatrix * _scene->_door_rotation_matrix;
+  for( unsigned int i = 0; i < this->_meshes.size(); i++ )
+  { 
+    model_matrix = &iModelMatrix;
 
-    for( unsigned int i = 0; i < this->_meshes.size(); i++ )
-    { 
-      // Perform revolving door rotation
-      if( i > 14
-       && i < 18 )
+    // Perform revolving door rotation
+    if( _model_id == 3 )
+    {
+      if( i > 14 && i < 18 )
       {
         model_matrix = &rotation_matrix;
       }
-      else
+
+      if( i > 2 && i < 6 )
       {
-        model_matrix = &iModelMatrix;
+        model_matrix = &rotation_matrix1;
       }
 
-      if( !this->_meshes[ i ]._opacity_map )
+      if( i > 5 && i < 9 )
       {
-        this->_meshes[ i ].DrawDepth( iShader,
-                                      *model_matrix );
+        model_matrix = &rotation_matrix1;
+      }
+
+      if( i > 8 && i < 12 )
+      {
+        model_matrix = &rotation_matrix2;
+      }
+
+      if( i > 11 && i < 15 )
+      {
+        model_matrix = &rotation_matrix2;
       }
     }
-  }
-  else
-  {
-    for( unsigned int i = 0; i < this->_meshes.size(); i++ )
-    { 
-      this->_meshes[ i ].DrawDepth( iShader,
-                                    iModelMatrix );
+
+    if( _model_id == 3 && this->_meshes[ i ]._opacity_map )
+    {
+      continue;
     }
+
+    this->_meshes[ i ].DrawDepth( iShader,
+                                  *model_matrix );
   }
 }
 
