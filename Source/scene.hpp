@@ -123,7 +123,8 @@ class Scene
     std::vector< unsigned int > _irradiance_cubeMaps;
     std::vector< unsigned int > _pre_filter_cubeMaps;
     unsigned int _pre_brdf_texture;
-  
+    
+    std::vector< std::vector< unsigned int > > _loaded_materials;
     unsigned int _tex_albedo_ground1;
     unsigned int _tex_normal_ground1;
     unsigned int _tex_height_ground1;

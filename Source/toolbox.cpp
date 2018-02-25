@@ -763,4 +763,111 @@ unsigned int Toolbox::GenPreFilterCubeMap( unsigned int iEnvCubeMap,
   return pre_filter_cubemap;
 }
 
+std::vector< unsigned int > Toolbox::LoadMaterialTextures( std::string iMaterialName,
+                                                           float       iAnisotropy )
+{
+  SDL_Surface * sdl_image_data = NULL;
+  std::vector< unsigned int > material;
+  
+  std::string path( "" );
+  path += "../Textures/materials/" + iMaterialName + "/";
 
+  // albedo
+  if( ( sdl_image_data = IMG_Load( std::string( path + "albedo.png" ).data() ) ) != NULL )
+  {
+    material.push_back( CreateTextureFromData( sdl_image_data,
+                                               GL_RGB,
+                                               GL_RGB,
+                                               true,
+                                               true,
+                                               iAnisotropy ) );
+    SDL_FreeSurface( sdl_image_data );
+
+  }
+  else
+  {
+    fprintf( stderr, "Erreur lors du chargement de la texture\n" );
+  }
+
+  // normal
+  if( ( sdl_image_data = IMG_Load( std::string( path + "normal.png" ).data() ) ) != NULL )
+  {
+    material.push_back( CreateTextureFromData( sdl_image_data,
+                                               GL_RGB,
+                                               GL_RGB,
+                                               true,
+                                               true,
+                                               iAnisotropy ) );
+    SDL_FreeSurface( sdl_image_data );
+  }
+  else
+  {
+    fprintf( stderr, "Erreur lors du chargement de la texture\n" );
+  }
+
+  // height
+  if( ( sdl_image_data = IMG_Load( std::string( path + "height.png" ).data() ) ) != NULL )
+  {
+    material.push_back( CreateTextureFromData( sdl_image_data,
+                                               GL_R8,
+                                               GL_RED,
+                                               true,
+                                               true,
+                                               iAnisotropy ) );
+    SDL_FreeSurface( sdl_image_data );
+  }
+  else
+  {
+    fprintf( stderr, "Erreur lors du chargement de la texture\n" );
+  }
+
+  // AO
+  if( ( sdl_image_data = IMG_Load( std::string( path + "AO.png" ).data() ) ) != NULL )
+  {
+    material.push_back( CreateTextureFromData( sdl_image_data,
+                                               GL_R8,
+                                               GL_RED,
+                                               true,
+                                               true,
+                                               iAnisotropy ) );
+    SDL_FreeSurface( sdl_image_data );
+  }
+  else
+  {
+    fprintf( stderr, "Erreur lors du chargement de la texture\n" );
+  }
+
+  // Roughness
+  if( ( sdl_image_data = IMG_Load( std::string( path + "roughness.png" ).data() ) ) != NULL )
+  {
+    material.push_back( CreateTextureFromData( sdl_image_data,
+                                               GL_R8,
+                                               GL_RED,
+                                               true,
+                                               true,
+                                               iAnisotropy ) );
+    SDL_FreeSurface( sdl_image_data );
+  }
+  else
+  {
+    fprintf( stderr, "Erreur lors du chargement de la texture\n" );
+  }
+
+  // Metalness
+  if( ( sdl_image_data = IMG_Load( std::string( path + "metalness.png" ).data() ) ) != NULL )
+  {
+    material.push_back( CreateTextureFromData( sdl_image_data,
+                                               GL_R8,
+                                               GL_RED,
+                                               true,
+                                               true,
+                                               iAnisotropy ) );
+    SDL_FreeSurface( sdl_image_data );
+  }
+  else
+  {
+    fprintf( stderr, "Erreur lors du chargement de la texture\n" );
+  }  
+
+  return material;
+}

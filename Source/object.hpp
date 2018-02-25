@@ -35,7 +35,8 @@ class Object
             bool      iNormalMap,
             bool      iHeightMap,
             float     iDisplacementFactor,
-            float     iTessellationFactor );
+            float     iTessellationFactor,
+            int       iMaterialID );
 
     void Set( Object iSourceObject );
 
@@ -61,6 +62,7 @@ class Object
     bool      _height_map;
     float     _displacement_factor;
     float     _tessellation_factor;
+    int       _material_id;
 };
 
 #endif  // OBJECT_H

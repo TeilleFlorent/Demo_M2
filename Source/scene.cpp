@@ -28,7 +28,7 @@ Scene::Scene( Window * iParentWindow )
   _bloom              = true;
   _blur_downsample    = 1.0;
   _blur_pass_count    = 6;
-  _blur_offset_factor = 1.0;
+  _blur_offset_factor = 1.2;
 
   // Init multi sample parameters
   _multi_sample    = false;
@@ -146,18 +146,6 @@ void Scene::Quit()
     glDeleteTextures( 1, &_window->_toolbox->_final_tex_color_buffer[ 0 ] );
   if( _window->_toolbox->_final_tex_color_buffer[ 1 ] )
     glDeleteTextures( 1, &_window->_toolbox->_final_tex_color_buffer[ 1 ] );
-  if( _tex_albedo_ground1 )
-    glDeleteTextures( 1, &_tex_albedo_ground1 );
-  if( _tex_normal_ground1 )
-    glDeleteTextures( 1, &_tex_normal_ground1 );
-  if( _tex_height_ground1 )
-    glDeleteTextures( 1, &_tex_height_ground1 );
-  if( _tex_AO_ground1 )
-    glDeleteTextures( 1, &_tex_AO_ground1 );
-  if( _tex_roughness_ground1 )
-    glDeleteTextures( 1, &_tex_roughness_ground1 );
-  if( _tex_metalness_ground1 )
-    glDeleteTextures( 1, &_tex_metalness_ground1 );
 
 
   // Delete VAOs
@@ -366,111 +354,28 @@ void Scene::SceneDataInitialization()
   glBindTexture( GL_TEXTURE_2D, 0 );
 
 
-  // Load ground1 albedo texture
-  // --------------------------
-  if( ( sdl_image_data = IMG_Load( "../Textures/ground1/albedo.png" ) ) != NULL )
-  {
-    _tex_albedo_ground1 = _window->_toolbox->CreateTextureFromData( sdl_image_data,
-                                                                   GL_RGB,
-                                                                   GL_RGB,
-                                                                   true,
-                                                                   true,
-                                                                   anisotropy_value );
-    SDL_FreeSurface( sdl_image_data );
-  }
-  else
-  {
-    fprintf( stderr, "Erreur lors du chargement de la texture\n" );
-  }
-
-  // Load ground1 normal texture
-  // --------------------------
-  if( ( sdl_image_data = IMG_Load( "../Textures/ground1/normal.png" ) ) != NULL )
-  {
-    _tex_normal_ground1 = _window->_toolbox->CreateTextureFromData( sdl_image_data,
-                                                                   GL_RGB,
-                                                                   GL_RGB,
-                                                                   true,
-                                                                   true,
-                                                                   anisotropy_value );
-    SDL_FreeSurface( sdl_image_data );
-  }
-  else
-  {
-    fprintf( stderr, "Erreur lors du chargement de la texture\n" );
-  }
+  // Load white tiles material textures
+  // ----------------------------------
+  _loaded_materials.push_back( _window->_toolbox->LoadMaterialTextures( "entrance_tiles",
+                                                                        anisotropy_value ) );
 
 
-  // Load ground1 height texture
-  // --------------------------
-  if( ( sdl_image_data = IMG_Load( "../Textures/ground1/height.png" ) ) != NULL )
-  {
-    _tex_height_ground1 = _window->_toolbox->CreateTextureFromData( sdl_image_data,
-                                                                   GL_R8,
-                                                                   GL_RED,
-                                                                   true,
-                                                                   true,
-                                                                   anisotropy_value );
-    SDL_FreeSurface( sdl_image_data );
-  }
-  else
-  {
-    fprintf( stderr, "Erreur lors du chargement de la texture\n" );
-  }
+  // Load leather material textures
+  // ------------------------------
+  _loaded_materials.push_back( _window->_toolbox->LoadMaterialTextures( "leather",
+                                                                        anisotropy_value ) );
 
 
-  // Load ground1 AO texture
-  // ----------------------
-  if( ( sdl_image_data = IMG_Load( "../Textures/ground1/AO.png" ) ) != NULL )
-  {
-    _tex_AO_ground1 = _window->_toolbox->CreateTextureFromData( sdl_image_data,
-                                                               GL_R8,
-                                                               GL_RED,
-                                                               true,
-                                                               true,
-                                                               anisotropy_value );
-    SDL_FreeSurface( sdl_image_data );
-  }
-  else
-  {
-    fprintf( stderr, "Erreur lors du chargement de la texture\n" );
-  }
-
-
-  // Load ground1 roughness texture 
+  // Load marble material textures
   // -----------------------------
-  if( ( sdl_image_data = IMG_Load( "../Textures/ground1/roughness.png" ) ) != NULL )
-  {
-    _tex_roughness_ground1 = _window->_toolbox->CreateTextureFromData( sdl_image_data,
-                                                                      GL_R8,
-                                                                      GL_RED,
-                                                                      true,
-                                                                      true,
-                                                                      anisotropy_value );
-    SDL_FreeSurface( sdl_image_data );
-  }
-  else
-  {
-    fprintf( stderr, "Erreur lors du chargement de la texture\n" );
-  }
+  _loaded_materials.push_back( _window->_toolbox->LoadMaterialTextures( "marble",
+                                                                        anisotropy_value ) );
 
 
-  // Load ground1 metalness texture  
-  // -----------------------------
-  if( ( sdl_image_data = IMG_Load( "../Textures/ground1/metalness.png" ) ) != NULL )
-  {
-    _tex_metalness_ground1 = _window->_toolbox->CreateTextureFromData( sdl_image_data,
-                                                                      GL_R8,
-                                                                      GL_RED,
-                                                                      true,
-                                                                      true,
-                                                                      anisotropy_value );
-    SDL_FreeSurface( sdl_image_data );
-  }
-  else
-  {
-    fprintf( stderr, "Erreur lors du chargement de la texture\n" );
-  }
+  // Load black plastic material textures
+  // ------------------------------------
+  _loaded_materials.push_back( _window->_toolbox->LoadMaterialTextures( "black_plastic",
+                                                                        anisotropy_value ) );
 }
 
 void Scene::LightsInitialization()
@@ -479,7 +384,7 @@ void Scene::LightsInitialization()
   
   PointLight::SetLightsMultiplier( 30.0 );
 
-  _lights.push_back( PointLight( glm::vec3( -2.0, 2.0, 0.0 ),
+  _lights.push_back( PointLight( glm::vec3( 0.0, 2.0, 0.0 ),
                                  glm::vec3( 1.0, 1.0, 1.0 ),
                                  0.5,
                                  3.0 ) );    
@@ -527,9 +432,10 @@ void Scene::ObjectsInitialization()
                         0.99,           // bloom bright value
                         false,          // opacity map
                         true,           // normal map
-                        false,           // height map
+                        false,          // height map
                         0.12,           // displacement factor
-                        0.15 );         // tessellation factor
+                        0.15,           // tessellation factor
+                        3 );            // material ID
 
     _grounds_type1.push_back( temp_object );
   }
@@ -562,7 +468,8 @@ void Scene::ObjectsInitialization()
                            true,
                            false,
                            0.0,
-                           0.0 ) );
+                           0.0,
+                           -1 ) );
 
 
   // _walls type 1 object initialization ( room 1 walls )
@@ -631,7 +538,8 @@ void Scene::ObjectsInitialization()
                         true,
                         false,
                         0.12,
-                        0.15 / 3.0 );
+                        0.15 / 3.0,
+                        2 );
 
     if( i != 1 && i != 10 )
     {
@@ -645,6 +553,8 @@ void Scene::ObjectsInitialization()
   for( int i = 0; i < 6; i ++ )
   {
     glm::vec3 scale( _wall_size, 1.0, _wall_size );
+    int material_id = 0;
+    bool tessellation = false;
 
     if( i == 0 || i == 1 || i == 2 )
     {
@@ -658,19 +568,22 @@ void Scene::ObjectsInitialization()
 
     if( i == 3 || i == 4 || i == 5 )
     {
+      material_id = 1;
+      tessellation = true;
+
       position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
-      position += glm::vec3( -_wall_size, _wall_size, 0.0 );
+      position += glm::vec3( -_wall_size, _wall_size + 0.04, 0.0 );
 
       if( i == 4 )
       {
         position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
-        position += glm::vec3( -_wall_size * 2, _wall_size, 0.0 );
+        position += glm::vec3( -_wall_size * 2, _wall_size + 0.04, 0.0 );
       }
 
       if( i == 5 )
       {
         position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
-        position += glm::vec3( -_wall_size * 3, _wall_size, 0.0 );
+        position += glm::vec3( -_wall_size * 3, _wall_size + 0.04, 0.0 );
       }
 
       model_matrix = glm::mat4();
@@ -684,7 +597,7 @@ void Scene::ObjectsInitialization()
                         position,
                         _PI_2,
                         scale,
-                        glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
+                        glm::vec2( 1.0, 1.0 ),
                         1.0,
                         false,
                         true,
@@ -694,9 +607,10 @@ void Scene::ObjectsInitialization()
                         0.99,
                         false,
                         true,
-                        false,
-                        0.12,
-                        0.15 / 3.0 );
+                        tessellation,
+                        0.06,
+                        0.05,
+                        material_id );
 
     _walls_type1.push_back( temp_object );
   }
@@ -711,7 +625,7 @@ void Scene::ObjectsInitialization()
     if( i == 0 || i == 1 || i == 2 )
     {
       position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
-      position += glm::vec3( -_wall_size * ( 2.0 + i ), _wall_size, 0.0 );
+      position += glm::vec3( -_wall_size * ( 2.0 + i ), _wall_size, -0.05 );
       
       model_matrix = glm::mat4();
       model_matrix = glm::translate( model_matrix, position );
@@ -722,7 +636,7 @@ void Scene::ObjectsInitialization()
     if( i == 3 || i == 4 || i == 5 )
     {
       position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
-      position += glm::vec3( -_wall_size * ( 2.0 + ( i - 3 ) ), 0.0, _wall_size );
+      position += glm::vec3( -_wall_size * ( 2.0 + ( i - 3 ) ), 0.0, _wall_size + 0.05 );
 
       model_matrix = glm::mat4();
       model_matrix = glm::translate( model_matrix, position );
@@ -756,9 +670,10 @@ void Scene::ObjectsInitialization()
                         0.99,
                         false,
                         true,
-                        false,
-                        0.12,
-                        0.15 / 3.0 );
+                        true,
+                        0.06,
+                        0.05,
+                        1 );
 
     _walls_type1.push_back( temp_object );
   }
@@ -769,7 +684,7 @@ void Scene::ObjectsInitialization()
   for( int i = 0; i < 3; i ++ )
   {   
     scale = glm::vec3( 0.105, 0.105, 0.105 );
-    
+
     if( i == 0 )
     {
       position = glm::vec3( -4.8, 0.03, 0.0 );
@@ -808,12 +723,13 @@ void Scene::ObjectsInitialization()
                                        1.0,
                                        0.015,
                                        true,
-                                       0.99,
+                                       0.75,
                                        true,
                                        true,
                                        false,
                                        0.0,
-                                       0.0 ) );
+                                       0.0,
+                                       0 ) );
   }
 
 
@@ -848,7 +764,8 @@ void Scene::ObjectsInitialization()
                         true,
                         false,
                         0.12,
-                        0.15 / 3.0 );
+                        0.15 / 3.0,
+                        0 );
 
     _walls_type1.push_back( temp_object );
   }
@@ -885,7 +802,8 @@ void Scene::ObjectsInitialization()
                         true,
                         false,
                         0.12,
-                        0.15 / 3.0 );
+                        0.15 / 3.0,
+                        0 );
 
     _walls_type1.push_back( temp_object );
   }
@@ -936,7 +854,8 @@ void Scene::ObjectsInitialization()
                         true,
                         false,
                         0.12,
-                        0.15 / 3.0 );
+                        0.15 / 3.0,
+                        0 );
 
     _walls_type1.push_back( temp_object );
   }
@@ -970,7 +889,8 @@ void Scene::ObjectsInitialization()
                       true,           // normal map
                       false,           // height map
                       0.12,           // displacement factor
-                      0.15 );         // tessellation factor
+                      0.15,
+                      0 );         // tessellation factor
 
   _grounds_type1.push_back( temp_object );
 
@@ -1004,7 +924,8 @@ void Scene::ObjectsInitialization()
                         true,           // normal map
                         false,           // height map
                         0.12,           // displacement factor
-                        0.15 );         // tessellation factor
+                        0.15,
+                        0 );         // tessellation factor
 
   _grounds_type1.push_back( temp_object );
 
@@ -1080,7 +1001,8 @@ void Scene::ObjectsInitialization()
                         true,
                         false,
                         0.12,
-                        0.15 / 3.0 );
+                        0.15 / 3.0,
+                        0 );
 
     if( i != 4 && i != 7 )
     {
@@ -1121,7 +1043,8 @@ void Scene::ObjectsInitialization()
                         true,
                         false,
                         0.12,
-                        0.15 / 3.0 );
+                        0.15 / 3.0,
+                        0 );
 
     _walls_type1.push_back( temp_object );
   }
@@ -1159,7 +1082,8 @@ void Scene::ObjectsInitialization()
                         true,
                         false,
                         0.12,
-                        0.15 / 3.0 );
+                        0.15 / 3.0,
+                        0 );
 
     _walls_type1.push_back( temp_object );
   }
@@ -1212,7 +1136,8 @@ void Scene::ObjectsInitialization()
                         true,
                         false,
                         0.12,
-                        0.15 / 3.0 );
+                        0.15 / 3.0,
+                        0 );
 
     _walls_type1.push_back( temp_object );
   }
@@ -1248,7 +1173,8 @@ void Scene::ObjectsInitialization()
                         true,           // normal map
                         false,           // height map
                         0.12,           // displacement factor
-                        0.15 );         // tessellation factor
+                        0.15,
+                        0 );         
 
   _grounds_type1.push_back( temp_object );
 
@@ -1283,7 +1209,8 @@ void Scene::ObjectsInitialization()
                         true,           // normal map
                         false,           // height map
                         0.12,           // displacement factor
-                        0.15 );         // tessellation factor
+                        0.15,
+                        0 );        
 
   _grounds_type1.push_back( temp_object );
 
@@ -1358,7 +1285,8 @@ void Scene::ObjectsInitialization()
                         true,
                         false,
                         0.12,
-                        0.15 / 3.0 );
+                        0.15 / 3.0,
+                        0 );
 
     if( i != 10 )
     {
@@ -1886,17 +1814,17 @@ void Scene::SceneForwardRendering()
    
     // Textures binding
     glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, _tex_albedo_ground1 );  
+    glBindTexture( GL_TEXTURE_2D, _loaded_materials[ _grounds_type1[ ground_it ]._material_id ][ 0 ] );  
     glActiveTexture( GL_TEXTURE1 );
-    glBindTexture( GL_TEXTURE_2D, _tex_normal_ground1 ); 
+    glBindTexture( GL_TEXTURE_2D, _loaded_materials[ _grounds_type1[ ground_it ]._material_id ][ 1 ] ); 
     glActiveTexture( GL_TEXTURE2 );
-    glBindTexture( GL_TEXTURE_2D, _tex_height_ground1 ); 
+    glBindTexture( GL_TEXTURE_2D, _loaded_materials[ _grounds_type1[ ground_it ]._material_id ][ 2 ] ); 
     glActiveTexture( GL_TEXTURE3 );
-    glBindTexture( GL_TEXTURE_2D, _tex_AO_ground1 ); 
+    glBindTexture( GL_TEXTURE_2D, _loaded_materials[ _grounds_type1[ ground_it ]._material_id ][ 3 ] ); 
     glActiveTexture( GL_TEXTURE4 );
-    glBindTexture( GL_TEXTURE_2D, _tex_roughness_ground1 ); 
+    glBindTexture( GL_TEXTURE_2D, _loaded_materials[ _grounds_type1[ ground_it ]._material_id ][ 4 ] ); 
     glActiveTexture( GL_TEXTURE5 );
-    glBindTexture( GL_TEXTURE_2D, _tex_metalness_ground1 ); 
+    glBindTexture( GL_TEXTURE_2D, _loaded_materials[ _grounds_type1[ ground_it ]._material_id ][ 5 ] ); 
     glActiveTexture( GL_TEXTURE7 );
     glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
     glActiveTexture( GL_TEXTURE8 );
@@ -1967,17 +1895,17 @@ void Scene::SceneForwardRendering()
 
     // Textures binding
     glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, _tex_albedo_ground1 );  
+    glBindTexture( GL_TEXTURE_2D, _loaded_materials[ _walls_type1[ wall_it ]._material_id ][ 0 ] );  
     glActiveTexture( GL_TEXTURE1 );
-    glBindTexture( GL_TEXTURE_2D, _tex_normal_ground1 ); 
+    glBindTexture( GL_TEXTURE_2D, _loaded_materials[ _walls_type1[ wall_it ]._material_id ][ 1 ] ); 
     glActiveTexture( GL_TEXTURE2 );
-    glBindTexture( GL_TEXTURE_2D, _tex_height_ground1 ); 
+    glBindTexture( GL_TEXTURE_2D, _loaded_materials[ _walls_type1[ wall_it ]._material_id ][ 2 ] ); 
     glActiveTexture( GL_TEXTURE3 );
-    glBindTexture( GL_TEXTURE_2D, _tex_AO_ground1 ); 
+    glBindTexture( GL_TEXTURE_2D, _loaded_materials[ _walls_type1[ wall_it ]._material_id ][ 3 ] ); 
     glActiveTexture( GL_TEXTURE4 );
-    glBindTexture( GL_TEXTURE_2D, _tex_roughness_ground1 ); 
+    glBindTexture( GL_TEXTURE_2D, _loaded_materials[ _walls_type1[ wall_it ]._material_id ][ 4 ] ); 
     glActiveTexture( GL_TEXTURE5 );
-    glBindTexture( GL_TEXTURE_2D, _tex_metalness_ground1 ); 
+    glBindTexture( GL_TEXTURE_2D, _loaded_materials[ _walls_type1[ wall_it ]._material_id ][ 5 ] ); 
     glActiveTexture( GL_TEXTURE7 );
     glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
     glActiveTexture( GL_TEXTURE8 );
@@ -2235,15 +2163,15 @@ void Scene::DeferredGeometryPass( glm::mat4 * iProjectionMatrix,
   model_matrix = glm::scale( model_matrix, _grounds_type1[ 0 ]._scale ); 
 
   glActiveTexture( GL_TEXTURE0 );
-  glBindTexture( GL_TEXTURE_2D, _tex_albedo_ground1 );  
+  glBindTexture( GL_TEXTURE_2D, _loaded_materials[ 0 ][ 0 ] );  
   glActiveTexture( GL_TEXTURE1 );
-  glBindTexture( GL_TEXTURE_2D, _tex_normal_ground1 ); 
+  glBindTexture( GL_TEXTURE_2D, _loaded_materials[ 0 ][ 1 ] ); 
   glActiveTexture( GL_TEXTURE3 );
-  glBindTexture( GL_TEXTURE_2D, _tex_AO_ground1 ); 
+  glBindTexture( GL_TEXTURE_2D, _loaded_materials[ 0 ][ 3 ] ); 
   glActiveTexture( GL_TEXTURE4 );
-  glBindTexture( GL_TEXTURE_2D, _tex_roughness_ground1 ); 
+  glBindTexture( GL_TEXTURE_2D, _loaded_materials[ 0 ][ 4 ] ); 
   glActiveTexture( GL_TEXTURE5 );
-  glBindTexture( GL_TEXTURE_2D, _tex_metalness_ground1 ); 
+  glBindTexture( GL_TEXTURE_2D, _loaded_materials[ 0 ][ 5 ] ); 
 
   glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( *iViewMatrix ) );
   glUniformMatrix4fv( glGetUniformLocation( _geometry_pass_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
