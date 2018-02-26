@@ -764,7 +764,8 @@ unsigned int Toolbox::GenPreFilterCubeMap( unsigned int iEnvCubeMap,
 }
 
 std::vector< unsigned int > Toolbox::LoadMaterialTextures( std::string iMaterialName,
-                                                           float       iAnisotropy )
+                                                           float       iAnisotropy,
+                                                           bool        iEmissive )
 {
   SDL_Surface * sdl_image_data = NULL;
   std::vector< unsigned int > material;
@@ -867,6 +868,25 @@ std::vector< unsigned int > Toolbox::LoadMaterialTextures( std::string iMaterial
   else
   {
     fprintf( stderr, "Erreur lors du chargement de la texture\n" );
+  }
+
+  // Emissive
+  if( iEmissive )
+  {
+    if( ( sdl_image_data = IMG_Load( std::string( path + "emissive.png" ).data() ) ) != NULL )
+    {
+      material.push_back( CreateTextureFromData( sdl_image_data,
+                                                 GL_RGB,
+                                                 GL_RGB,
+                                                 true,
+                                                 true,
+                                                 iAnisotropy ) );
+      SDL_FreeSurface( sdl_image_data );
+    }
+    else
+    {
+      fprintf( stderr, "Erreur lors du chargement de la texture\n" );
+    }
   }  
 
   return material;

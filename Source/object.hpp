@@ -36,7 +36,9 @@ class Object
             bool      iHeightMap,
             float     iDisplacementFactor,
             float     iTessellationFactor,
-            int       iMaterialID );
+            int       iMaterialID,
+            bool      iEmissive,
+            float     iEmissiveFactor );
 
     void Set( Object iSourceObject );
 
@@ -63,6 +65,8 @@ class Object
     float     _displacement_factor;
     float     _tessellation_factor;
     int       _material_id;
+    bool      _emissive;
+    float     _emissive_factor;
 };
 
 #endif  // OBJECT_H

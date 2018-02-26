@@ -27,7 +27,9 @@ Object::Object( int       iID,
                 bool      iHeightMap,
                 float     iDisplacementFactor,
                 float     iTessellationFactor,
-                int       iMaterialID )
+                int       iMaterialID,
+                bool      iEmissive,
+                float     iEmissiveFactor )
 {
   _id                  = iID;
   _model_matrix        = iModelMatrix;
@@ -48,6 +50,8 @@ Object::Object( int       iID,
   _displacement_factor = iDisplacementFactor;
   _tessellation_factor = iTessellationFactor;
   _material_id         = iMaterialID;
+  _emissive            = iEmissive;
+  _emissive_factor     = iEmissiveFactor;
 }
 
 void Object::Set( Object iSourceObject )
@@ -71,6 +75,8 @@ void Object::Set( Object iSourceObject )
   _displacement_factor = iSourceObject._displacement_factor; 
   _tessellation_factor = iSourceObject._tessellation_factor; 
   _material_id         = iSourceObject._material_id; 
+  _emissive            = iSourceObject._emissive;
+  _emissive_factor     = iSourceObject._emissive_factor; 
 }
 
 

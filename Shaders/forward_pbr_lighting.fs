@@ -58,6 +58,10 @@ uniform int   uLightSourceIt;
 uniform float uShadowBias;
 uniform float uShadowDarkness;
 
+// Emissive uniform(s)
+uniform bool  uEmissive;
+uniform float uEmissiveFactor;
+
 // Scene object ID uniform
 uniform float uID;
 
@@ -69,6 +73,7 @@ uniform sampler2D   uTextureAO1;
 uniform sampler2D   uTextureRoughness1; 
 uniform sampler2D   uTextureMetalness1; 
 uniform sampler2D   uTextureOpacity1; 
+uniform sampler2D   uTextureEmissive1; 
 
 uniform samplerCube uIrradianceCubeMap;
 uniform samplerCube uPreFilterCubeMap;
@@ -298,7 +303,7 @@ vec3 PointLightReflectance( vec2     iUV,
     
   }   
 
-  return Lo;
+  return Lo * iMaterial._ao;
 } 
 
 // PBR IBL calculation
@@ -401,7 +406,6 @@ vec3 PBRLightingCalculation( vec3 iNormal,
                                                          N_dot_V,
                                                          material );
 
-
   // IBL calculation part
   // --------------------
    
@@ -416,7 +420,7 @@ vec3 PBRLightingCalculation( vec3 iNormal,
 
   // Return fragment final PBR lighting 
   // ----------------------------------
-  return IBL_ambient_reflectance * 1.0 + ( point_lights_reflectance * iShadowFactor );
+  return IBL_ambient_reflectance + ( point_lights_reflectance * iShadowFactor );
 }
 
 
@@ -445,10 +449,6 @@ void main()
     discard;
   }
 
-  // Get view direction
-  vec3 view_to_frag = uViewPos - oFragPos;
-  vec3 view_dir = normalize( view_to_frag );
-
   // Get fragment normal
   vec3 normal;
   if( uNormalMap )
@@ -466,6 +466,10 @@ void main()
     normal *= -1.0;
   }
 
+  // Get view direction
+  vec3 view_to_frag = uViewPos - oFragPos;
+  vec3 view_dir = normalize( view_to_frag );
+
   // Omnidirectional shadow mapping calculation
   float shadow_factor = 1.0;
   if( uReceivShadow )
@@ -480,21 +484,31 @@ void main()
                                                      opacity,
                                                      shadow_factor );
 
+   // Get emissive value
+  vec3 emissive = vec3( 0.0 );
+  if( uEmissive )
+  {
+    emissive = texture( uTextureEmissive1, oUV ).rgb * uEmissiveFactor;
+  }
+
+  // Get final fragment color
+  vec3 final_color = PBR_lighting_result + emissive;
+
   // Main out color
-  FragColor = vec4( PBR_lighting_result, opacity );
+  FragColor = vec4( final_color, opacity );
   //FragColor = vec4( vec3( shadow_factor ), 1.0 );
-  //FragColor = vec4( vec3( texture( uTextureAO1, oUV ).r ), 1.0 );
+  //FragColor = vec4( vec3( texture( uTextureEmissive1, oUV ).rgb ), 1.0 );
   //FragColor = vec4( vec3( normal ), 1.0 );
 
   // Second out color => draw only brightest fragments
-  vec3 bright_color = vec3( 0.0, 0.0, 0.0 );
+  vec3 bright_color = vec3( 0.0 );
   if( uBloom )
   {
-    float brightness = dot( PBR_lighting_result, vec3( 0.2126, 0.7152, 0.0722 ) );
+    float brightness = dot( final_color, vec3( 0.2126, 0.7152, 0.0722 ) );
     if( brightness > uBloomBrightness )
     {
-      bright_color = PBR_lighting_result;
+      bright_color = final_color;
     }
   }
-  FragColorBrightness = vec4( bright_color, opacity );
+  FragColorBrightness = vec4( bright_color + emissive, opacity );
 }

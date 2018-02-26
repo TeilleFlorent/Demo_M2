@@ -127,7 +127,8 @@ class Toolbox
                                       unsigned int iPrefilterMaxMipLevel );
 
     std::vector< unsigned int > LoadMaterialTextures( std::string iMaterialName,
-                                                      float       iAnisotropy );
+                                                      float       iAnisotropy,
+                                                      bool        iEmissive );
 
 
     // Toolbox class members
