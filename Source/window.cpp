@@ -113,7 +113,7 @@ SDL_Window * Window::InitSDLWindow( int iWidth,
   }
 
   fprintf( stderr, "\nVersion d'OpenGL : %s\n", glGetString( GL_VERSION ) );
-  fprintf( stderr, "Version de shaders supportes : %s\n", glGetString( GL_SHADING_LANGUAGE_VERSION ) );  
+  fprintf( stderr, "Version de shaders supportes : %s\n\n", glGetString( GL_SHADING_LANGUAGE_VERSION ) );  
   return win;
 }
 

@@ -180,6 +180,7 @@ void Scene::Quit()
 
 void Scene::SceneDataInitialization()
 {
+  std::cout << "Scene's data initialization in progress..." << std::endl;
 
   float anisotropy_value = 0.0f; 
   glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &anisotropy_value );
@@ -474,6 +475,8 @@ void Scene::SceneDataInitialization()
   _loaded_materials.push_back( _window->_toolbox->LoadMaterialTextures( "room3_roof",
                                                                         anisotropy_value,
                                                                         true ) );
+
+  std::cout << "Scene's data initialization done.\n" << std::endl;
 }
 
 void Scene::LightsInitialization()
@@ -494,7 +497,9 @@ void Scene::LightsInitialization()
 }
 
 void Scene::ObjectsInitialization()
-{
+{ 
+  std::cout << "Scene's objects initialization in progress..." << std::endl;
+
   glm::vec3 position;
   glm::mat4 model_matrix = glm::mat4(); 
 
@@ -1439,10 +1444,14 @@ void Scene::ObjectsInitialization()
       _walls_type1.push_back( temp_object );
     }
   }
+
+  std::cout << "Scene's objects initialization done.\n" << std::endl;
 }
 
 void Scene::IBLInitialization()
 { 
+  std::cout << "Scene's IBL initialization in progress..." << std::endl;
+
   unsigned int capture_FBO;
   unsigned int capture_RBO;
 
@@ -1605,10 +1614,14 @@ void Scene::IBLInitialization()
     _irradiance_cubeMaps.push_back( irradiance_cubemap );
     _pre_filter_cubeMaps.push_back( pre_filter_cubemap );
   }
+
+  std::cout << "Scene's IBL initialization done.\n" << std::endl;
 }
 
 void Scene::ShadersInitialization()
 {
+  std::cout << "Scene's shaders initialization in progress..." << std::endl;
+
 
   // Set and compile shaders
   // -----------------------
@@ -1705,10 +1718,14 @@ void Scene::ShadersInitialization()
   glUniform1i( glGetUniformLocation( _post_process_shader._program, "uBaseColorTexture" ), 0 );
   glUniform1i( glGetUniformLocation( _post_process_shader._program, "uBloomBrightnessTexture" ), 1 );
   glUseProgram( 0 );
+
+  std::cout << "Scene's shaders initialization done.\n" << std::endl;
 }
 
 void Scene::ModelsLoading()
 { 
+  std::cout << "Scene's models loading in progress..." << std::endl;
+
   Model::SetToolbox( _window->_toolbox );
   Model::SetScene( this );
 
@@ -1743,6 +1760,8 @@ void Scene::ModelsLoading()
                                      _revolving_door[ 0 ]._normal_map,
                                      _revolving_door[ 0 ]._height_map );
   _revolving_door_model->PrintInfos();
+
+  std::cout << "Scene's models loading done.\n" << std::endl;
 }
 
 void Scene::TesselationInitialization()
@@ -2665,6 +2684,6 @@ void Scene::ObjectsEnvCubemapGeneration()
 
   //_test_cubemap = _window->_toolbox->GenEnvironmentCubemap( &_ink_bottle );
 
-  std::cout << "Scene's objects environment generation done." << std::endl;
+  std::cout << "Scene's objects environment generation done.\n" << std::endl;
 }
 
