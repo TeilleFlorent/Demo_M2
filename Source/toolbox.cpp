@@ -969,7 +969,7 @@ unsigned int Toolbox::GenEnvironmentCubemap( Object * iObject )
 
     // Draw grounds type 1
     // -------------------
-    for( int ground_it = 0; ground_it < _window->_scene->_grounds_type1.size(); ground_it ++ )
+    /*for( int ground_it = 0; ground_it < _window->_scene->_grounds_type1.size(); ground_it ++ )
     {
       model_matrix = _window->_scene->_grounds_type1[ ground_it ]._model_matrix; 
      
@@ -1037,7 +1037,7 @@ unsigned int Toolbox::GenEnvironmentCubemap( Object * iObject )
       glDrawElements( GL_TRIANGLES, _window->_scene->_ground1_indices.size(), GL_UNSIGNED_INT, 0 );
       
       glBindVertexArray( 0 );
-    }
+    }*/
 
 
     // Draw walls type 1
@@ -1114,9 +1114,6 @@ unsigned int Toolbox::GenEnvironmentCubemap( Object * iObject )
 
   }
 
-  // Unbind capture FBO
-  glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
   // generate mipmaps from first mip face ( combatting visible dots artifact )
   glBindTexture( GL_TEXTURE_CUBE_MAP, cubemap_id );
   glGenerateMipmap( GL_TEXTURE_CUBE_MAP ); 
@@ -1147,10 +1144,6 @@ unsigned int Toolbox::GenEnvironmentCubemap( Object * iObject )
   glGenerateMipmap( GL_TEXTURE_CUBE_MAP ); // generate mipmaps from first mip face (combatting visible dots artifact)
   */
   
-  glBindTexture( GL_TEXTURE_CUBE_MAP, 0 );
-  glBindRenderbuffer( GL_RENDERBUFFER, 0 );
-  glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
   return cubemap_id;
 }
 

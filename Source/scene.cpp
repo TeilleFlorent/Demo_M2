@@ -40,7 +40,7 @@ Scene::Scene( Window * iParentWindow )
 
   // Init IBL parameters
   _current_env              = 2;
-  _res_env_cubemap          = 1024;
+  _res_env_cubemap          = 512;
 
   _res_irradiance_cubemap   = 32;
   _irradiance_sample_delta  = 0.025;
@@ -1912,10 +1912,10 @@ void Scene::SceneForwardRendering()
   glUniform1f( glGetUniformLocation( _skybox_shader._program, "uBloomBrightness" ), 1.0 );
 
   glActiveTexture( GL_TEXTURE0 );
-  //glBindTexture( GL_TEXTURE_CUBE_MAP, _env_cubeMaps[ _current_env ] ); 
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _env_cubeMaps[ _current_env ] ); 
   //glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] ); 
   //glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _test_cubemap ); 
+  //glBindTexture( GL_TEXTURE_CUBE_MAP, _test_cubemap ); 
 
   _window->_toolbox->RenderCube();
 
@@ -2663,7 +2663,7 @@ void Scene::ObjectsEnvCubemapGeneration()
 {
   std::cout << "Scene's objects environment generation in progress..." << std::endl;
 
-  _test_cubemap = _window->_toolbox->GenEnvironmentCubemap( &_ink_bottle );
+  //_test_cubemap = _window->_toolbox->GenEnvironmentCubemap( &_ink_bottle );
 
   std::cout << "Scene's objects environment generation done." << std::endl;
 }
