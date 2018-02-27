@@ -211,6 +211,16 @@ void Scene::SceneDataInitialization()
                                      _grounds_type1[ 0 ]._uv_scale.x );
 
 
+  // Create ground type 1 VAO
+  // ------------------------
+  _window->_toolbox->CreatePlaneVAO( &_ground2_VAO,
+                                     &_ground2_VBO,
+                                     &_ground2_IBO,
+                                     &_ground2_indices,
+                                     40,
+                                     3.0 );
+
+
   // Create wall type 1 VAO
   // ----------------------
   _window->_toolbox->CreatePlaneVAO( &_wall1_VAO,
@@ -219,6 +229,16 @@ void Scene::SceneDataInitialization()
                                      &_wall1_indices,
                                      40,
                                      _walls_type1[ 0 ]._uv_scale.x );
+
+
+  // Create wall type 2 VAO
+  // ----------------------
+  _window->_toolbox->CreatePlaneVAO( &_wall2_VAO,
+                                     &_wall2_VBO,
+                                     &_wall2_IBO,
+                                     &_wall2_indices,
+                                     40,
+                                     _walls_type1[ 0 ]._uv_scale.x * 1.5 );
 
 
   // Create temp color buffer
@@ -415,6 +435,41 @@ void Scene::SceneDataInitialization()
   _loaded_materials.push_back( _window->_toolbox->LoadMaterialTextures( "room2_walls",
                                                                         anisotropy_value,
                                                                         false ) );
+
+
+  // Load corridor2 walls material textures
+  // --------------------------------------
+  _loaded_materials.push_back( _window->_toolbox->LoadMaterialTextures( "corridor2_floor",
+                                                                        anisotropy_value,
+                                                                        false ) );
+
+
+  // Load corridor2 walls material textures
+  // --------------------------------------
+  _loaded_materials.push_back( _window->_toolbox->LoadMaterialTextures( "corridor2_walls",
+                                                                        anisotropy_value,
+                                                                        false ) );
+
+
+  // Load room3 floor material textures
+  // ----------------------------------
+  _loaded_materials.push_back( _window->_toolbox->LoadMaterialTextures( "room3_floor",
+                                                                        anisotropy_value,
+                                                                        false ) );
+
+
+  // Load room3 walls material textures
+  // ----------------------------------
+  _loaded_materials.push_back( _window->_toolbox->LoadMaterialTextures( "room3_walls",
+                                                                        anisotropy_value,
+                                                                        false ) );
+
+
+  // Load room3 roof material textures
+  // ---------------------------------
+  _loaded_materials.push_back( _window->_toolbox->LoadMaterialTextures( "room3_roof",
+                                                                        anisotropy_value,
+                                                                        true ) );
 }
 
 void Scene::LightsInitialization()
@@ -423,7 +478,7 @@ void Scene::LightsInitialization()
   
   PointLight::SetLightsMultiplier( 30.0 );
 
-  _lights.push_back( PointLight( glm::vec3( 0.0, 2.0, -17.0 ),
+  _lights.push_back( PointLight( glm::vec3( 17, 2.0, -18.0 ),
                                  glm::vec3( 1.0, 1.0, 1.0 ),
                                  0.5,
                                  3.0 ) );    
@@ -468,7 +523,7 @@ void Scene::ObjectsInitialization()
                         position,       // position
                         _PI_2,          // angle
                         scale,          // scale
-                        glm::vec2( 4.0, 4.0 ),   // uv scale
+                        glm::vec2( 6.0, 6.0 ),   // uv scale
                         1.0,            // alpha
                         false,          // generate shadow
                         true,           // receiv shadow
@@ -530,7 +585,7 @@ void Scene::ObjectsInitialization()
     {
       position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
       position += glm::vec3( 0.0, _wall_size, 0.0 );
-      position -= glm::vec3( _wall_size - ( _wall_size * i ), 0.0, _wall_size + 0.01 );
+      position -= glm::vec3( _wall_size - ( _wall_size * i ), 0.0, _wall_size );
 
       model_matrix = glm::mat4();
       model_matrix = glm::translate( model_matrix, position );
@@ -564,7 +619,7 @@ void Scene::ObjectsInitialization()
     if( i > 8 && i < 12 )
     {
       position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
-      position += glm::vec3( -_wall_size - 0.04, _wall_size, ( _wall_size * ( i - 9 ) ) );
+      position += glm::vec3( -_wall_size, _wall_size, ( _wall_size * ( i - 9 ) ) );
 
       model_matrix = glm::mat4();
       model_matrix = glm::translate( model_matrix, position );
@@ -589,8 +644,8 @@ void Scene::ObjectsInitialization()
                         false,
                         true,
                         true,
-                        0.06,
                         0.05,
+                        0.15,
                         2,
                         false,
                         1.0 );
@@ -750,12 +805,12 @@ void Scene::ObjectsInitialization()
 
     if( i == 1 )
     {
-      position = glm::vec3( 0.0, 0.19, -13.8 );
+      position = glm::vec3( 0.0, 0.125, -13.8 );
     }
 
     if( i == 2 )
     {
-      position = glm::vec3( 13.8, 0.03, -_ground_size - ( _wall_size * 4 ) );
+      position = glm::vec3( 13.8, 0.06, -_ground_size - ( _wall_size * 4 ) );
     }
 
     model_matrix = glm::mat4();
@@ -991,10 +1046,10 @@ void Scene::ObjectsInitialization()
                         true,           // normal map
                         false,           // height map
                         0.12,           // displacement factor
-                        0.15,
+                        0.15,           // tessellation factor
                         7,
                         false,
-                        1.0 );         // tessellation factor
+                        1.0 );         
 
   _grounds_type1.push_back( temp_object );
 
@@ -1008,12 +1063,11 @@ void Scene::ObjectsInitialization()
     {
       position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
       position += glm::vec3( 0.0, _wall_size, 0.0 );
-      position -= glm::vec3( _wall_size - ( _wall_size * i ), _wall_size, _wall_size );
+      position -= glm::vec3( _wall_size - ( _wall_size * i ), 0.0, _wall_size );
       position += room2_offset_position;
 
       model_matrix = glm::mat4();
       model_matrix = glm::translate( model_matrix, position );
-      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0, 1.0 ) );
       model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 1.0, 0.0 , 0.0 ) );
       model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
     }
@@ -1021,12 +1075,11 @@ void Scene::ObjectsInitialization()
     if( i > 2 && i < 6 )
     {
       position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
-      position += glm::vec3( ( _wall_size * ( i - 3 ) ), 0.0, _wall_size * 2.0 );
+      position += glm::vec3( ( _wall_size * ( i - 3 ) ) - _wall_size, 0.0, _wall_size * 2.0 );
       position += room2_offset_position;
 
       model_matrix = glm::mat4();
       model_matrix = glm::translate( model_matrix, position );
-      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0, 1.0 ) );
       model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( -1.0, 0.0 , 0.0 ) );
       model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
     }
@@ -1034,11 +1087,12 @@ void Scene::ObjectsInitialization()
     if( i > 5 && i < 9 )
     {
       position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
-      position += glm::vec3( _wall_size * 2.0, 0.0, _wall_size - ( _wall_size * ( i - 6 ) ) );
+      position += glm::vec3( _wall_size * 2.0, _wall_size, _wall_size - ( _wall_size * ( i - 6 ) ) );
       position += room2_offset_position;
 
       model_matrix = glm::mat4();
       model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 1.0, 0.0, 0.0 ) );
       model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0 , 1.0 ) );
       model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
     }
@@ -1046,11 +1100,12 @@ void Scene::ObjectsInitialization()
     if( i > 8 && i < 12 )
     {
       position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
-      position += glm::vec3( -_wall_size, _wall_size, _wall_size - ( _wall_size * ( i - 9 ) ) );
+      position += glm::vec3( -_wall_size, _wall_size, ( _wall_size * ( i - 9 ) ) );
       position += room2_offset_position;
 
       model_matrix = glm::mat4();
       model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 1.0, 0.0, 0.0 ) );
       model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0 , -1.0 ) );
       model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
     }
@@ -1092,7 +1147,7 @@ void Scene::ObjectsInitialization()
 
     position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
     position += room2_offset_position;
-    position += glm::vec3( _wall_size * ( 2 + i ), 0.0, 0.0 );
+    position += glm::vec3( _wall_size * ( 2 + i ), -0.02, 0.0 );
         
     model_matrix = glm::mat4();
     model_matrix = glm::translate( model_matrix, position );
@@ -1114,10 +1169,10 @@ void Scene::ObjectsInitialization()
                         0.99,
                         false,
                         true,
-                        false,
-                        0.12,
-                        0.15 / 3.0,
-                        0,
+                        true,
+                        0.06,
+                        0.2,
+                        9,
                         false,
                         1.0 );
 
@@ -1156,9 +1211,9 @@ void Scene::ObjectsInitialization()
                         false,
                         true,
                         false,
-                        0.12,
-                        0.15 / 3.0,
-                        0,
+                        0.03,
+                        0.2,
+                        9,
                         false,
                         1.0 );
 
@@ -1212,9 +1267,9 @@ void Scene::ObjectsInitialization()
                         false,
                         true,
                         false,
-                        0.12,
-                        0.15 / 3.0,
-                        0,
+                        0.1,
+                        0.1,
+                        10,
                         false,
                         1.0 );
 
@@ -1240,7 +1295,7 @@ void Scene::ObjectsInitialization()
                         position,       // position
                         _PI_2,          // angle
                         scale,          // scale
-                        glm::vec2( 6.0, 6.0 ),                          // uv scale
+                        glm::vec2( 6.0, 6.0 ),     // uv scale
                         1.0,            // alpha
                         false,          // generate shadow
                         true,           // receiv shadow
@@ -1250,10 +1305,10 @@ void Scene::ObjectsInitialization()
                         0.99,           // bloom bright value
                         false,          // opacity map
                         true,           // normal map
-                        false,           // height map
-                        0.12,           // displacement factor
+                        true,           // height map
+                        0.08,          // displacement factor
                         0.15,
-                        0,
+                        11,
                         false,
                         1.0 );         
 
@@ -1291,9 +1346,9 @@ void Scene::ObjectsInitialization()
                         false,          // height map
                         0.12,           // displacement factor
                         0.15,
-                        0,
-                        false,
-                        1.0 );        
+                        13,
+                        true,
+                        20.0 );        
 
   _grounds_type1.push_back( temp_object );
 
@@ -1331,10 +1386,11 @@ void Scene::ObjectsInitialization()
     {
       position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
       position += room3_offset_position;
-      position += glm::vec3( _wall_size * 2.0, 0.0, _wall_size - ( _wall_size * ( i - 6 ) ) );
+      position += glm::vec3( _wall_size * 2.0, _wall_size, _wall_size - ( _wall_size * ( i - 6 ) ) );
 
       model_matrix = glm::mat4();
       model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 1.0, 0.0 , 0.0 ) );
       model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0 , 1.0 ) );
       model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
     }
@@ -1343,10 +1399,11 @@ void Scene::ObjectsInitialization()
     {
       position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
       position += room3_offset_position;
-      position += glm::vec3( -_wall_size, _wall_size, _wall_size - ( _wall_size * ( i - 9 ) ) );
+      position += glm::vec3( -_wall_size, _wall_size, ( _wall_size * ( i - 9 ) ) );
 
       model_matrix = glm::mat4();
       model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 1.0, 0.0 , 0.0 ) );
       model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0 , -1.0 ) );
       model_matrix = glm::scale( model_matrix, glm::vec3( _wall_size, 1.0, _wall_size ) ); 
     }
@@ -1369,7 +1426,7 @@ void Scene::ObjectsInitialization()
                         false,
                         0.12,
                         0.15 / 3.0,
-                        0,
+                        12,
                         false,
                         1.0 );
 
@@ -1960,9 +2017,18 @@ void Scene::SceneForwardRendering()
     glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowBias" ), _grounds_type1[ ground_it ]._shadow_bias );
     glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _grounds_type1[ ground_it ]._shadow_darkness );
 
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uEmissive" ), _grounds_type1[ ground_it ]._emissive );
+    if( _grounds_type1[ ground_it ]._emissive )
+    {
+      glActiveTexture( GL_TEXTURE11 );
+      glBindTexture( GL_TEXTURE_2D, _loaded_materials[ _grounds_type1[ ground_it ]._material_id ][ 6 ] );
+      glUniform1f( glGetUniformLocation( current_shader->_program, "uEmissiveFactor" ), _grounds_type1[ ground_it ]._emissive_factor );
+    }
+
     glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _grounds_type1[ ground_it ]._id );  
 
-    glBindVertexArray( _ground1_VAO );
+    ( _grounds_type1[ ground_it ]._id == 18 ) ? glBindVertexArray( _ground2_VAO ) : glBindVertexArray( _ground1_VAO );
     ( _grounds_type1[ ground_it ]._height_map == true ) ? glDrawElements( GL_PATCHES, _ground1_indices.size(), GL_UNSIGNED_INT, 0 ) : glDrawElements( GL_TRIANGLES, _ground1_indices.size(), GL_UNSIGNED_INT, 0 );
     glBindVertexArray( 0 );
     glUseProgram( 0 );
@@ -2042,7 +2108,7 @@ void Scene::SceneForwardRendering()
     
     glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _walls_type1[ wall_it ]._id );  
 
-    glBindVertexArray( _wall1_VAO );
+    ( _walls_type1[ wall_it ]._id == 4 ) ? glBindVertexArray( _wall2_VAO ) : glBindVertexArray( _wall1_VAO );
     ( _walls_type1[ wall_it ]._height_map == true ) ? glDrawElements( GL_PATCHES, _wall1_indices.size(), GL_UNSIGNED_INT, 0 ) : glDrawElements( GL_TRIANGLES, _wall1_indices.size(), GL_UNSIGNED_INT, 0 );
     glBindVertexArray( 0 );
     glUseProgram( 0 );

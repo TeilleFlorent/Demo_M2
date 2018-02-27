@@ -181,14 +181,14 @@ void Window::ManageEvents( Camera * iCamera )
 
           case 'a' :
             //_scene->_lights[ 0 ]._position.x += 0.1;
-            _scene->_blur_offset_factor += 0.1;
-            std::cout << "_bias = " << _scene->_blur_offset_factor << std::endl;
+            _scene->_grounds_type1[ 4 ]._tessellation_factor += 0.001;
+            std::cout << "factor = " << _scene->_grounds_type1[ 4 ]._tessellation_factor << std::endl;
             break;
 
           case 'e' :
             //_scene->_lights[ 0 ]._position.x -= 0.1;
-            _scene->_blur_offset_factor -= 0.1;
-            std::cout << "_bias = " << _scene->_blur_offset_factor << std::endl;
+            _scene->_grounds_type1[ 4 ]._tessellation_factor -= 0.001;
+            std::cout << "factor = " << _scene->_grounds_type1[ 4 ]._tessellation_factor << std::endl;
             break;
 
           case 'r' :

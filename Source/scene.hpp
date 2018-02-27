@@ -104,18 +104,26 @@ class Scene
 
     // VAOs
     unsigned int _ground1_VAO;
+    unsigned int _ground2_VAO;
     unsigned int _wall1_VAO;
+    unsigned int _wall2_VAO;
 
     // VBOs
     unsigned int _ground1_VBO;
+    unsigned int _ground2_VBO;
     unsigned int _wall1_VBO;
+    unsigned int _wall2_VBO;
 
     // IBOs
     unsigned int                _ground1_IBO;
     std::vector< unsigned int > _ground1_indices;
+    unsigned int                _ground2_IBO;
+    std::vector< unsigned int > _ground2_indices;
     unsigned int                _wall1_IBO;
     std::vector< unsigned int > _wall1_indices;
-    
+    unsigned int                _wall2_IBO;
+    std::vector< unsigned int > _wall2_indices;
+
     // Textures
     int _current_env;
     std::vector< unsigned int > _hdr_textures;
