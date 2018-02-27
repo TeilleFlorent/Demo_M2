@@ -174,19 +174,18 @@ void Mesh::SetupMesh()
 //******************************************************************************
 
 Toolbox * Model::_toolbox; 
+Scene   * Model::_scene; 
 
 Model::Model( string  iPath, 
               int     iID,
               string  iName,
               bool    iNormalMap,
-              bool    iHeightMap,
-              Scene * iScene )
+              bool    iHeightMap )
 {
   _model_id   = iID;
   _model_name = iName;
   _normal_map = iNormalMap;
   _height_map = iHeightMap;
-  _scene      = iScene;
 
   LoadModel( iPath );
 }
@@ -796,4 +795,14 @@ void Model::SetToolbox( Toolbox * iToolbox )
 Toolbox * Model::GetToolbox()
 {
   return _toolbox;
+}
+
+void Model::SetScene( Scene * iScene )
+{
+  _scene = iScene;
+}
+
+Scene * Model::GetScene()
+{
+  return _scene;
 }

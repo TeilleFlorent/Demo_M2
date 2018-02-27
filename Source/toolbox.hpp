@@ -37,6 +37,8 @@ class Toolbox
 
     // Toolbox functions
     // ---------------
+    
+    Toolbox();
 
     Toolbox( Window * iParentWindow );
 
@@ -129,6 +131,8 @@ class Toolbox
     std::vector< unsigned int > LoadMaterialTextures( std::string iMaterialName,
                                                       float       iAnisotropy,
                                                       bool        iEmissive );
+
+    unsigned int GenEnvironmentCubemap( Object * iObject );
 
 
     // Toolbox class members

@@ -126,8 +126,7 @@ class Model
            int     iID,
            string  iName,
            bool    iNormalMap,
-           bool    iHeightMap,
-           Scene * iScene );
+           bool    iHeightMap );
 
     void Draw( Shader    iShader,
                glm::mat4 iModelMatrix );   
@@ -161,6 +160,10 @@ class Model
     static void SetToolbox( Toolbox * iToolbox );
 
     static Toolbox * GetToolbox();
+   
+    static void SetScene( Scene * iScene );
+
+    static Scene * GetScene();
 
 
     // Class members
@@ -176,16 +179,17 @@ class Model
     Assimp::Importer  _importer;
     const aiScene *   _assimp_scene;
 
-    // Pointer on the scene where this model is render
-    Scene *           _scene;
-
     bool _normal_map;
     bool _height_map;
+    
 
   private:
 
     // Pointer on the window program toolbox
     static Toolbox * _toolbox;
+
+    // Pointer on the scene
+    static Scene * _scene;
 
 };    
 

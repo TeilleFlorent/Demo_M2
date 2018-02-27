@@ -41,6 +41,7 @@ uniform bool  uBloom;
 uniform float uBloomBrightness;
 
 // IBL uniforms
+uniform bool  uIBL;
 uniform float uMaxMipLevel;
 
 // Opacity uniforms
@@ -406,6 +407,7 @@ vec3 PBRLightingCalculation( vec3 iNormal,
                                                          N_dot_V,
                                                          material );
 
+
   // IBL calculation part
   // --------------------
    
@@ -416,7 +418,11 @@ vec3 PBRLightingCalculation( vec3 iNormal,
                                                         iNormal,
                                                         iViewDir,
                                                         iOpacity );
-        
+  if( !uIBL )
+  {
+    IBL_ambient_reflectance = vec3( 0.0 );
+  }
+
 
   // Return fragment final PBR lighting 
   // ----------------------------------
@@ -497,7 +503,7 @@ void main()
   // Main out color
   FragColor = vec4( final_color, opacity );
   //FragColor = vec4( vec3( shadow_factor ), 1.0 );
-  //FragColor = vec4( vec3( texture( uTextureEmissive1, oUV ).rgb ), 1.0 );
+  //FragColor = vec4( vec3( texture( uTextureAlbedo1, oUV ).rgb ), 1.0 );
   //FragColor = vec4( vec3( normal ), 1.0 );
 
   // Second out color => draw only brightest fragments

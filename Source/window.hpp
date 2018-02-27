@@ -50,7 +50,7 @@ class Window
     // Window class members
     // --------------------
 
-    SDL_Window *  _SDL_window;
+    SDL_Window * _SDL_window;
     
     SDL_GLContext _openGL_context;
     

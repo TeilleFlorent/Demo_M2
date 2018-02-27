@@ -14,9 +14,17 @@ Window::Window()
   _width  = 800 * 1.5;
   _height = 600 * 1.5;
 
+  // Init the window
   Initialization();
+
+  // Create and init this window's toolbox
   _toolbox = new Toolbox( this );
+  
+  // Create and init the scene
   _scene = new Scene( this );
+
+  // Scene's objects environment cubemap generation
+  _scene->ObjectsEnvCubemapGeneration();
 }
 
 void Window::Quit()
@@ -181,14 +189,34 @@ void Window::ManageEvents( Camera * iCamera )
 
           case 'a' :
             //_scene->_lights[ 0 ]._position.x += 0.1;
-            _scene->_grounds_type1[ 4 ]._tessellation_factor += 0.001;
-            std::cout << "factor = " << _scene->_grounds_type1[ 4 ]._tessellation_factor << std::endl;
+            
+            for( int i = 0; i < _scene->_grounds_type1.size(); i++ )
+            {
+              if( _scene->_grounds_type1[ i ]._id == 18 )
+              {
+                _scene->_grounds_type1[ i ]._emissive_factor += 0.5;
+                std::cout << "factor = " << _scene->_grounds_type1[ i ]._emissive_factor << std::endl;
+              }
+            }
+            
+            //_scene->_grounds_type1[ 4 ]._tessellation_factor += 0.001;
+            //std::cout << "factor = " << _scene->_grounds_type1[ 4 ]._tessellation_factor << std::endl;
             break;
 
           case 'e' :
             //_scene->_lights[ 0 ]._position.x -= 0.1;
-            _scene->_grounds_type1[ 4 ]._tessellation_factor -= 0.001;
-            std::cout << "factor = " << _scene->_grounds_type1[ 4 ]._tessellation_factor << std::endl;
+            
+            for( int i = 0; i < _scene->_grounds_type1.size(); i++ )
+            {
+              if( _scene->_grounds_type1[ i ]._id == 18 )
+              {
+                _scene->_grounds_type1[ i ]._emissive_factor -= 0.5;
+                std::cout << "factor = " << _scene->_grounds_type1[ i ]._emissive_factor << std::endl;
+              }
+            }
+
+            //_scene->_grounds_type1[ 4 ]._tessellation_factor -= 0.001;
+            //std::cout << "factor = " << _scene->_grounds_type1[ 4 ]._tessellation_factor << std::endl;
             break;
 
           case 'r' :

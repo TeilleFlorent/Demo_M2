@@ -29,6 +29,7 @@ class Scene
 
     // Scene functions
     // ---------------
+    Scene();
 
     Scene( Window * iParentWindow );
 
@@ -47,6 +48,8 @@ class Scene
     void TesselationInitialization();
 
     void ModelsLoading();
+
+    void ObjectsEnvCubemapGeneration();
 
     void DeferredBuffersInitialization();
 
@@ -156,12 +159,12 @@ class Scene
     int  _nb_multi_sample;
 
     // IBL parameters
-    int   _res_env_cubeMap;
+    int   _res_env_cubemap;
 
-    int   _res_irradiance_cubeMap;
+    int   _res_irradiance_cubemap;
     float _irradiance_sample_delta;
 
-    int          _res_pre_filter_cubeMap;
+    int          _res_pre_filter_cubemap;
     unsigned int _pre_filter_sample_count;
     unsigned int _pre_filter_max_mip_Level;
 
@@ -210,6 +213,8 @@ class Scene
     glm::mat4 _door2_rotation_matrix;
     float     _door_angle;
     bool      _door_open;
+
+    unsigned int _test_cubemap;
 };
 
 #endif  // SCENE_H

@@ -6,6 +6,10 @@
 //**********  Class Scene  *****************************************************
 //******************************************************************************
 
+Scene::Scene()
+{ 
+}
+
 Scene::Scene( Window * iParentWindow )
 { 
   _pipeline_type = FORWARD_RENDERING;
@@ -16,8 +20,8 @@ Scene::Scene( Window * iParentWindow )
   // ----------------------
   
   // near far
-  _near = 0.01;
-  _far  = 30.0;
+  _near        = 0.01;
+  _far         = 30.0;
   _shadow_near = 0.01;
   _shadow_far  = 30.0;
 
@@ -35,18 +39,18 @@ Scene::Scene( Window * iParentWindow )
   _nb_multi_sample = 4;
 
   // Init IBL parameters
-  _current_env             = 2;
-  _res_env_cubeMap         = 512;
+  _current_env              = 2;
+  _res_env_cubemap          = 1024;
 
-  _res_irradiance_cubeMap  = 32;
-  _irradiance_sample_delta = 0.025;
+  _res_irradiance_cubemap   = 32;
+  _irradiance_sample_delta  = 0.025;
   
-  _res_pre_filter_cubeMap   = 256;
+  _res_pre_filter_cubemap   = 256;
   _pre_filter_sample_count  = 1024 * 1;
   _pre_filter_max_mip_Level = 5;
 
-  _res_pre_brdf_texture  = 512;
-  _pre_brdf_sample_count = 1024 * 1;    
+  _res_pre_brdf_texture     = 512;
+  _pre_brdf_sample_count    = 1024 * 1;    
 
   // Init tessellation parameters
   _tess_patch_vertices_count = 3;
@@ -478,7 +482,7 @@ void Scene::LightsInitialization()
   
   PointLight::SetLightsMultiplier( 30.0 );
 
-  _lights.push_back( PointLight( glm::vec3( 17, 2.0, -18.0 ),
+  _lights.push_back( PointLight( glm::vec3( 0.0, 2.0, 4.0 ),
                                  glm::vec3( 1.0, 1.0, 1.0 ),
                                  0.5,
                                  3.0 ) );    
@@ -1348,7 +1352,7 @@ void Scene::ObjectsInitialization()
                         0.15,
                         13,
                         true,
-                        20.0 );        
+                        17.0 );        
 
   _grounds_type1.push_back( temp_object );
 
@@ -1483,7 +1487,7 @@ void Scene::IBLInitialization()
     glGenRenderbuffers( 1, &capture_RBO );
     glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
     glBindRenderbuffer( GL_RENDERBUFFER, capture_RBO );
-    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, _res_env_cubeMap, _res_env_cubeMap );
+    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, _res_env_cubemap, _res_env_cubemap );
     glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, capture_RBO );
 
 
@@ -1496,8 +1500,8 @@ void Scene::IBLInitialization()
       glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
       0, 
       GL_RGB16F, 
-      _res_env_cubeMap, 
-      _res_env_cubeMap, 
+      _res_env_cubemap, 
+      _res_env_cubemap, 
       0, 
       GL_RGB, 
       GL_FLOAT, 
@@ -1532,7 +1536,7 @@ void Scene::IBLInitialization()
     glBindTexture( GL_TEXTURE_2D, hdr_texture );
     glUniformMatrix4fv( glGetUniformLocation( _cube_map_converter_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_projection_matrix ) );
 
-    glViewport( 0, 0, _res_env_cubeMap, _res_env_cubeMap ); // don't forget to configure the viewport to the capture dimensions.
+    glViewport( 0, 0, _res_env_cubemap, _res_env_cubemap ); // don't forget to configure the viewport to the capture dimensions.
     glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
     for( unsigned int i = 0; i < 6; ++i )
     {
@@ -1550,7 +1554,7 @@ void Scene::IBLInitialization()
     // Gen & compute irradiance cube map textures
     // ------------------------------------------
     irradiance_cubemap = _window->_toolbox->GenIrradianceCubeMap( env_cubemap,
-                                                                  _res_irradiance_cubeMap,
+                                                                  _res_irradiance_cubemap,
                                                                   _diffuse_irradiance_shader,
                                                                   _irradiance_sample_delta );
 
@@ -1558,7 +1562,7 @@ void Scene::IBLInitialization()
     // Gen & compute specular pre filter cube map textures
     // ---------------------------------------------------
     pre_filter_cubemap = _window->_toolbox->GenPreFilterCubeMap( env_cubemap,
-                                                                 _res_pre_filter_cubeMap,
+                                                                 _res_pre_filter_cubemap,
                                                                  _specular_pre_filter_shader,
                                                                  _pre_filter_sample_count,
                                                                  _pre_filter_max_mip_Level );
@@ -1706,14 +1710,14 @@ void Scene::ShadersInitialization()
 void Scene::ModelsLoading()
 { 
   Model::SetToolbox( _window->_toolbox );
+  Model::SetScene( this );
 
   // Table model loading
   _table_model = new Model( "../Models/cube/cube.fbx", 
                             0, 
                             "Table1",
                             true,
-                            false,
-                            this );
+                            false );
   _table_model->PrintInfos();
 
   // Volume sphere model loading
@@ -1721,8 +1725,7 @@ void Scene::ModelsLoading()
                              1, 
                              "VolumeSphere",
                              false,
-                             false,
-                             this );
+                             false );
   _sphere_model->PrintInfos();
 
   // Ink bottle model loading
@@ -1730,8 +1733,7 @@ void Scene::ModelsLoading()
                                  2, 
                                  "InkBottle",
                                  _ink_bottle._normal_map,
-                                 _ink_bottle._height_map,
-                                 this );
+                                 _ink_bottle._height_map );
   _ink_bottle_model->PrintInfos();
 
   // revolving door model loading
@@ -1739,8 +1741,7 @@ void Scene::ModelsLoading()
                                      3, 
                                      "RevolvingDoor",
                                      _revolving_door[ 0 ]._normal_map,
-                                     _revolving_door[ 0 ]._height_map,
-                                     this );
+                                     _revolving_door[ 0 ]._height_map );
   _revolving_door_model->PrintInfos();
 }
 
@@ -1911,11 +1912,12 @@ void Scene::SceneForwardRendering()
   glUniform1f( glGetUniformLocation( _skybox_shader._program, "uBloomBrightness" ), 1.0 );
 
   glActiveTexture( GL_TEXTURE0 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _env_cubeMaps[ _current_env ] ); 
+  //glBindTexture( GL_TEXTURE_CUBE_MAP, _env_cubeMaps[ _current_env ] ); 
   //glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] ); 
   //glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _test_cubemap ); 
 
-  //_window->_toolbox->RenderCube();
+  _window->_toolbox->RenderCube();
 
   glDepthMask( GL_TRUE );  // réactivé pour draw le reste
   glUseProgram( 0 );
@@ -1998,6 +2000,8 @@ void Scene::SceneForwardRendering()
     glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _grounds_type1[ ground_it ]._bloom );
     glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _grounds_type1[ ground_it ]._bloom_brightness );
 
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), true );
     glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
     // Opacity uniforms
@@ -2078,6 +2082,8 @@ void Scene::SceneForwardRendering()
     glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _walls_type1[ wall_it ]._bloom );
     glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _walls_type1[ wall_it ]._bloom_brightness );
 
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), true );
     glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
     // Opacity uniforms
@@ -2151,6 +2157,8 @@ void Scene::SceneForwardRendering()
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _ink_bottle._bloom );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _ink_bottle._bloom_brightness );
 
+  // IBL uniforms
+  glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), true );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
   // Opacity uniforms
@@ -2205,6 +2213,8 @@ void Scene::SceneForwardRendering()
     glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
   }
 
+  // IBL uniforms
+  glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), true );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
 
   for( int door_it = 0; door_it < _revolving_door.size(); door_it++ )
@@ -2647,5 +2657,14 @@ void Scene::DoorOpeningScript()
   {
     _door_angle = 0.0;
   }
+}
+
+void Scene::ObjectsEnvCubemapGeneration()
+{
+  std::cout << "Scene's objects environment generation in progress..." << std::endl;
+
+  _test_cubemap = _window->_toolbox->GenEnvironmentCubemap( &_ink_bottle );
+
+  std::cout << "Scene's objects environment generation done." << std::endl;
 }
 
