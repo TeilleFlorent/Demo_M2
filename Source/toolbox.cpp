@@ -959,39 +959,12 @@ unsigned int Toolbox::GenEnvironmentCubemap( Object * iObject )
   // Use the correct shader 
   _window->_scene->_forward_pbr_shader.Use();
 
-  // Projection matrice uniform
-  glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_projection_matrix ) );
-
   glm::mat4 model_matrix;
   for( unsigned int i = 0; i < 6; ++i )
   { 
     // Bind correct cubemap face to render
     glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, cubemap_id, 0 );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-    // Matrices uniforms
-    glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_view_matrices[ i ] ) );
-    glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-    glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uViewPos" ), 1, &iObject->_position[ 0 ] );
-
-    // Point lights uniforms
-    glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uLightCount" ), _window->_scene->_lights.size() );
-    for( int i = 0; i < _window->_scene->_lights.size(); i++ )
-    {
-      string temp = to_string( i );
-      glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_window->_scene->_lights[ i ]._position[ 0 ] );
-      glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_window->_scene->_lights[ i ]._color[ 0 ] );
-      glUniform1f(  glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _window->_scene->_lights[ i ]._intensity );
-    }
-
-    // Bloom uniforms
-    glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uBloom" ), false );
-
-    // IBL uniforms
-    glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uIBL" ), false );
-
-    // Omnidirectional shadow mapping uniforms
-    glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uReceivShadow" ), false );
 
 
     // Draw grounds type 1
@@ -1014,7 +987,32 @@ unsigned int Toolbox::GenEnvironmentCubemap( Object * iObject )
       glActiveTexture( GL_TEXTURE5 );
       glBindTexture( GL_TEXTURE_2D, _window->_scene->_loaded_materials[ _window->_scene->_grounds_type1[ ground_it ]._material_id ][ 5 ] ); 
 
-      // Opacity uniforms
+      // Matrices uniforms
+      glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_projection_matrix ) );
+      glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_view_matrices[ i ] ) );
+      glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+      glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uViewPos" ), 1, &iObject->_position[ 0 ] );
+
+      // Point lights uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uLightCount" ), _window->_scene->_lights.size() );
+      for( int i = 0; i < _window->_scene->_lights.size(); i++ )
+      {
+        string temp = to_string( i );
+        glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_window->_scene->_lights[ i ]._position[ 0 ] );
+        glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_window->_scene->_lights[ i ]._color[ 0 ] );
+        glUniform1f(  glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _window->_scene->_lights[ i ]._intensity );
+      }
+
+      // Bloom uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uBloom" ), false );
+
+      // IBL uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uIBL" ), false );
+
+      // Omnidirectional shadow mapping uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uReceivShadow" ), false );
+
+      // Opacity uniforms 
       glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uAlpha" ), _window->_scene->_grounds_type1[ ground_it ]._alpha );
       glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uOpacityMap" ), _window->_scene->_grounds_type1[ ground_it ]._opacity_map );
       glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
@@ -1044,7 +1042,7 @@ unsigned int Toolbox::GenEnvironmentCubemap( Object * iObject )
 
     // Draw walls type 1
     // -----------------
-    for( unsigned int wall_it = 0; wall_it < _window->_scene->_walls_type1.size(); wall_it++ )
+    /*for( unsigned int wall_it = 0; wall_it < _window->_scene->_walls_type1.size(); wall_it++ )
     {
       model_matrix = _window->_scene->_walls_type1[ wall_it ]._model_matrix;
 
@@ -1061,6 +1059,31 @@ unsigned int Toolbox::GenEnvironmentCubemap( Object * iObject )
       glBindTexture( GL_TEXTURE_2D, _window->_scene->_loaded_materials[ _window->_scene->_walls_type1[ wall_it ]._material_id ][ 4 ] ); 
       glActiveTexture( GL_TEXTURE5 );
       glBindTexture( GL_TEXTURE_2D, _window->_scene->_loaded_materials[ _window->_scene->_walls_type1[ wall_it ]._material_id ][ 5 ] ); 
+
+      // Matrices uniforms
+      glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_projection_matrix ) );
+      glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_view_matrices[ i ] ) );
+      glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+      glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uViewPos" ), 1, &iObject->_position[ 0 ] );
+
+      // Point lights uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uLightCount" ), _window->_scene->_lights.size() );
+      for( int i = 0; i < _window->_scene->_lights.size(); i++ )
+      {
+        string temp = to_string( i );
+        glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_window->_scene->_lights[ i ]._position[ 0 ] );
+        glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_window->_scene->_lights[ i ]._color[ 0 ] );
+        glUniform1f(  glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _window->_scene->_lights[ i ]._intensity );
+      }
+
+      // Bloom uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uBloom" ), false );
+
+      // IBL uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uIBL" ), false );
+
+      // Omnidirectional shadow mapping uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uReceivShadow" ), false );
 
       // Opacity uniforms
       glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uAlpha" ), _window->_scene->_walls_type1[ wall_it ]._alpha );
@@ -1081,11 +1104,14 @@ unsigned int Toolbox::GenEnvironmentCubemap( Object * iObject )
       
       glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uID" ), _window->_scene->_walls_type1[ wall_it ]._id );  
 
+      // Bind correct VAO
       ( _window->_scene->_walls_type1[ wall_it ]._id == 4 ) ? glBindVertexArray( _window->_scene->_wall2_VAO ) : glBindVertexArray( _window->_scene->_wall1_VAO );
+
       glDrawElements( GL_TRIANGLES, _window->_scene->_wall1_indices.size(), GL_UNSIGNED_INT, 0 );
+
       glBindVertexArray( 0 );
-      glUseProgram( 0 );
-    }
+    }*/
+
   }
 
   // Unbind capture FBO
