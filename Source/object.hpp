@@ -40,7 +40,9 @@ class Object
             float     iTessellationFactor,
             int       iMaterialID,
             bool      iEmissive,
-            float     iEmissiveFactor );
+            float     iEmissiveFactor,
+            bool      iParallaxCubemap,
+            bool      iIBL );
 
     void Set( Object iSourceObject );
 
@@ -71,6 +73,8 @@ class Object
     bool                        _emissive;
     float                       _emissive_factor;
     std::vector< unsigned int > _IBL_cubemaps;
+    bool                        _parallax_cubemap;
+    bool                        _IBL;
 };
 
 #endif  // OBJECT_H

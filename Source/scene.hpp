@@ -218,7 +218,8 @@ class Scene
     float     _door_angle;
     bool      _door_open;
 
-    unsigned int _test = 0;
+    unsigned int _test  = 0;
+    unsigned int _test2 = 0;
 };
 
 #endif  // SCENE_H

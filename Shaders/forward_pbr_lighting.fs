@@ -43,6 +43,9 @@ uniform float uBloomBrightness;
 // IBL uniforms
 uniform bool  uIBL;
 uniform float uMaxMipLevel;
+uniform bool  uParallaxCubemap;
+uniform vec3  uCubemapPos;
+uniform bool  uIsWall;
 
 // Opacity uniforms
 uniform bool  uOpacityMap;
@@ -230,7 +233,8 @@ vec3 PointLightReflectance( vec2     iUV,
                             vec3     iNormal,
                             vec3     iF0,
                             float    iNormalDotViewDir,
-                            Material iMaterial )
+                            Material iMaterial,
+                            float    iShadowFactor )
 { 
 
   // Pre calculation optimisation
@@ -300,7 +304,15 @@ vec3 PointLightReflectance( vec2     iUV,
 
     // Final point light influence
     // ---------------------------
-    Lo += ( ( kD * ( albedo_by_PI ) ) + light_specular ) * light_radiance * normal_dot_light_dir;  // already multiplied the specular by the Fresnel ( kS )
+
+    // shadow influence
+    float shadow_factor = 1.0;
+    if( i == uLightSourceIt )
+    {
+      shadow_factor = iShadowFactor;
+    } 
+
+    Lo += shadow_factor * ( ( kD * ( albedo_by_PI ) ) + light_specular ) * light_radiance * normal_dot_light_dir;  // already multiplied the specular by the Fresnel ( kS )
     
   }   
 
@@ -336,29 +348,49 @@ vec3 IBLAmbientReflectance( float    iNormalDotViewDir,
 
   // Specular reflectance calculation
   // --------------------------------
-  vec3 DirectionWS = oFragPos - uViewPos;
-  vec3 ReflDirectionWS = reflect( DirectionWS, iNormal);
 
-  vec3 bmax = vec3( 8.0, 8.0 / 3.0, 8.0 );
-  vec3 bmin = vec3( 0.0, 0.0, 0.0 );
-  vec3 pos = vec3( -8.0 * 0.5, 0.0, -8.0 * 0.5 );
-  bmax += pos;
-  bmin += pos;
+  // Get reflection vector using parallax corrected cubemap
+  vec3 reflect_dir;
+  if( uParallaxCubemap )
+  {
+    vec3 DirectionWS = oFragPos - uViewPos;
+    vec3 ReflDirectionWS = reflect( DirectionWS, iNormal);
 
-  vec3 FirstPlaneIntersect = ( bmax - oFragPos) / ReflDirectionWS;
-  vec3 SecondPlaneIntersect = ( bmin - oFragPos ) / ReflDirectionWS;  
+    vec3 bmax;
+    vec3 bmin;
+    vec3 pos; 
 
-  vec3 FurthestPlane = max( FirstPlaneIntersect, SecondPlaneIntersect );
-  float Distance = min( min( FurthestPlane.x, FurthestPlane.y ), FurthestPlane.z );
-  vec3 IntersectPositionWS = oFragPos + ReflDirectionWS * Distance;
-  ReflDirectionWS = IntersectPositionWS - vec3( 0.0, 0.0, 0.0 );
+    if( uIsWall )
+    {
+      bmax = vec3( 8.0, 8.0 / 3.0, 8.0 / 3.0 );
+      bmin = vec3( 0.0, 0.0, 0.0 );
+      pos  = vec3( -8.0 * 0.5, 0.0, -( 8.0 / 3.0 ) * 0.5 ) + vec3( uCubemapPos.x, 0.0, uCubemapPos.z );  
+    }
+    else
+    {
+      bmax = vec3( 8.0, 8.0 / 3.0, 8.0 );
+      bmin = vec3( 0.0, 0.0, 0.0 );
+      pos  = vec3( -8.0 * 0.5, 0.0, -8.0 * 0.5 ) + vec3( uCubemapPos.x, 0.0, uCubemapPos.z );
+    }
 
-  // Get reflection vector
-  vec3 reflect = reflect( -iViewDir, iNormal ); 
-  reflect = ReflDirectionWS;
+    bmax += pos;
+    bmin += pos;
+
+    vec3 FirstPlaneIntersect = ( bmax - oFragPos ) / ReflDirectionWS;
+    vec3 SecondPlaneIntersect = ( bmin - oFragPos ) / ReflDirectionWS;  
+
+    vec3 FurthestPlane = max( FirstPlaneIntersect, SecondPlaneIntersect );
+    float Distance = min( min( FurthestPlane.x, FurthestPlane.y ), FurthestPlane.z );
+    vec3 IntersectPositionWS = oFragPos + ReflDirectionWS * Distance;
+    reflect_dir = IntersectPositionWS - uCubemapPos;
+  }
+  else
+  {
+    reflect_dir = reflect( -iViewDir, iNormal ); 
+  }
 
   // Sample specular pre filtered color with a mip level corresponding to the given roughness
-  vec3 prefiltered_color = textureLod( uPreFilterCubeMap, reflect,  iMaterial._roughness * uMaxMipLevel ).rgb; 
+  vec3 prefiltered_color = textureLod( uPreFilterCubeMap, reflect_dir,  iMaterial._roughness * uMaxMipLevel ).rgb; 
 
   // Sample the BRDF look up texture with the given angle and roughness to get the corresponding scale and bias to F0
   vec2 brdf = texture( uPreBrdfLUT, vec2( iNormalDotViewDir, iMaterial._roughness) ).rg;
@@ -422,7 +454,8 @@ vec3 PBRLightingCalculation( vec3 iNormal,
                                                          iNormal,
                                                          F0,
                                                          N_dot_V,
-                                                         material );
+                                                         material,
+                                                         iShadowFactor );
 
 
   // IBL calculation part
@@ -439,11 +472,15 @@ vec3 PBRLightingCalculation( vec3 iNormal,
   {
     IBL_ambient_reflectance = vec3( 0.0 );
   }
+  else
+  {
+    //point_lights_reflectance = vec3( 0.0 );
+  }
 
 
   // Return fragment final PBR lighting 
   // ----------------------------------
-  return IBL_ambient_reflectance + ( point_lights_reflectance * iShadowFactor );
+  return IBL_ambient_reflectance + point_lights_reflectance;
 }
 
 

@@ -220,6 +220,13 @@ void Window::ManageEvents( Camera * iCamera )
             break;
 
           case 'r' :
+            _scene->_test2 += 1;
+            std::cout << "_test = " << _scene->_test2 << std::endl;
+            break;
+
+          case 't' :
+            _scene->_test2 -= 1;
+            std::cout << "_test = " << _scene->_test2 << std::endl;
             break;
        
           case SDLK_F1 :

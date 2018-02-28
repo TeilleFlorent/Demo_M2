@@ -30,7 +30,9 @@ Object::Object( int       iID,
                 float     iTessellationFactor,
                 int       iMaterialID,
                 bool      iEmissive,
-                float     iEmissiveFactor )
+                float     iEmissiveFactor,
+                bool      iParallaxCubemap,
+                bool      iIBL )
 {
   _id                  = iID;
   _model_matrix        = iModelMatrix;
@@ -54,6 +56,8 @@ Object::Object( int       iID,
   _material_id         = iMaterialID;
   _emissive            = iEmissive;
   _emissive_factor     = iEmissiveFactor;
+  _parallax_cubemap    = iParallaxCubemap;
+  _IBL                 = iIBL;
 }
 
 void Object::Set( Object iSourceObject )
@@ -80,6 +84,8 @@ void Object::Set( Object iSourceObject )
   _material_id         = iSourceObject._material_id; 
   _emissive            = iSourceObject._emissive;
   _emissive_factor     = iSourceObject._emissive_factor; 
+  _parallax_cubemap    = iSourceObject._parallax_cubemap;
+  _IBL                 = iSourceObject._IBL;
 }
 
 
