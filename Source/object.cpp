@@ -12,6 +12,7 @@ Object::Object()
 Object::Object( int       iID,
                 glm::mat4 iModelMatrix,
                 glm::vec3 iPosition,
+                glm::vec3 iIBLPosition,
                 float     iAngle,
                 glm::vec3 iScale,
                 glm::vec2 iUvScale,
@@ -34,6 +35,7 @@ Object::Object( int       iID,
   _id                  = iID;
   _model_matrix        = iModelMatrix;
   _position            = iPosition;
+  _IBL_position        = iIBLPosition;
   _angle               = iAngle;
   _scale               = iScale;
   _uv_scale            = iUvScale;
@@ -58,7 +60,8 @@ void Object::Set( Object iSourceObject )
 {
   _id                  = iSourceObject._id; 
   _model_matrix        = iSourceObject._model_matrix;                 
-  _position            = iSourceObject._position;           
+  _position            = iSourceObject._position;    
+  _IBL_position        = iSourceObject._IBL_position;       
   _angle               = iSourceObject._angle;               
   _scale               = iSourceObject._scale;               
   _uv_scale            = iSourceObject._uv_scale;            

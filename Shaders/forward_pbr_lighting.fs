@@ -336,9 +336,26 @@ vec3 IBLAmbientReflectance( float    iNormalDotViewDir,
 
   // Specular reflectance calculation
   // --------------------------------
-  
+  vec3 DirectionWS = oFragPos - uViewPos;
+  vec3 ReflDirectionWS = reflect( DirectionWS, iNormal);
+
+  vec3 bmax = vec3( 8.0, 8.0 / 3.0, 8.0 );
+  vec3 bmin = vec3( 0.0, 0.0, 0.0 );
+  vec3 pos = vec3( -8.0 * 0.5, 0.0, -8.0 * 0.5 );
+  bmax += pos;
+  bmin += pos;
+
+  vec3 FirstPlaneIntersect = ( bmax - oFragPos) / ReflDirectionWS;
+  vec3 SecondPlaneIntersect = ( bmin - oFragPos ) / ReflDirectionWS;  
+
+  vec3 FurthestPlane = max( FirstPlaneIntersect, SecondPlaneIntersect );
+  float Distance = min( min( FurthestPlane.x, FurthestPlane.y ), FurthestPlane.z );
+  vec3 IntersectPositionWS = oFragPos + ReflDirectionWS * Distance;
+  ReflDirectionWS = IntersectPositionWS - vec3( 0.0, 0.0, 0.0 );
+
   // Get reflection vector
   vec3 reflect = reflect( -iViewDir, iNormal ); 
+  reflect = ReflDirectionWS;
 
   // Sample specular pre filtered color with a mip level corresponding to the given roughness
   vec3 prefiltered_color = textureLod( uPreFilterCubeMap, reflect,  iMaterial._roughness * uMaxMipLevel ).rgb; 
@@ -500,8 +517,14 @@ void main()
   // Get final fragment color
   vec3 final_color = PBR_lighting_result + emissive;
 
+  if( !uIBL )
+  {
+    final_color *= 2.0;
+  }
+
   // Main out color
   FragColor = vec4( final_color, opacity );
+  
   //FragColor = vec4( vec3( shadow_factor ), 1.0 );
   //FragColor = vec4( vec3( texture( uTextureAlbedo1, oUV ).rgb ), 1.0 );
   //FragColor = vec4( vec3( normal ), 1.0 );

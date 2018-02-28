@@ -132,7 +132,9 @@ class Toolbox
                                                       float       iAnisotropy,
                                                       bool        iEmissive );
 
-    unsigned int GenEnvironmentCubemap( Object * iObject );
+    unsigned int GenEnvironmentCubemap( glm::vec3    iPosition,
+                                        bool         iNeedAllWalls,
+                                        unsigned int iWallID );
 
 
     // Toolbox class members

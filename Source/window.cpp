@@ -24,7 +24,7 @@ Window::Window()
   _scene = new Scene( this );
 
   // Scene's objects environment cubemap generation
-  _scene->ObjectsEnvCubemapGeneration();
+  _scene->ObjectsIBLInitialization();
 }
 
 void Window::Quit()
@@ -119,7 +119,7 @@ SDL_Window * Window::InitSDLWindow( int iWidth,
 
 void Window::InitGL()
 {
-  glClearColor( 1.0f, 0.0f, 0.0f, 1.0f );
+  glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
 
   glEnable( GL_DEPTH_TEST );
   glDepthFunc( GL_LESS ); 
@@ -190,33 +190,33 @@ void Window::ManageEvents( Camera * iCamera )
           case 'a' :
             //_scene->_lights[ 0 ]._position.x += 0.1;
             
-            for( int i = 0; i < _scene->_grounds_type1.size(); i++ )
+            /*for( int i = 0; i < _scene->_grounds_type1.size(); i++ )
             {
               if( _scene->_grounds_type1[ i ]._id == 18 )
               {
                 _scene->_grounds_type1[ i ]._emissive_factor += 0.5;
                 std::cout << "factor = " << _scene->_grounds_type1[ i ]._emissive_factor << std::endl;
               }
-            }
+            }*/
             
-            //_scene->_grounds_type1[ 4 ]._tessellation_factor += 0.001;
-            //std::cout << "factor = " << _scene->_grounds_type1[ 4 ]._tessellation_factor << std::endl;
+            _scene->_test += 1;
+            std::cout << "_test = " << _scene->_test << std::endl;
             break;
 
           case 'e' :
             //_scene->_lights[ 0 ]._position.x -= 0.1;
             
-            for( int i = 0; i < _scene->_grounds_type1.size(); i++ )
+            /*for( int i = 0; i < _scene->_grounds_type1.size(); i++ )
             {
               if( _scene->_grounds_type1[ i ]._id == 18 )
               {
                 _scene->_grounds_type1[ i ]._emissive_factor -= 0.5;
                 std::cout << "factor = " << _scene->_grounds_type1[ i ]._emissive_factor << std::endl;
               }
-            }
+            }*/
 
-            //_scene->_grounds_type1[ 4 ]._tessellation_factor -= 0.001;
-            //std::cout << "factor = " << _scene->_grounds_type1[ 4 ]._tessellation_factor << std::endl;
+            _scene->_test -= 1;
+            std::cout << "_test = " << _scene->_test << std::endl;
             break;
 
           case 'r' :

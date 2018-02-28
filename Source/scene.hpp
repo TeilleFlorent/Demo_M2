@@ -49,7 +49,11 @@ class Scene
 
     void ModelsLoading();
 
-    void ObjectsEnvCubemapGeneration();
+    void ObjectsIBLInitialization();
+
+    void ObjectCubemapsGeneration( Object *     iObject,
+                                   bool         iNeedAllWalls,
+                                   unsigned int iWallID );
 
     void DeferredBuffersInitialization();
 
@@ -214,7 +218,7 @@ class Scene
     float     _door_angle;
     bool      _door_open;
 
-    unsigned int _test_cubemap;
+    unsigned int _test = 0;
 };
 
 #endif  // SCENE_H

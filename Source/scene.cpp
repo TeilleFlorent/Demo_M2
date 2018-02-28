@@ -94,7 +94,7 @@ Scene::Scene( Window * iParentWindow )
                         45.0f,
                         ( float )_window->_width,
                         ( float )_window->_height,
-                        6.0 );
+                        2.0 );
 
   // Create and init all shaders
   ShadersInitialization();
@@ -411,7 +411,7 @@ void Scene::SceneDataInitialization()
   // ---------------------------------
   _loaded_materials.push_back( _window->_toolbox->LoadMaterialTextures( "room1_roof",
                                                                         anisotropy_value,
-                                                                        false ) );
+                                                                        true ) );
 
 
   // Load corridor1 floor material textures
@@ -485,9 +485,9 @@ void Scene::LightsInitialization()
   
   PointLight::SetLightsMultiplier( 30.0 );
 
-  _lights.push_back( PointLight( glm::vec3( 0.0, 2.0, 4.0 ),
+  _lights.push_back( PointLight( glm::vec3( -2.0, 2.0, 0.0 ),
                                  glm::vec3( 1.0, 1.0, 1.0 ),
-                                 0.5,
+                                 0.7,
                                  3.0 ) );    
 
   for( unsigned int i = 0; i < _lights.size(); i++ )
@@ -501,8 +501,8 @@ void Scene::ObjectsInitialization()
   std::cout << "Scene's objects initialization in progress..." << std::endl;
 
   glm::vec3 position;
+  glm::vec3 IBL_position( 0.0, 0.0, 0.0 );
   glm::mat4 model_matrix = glm::mat4(); 
-
   _ground_size = 8.0;
   _wall_size   = _ground_size / 3.0;
 
@@ -511,6 +511,12 @@ void Scene::ObjectsInitialization()
   // --------------------------------------------------------------
   for( int i = 0; i < 2; i ++ )
   {
+    bool emissive = false;
+    if( i == 1 )
+    {
+      emissive = true;
+    }
+
     int material_id = 3;
    
     if( i == 1 )
@@ -520,6 +526,15 @@ void Scene::ObjectsInitialization()
 
     position = glm::vec3( -(_ground_size * 0.5 ) + 0.0, 0.0, -(_ground_size * 0.5 ) + 0.0 );
     position += glm::vec3( _ground_size * i, i * _wall_size, 0.0 );
+    IBL_position = position + glm::vec3( _ground_size * 0.5, 0.0, _ground_size * 0.5 );
+
+    if( i == 0 )
+      std::cout << "pos = " << IBL_position.x << " " << IBL_position.y << " " << IBL_position.z << std::endl;
+
+    if( i == 1 )
+    {
+      IBL_position = position - glm::vec3( _ground_size * 0.5, 0.0, -_ground_size * 0.5 );
+    }
 
     model_matrix = glm::mat4();
     model_matrix = glm::translate( model_matrix, position );
@@ -530,6 +545,7 @@ void Scene::ObjectsInitialization()
     Object temp_object( 1,              // ID
                         model_matrix,   // model matrix
                         position,       // position
+                        IBL_position,   // position use to generate IBL cubemaps
                         _PI_2,          // angle
                         scale,          // scale
                         glm::vec2( 6.0, 6.0 ),   // uv scale
@@ -547,7 +563,7 @@ void Scene::ObjectsInitialization()
                         0.85,           // tessellation factor
                         material_id,    // material ID
                         false,          // emissive
-                        1.0 );          // emissive facor
+                        5.0 );          // emissive factor          
 
     _grounds_type1.push_back( temp_object );
   }
@@ -556,6 +572,7 @@ void Scene::ObjectsInitialization()
   // _ink_bottle object initialization
   // ---------------------------------
   position = glm::vec3( 1.0, 0.6, 1.0 );
+  IBL_position = position;
 
   model_matrix = glm::mat4();
   model_matrix = glm::translate( model_matrix, position );
@@ -565,7 +582,8 @@ void Scene::ObjectsInitialization()
 
   _ink_bottle.Set( Object( 2, // ID
                            model_matrix,
-                           glm::vec3( 1.0, 0.6, 1.0 ),
+                           position,
+                           IBL_position,
                            0.0,
                            scale,
                            glm::vec2( 1.0, 1.0 ),
@@ -640,6 +658,7 @@ void Scene::ObjectsInitialization()
     Object temp_object( 4, // ID
                         model_matrix,
                         position,
+                        IBL_position,
                         _PI_2,
                         glm::vec3( _wall_size, 1.0, _wall_size ),
                         glm::vec2( 1.0, 1.0 ),
@@ -654,7 +673,7 @@ void Scene::ObjectsInitialization()
                         true,
                         true,
                         0.05,
-                        0.15,
+                        0.1,
                         2,
                         false,
                         1.0 );
@@ -713,6 +732,7 @@ void Scene::ObjectsInitialization()
     Object temp_object( 5, // ID
                         model_matrix,
                         position,
+                        IBL_position,
                         _PI_2,
                         scale,
                         glm::vec2( 1.0, 1.0 ),
@@ -775,9 +795,10 @@ void Scene::ObjectsInitialization()
       model_matrix = glm::scale( model_matrix, scale );
     }
 
-    Object temp_object( 6, // ID
+    Object temp_object( 5, // ID
                         model_matrix,
                         position,
+                        IBL_position,
                         _PI_2,
                         scale,
                         glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
@@ -810,16 +831,19 @@ void Scene::ObjectsInitialization()
     if( i == 0 )
     {
       position = glm::vec3( -4.8, 0.03, 0.0 );
+      IBL_position = position + glm::vec3( 0.0, _wall_size * 0.5, 0.0 );
     }
 
     if( i == 1 )
     {
       position = glm::vec3( 0.0, 0.125, -13.8 );
+      IBL_position = position + glm::vec3( 0.0, _wall_size * 0.5, 0.0 );
     }
 
     if( i == 2 )
     {
       position = glm::vec3( 13.8, 0.06, -_ground_size - ( _wall_size * 4 ) );
+      IBL_position = position + glm::vec3( 0.0, _wall_size * 0.5, 0.0 );
     }
 
     model_matrix = glm::mat4();
@@ -836,6 +860,7 @@ void Scene::ObjectsInitialization()
     _revolving_door.push_back( Object( 7, // ID
                                        model_matrix,
                                        position,
+                                       IBL_position,
                                        0.0,
                                        scale,
                                        glm::vec2( 1.0, 1.0 ),
@@ -873,6 +898,7 @@ void Scene::ObjectsInitialization()
     Object temp_object( 8, // ID
                         model_matrix,
                         position,
+                        IBL_position,
                         _PI_2,
                         scale,
                         glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
@@ -913,6 +939,7 @@ void Scene::ObjectsInitialization()
     Object temp_object( 9, // ID
                         model_matrix,
                         position,
+                        IBL_position,
                         _PI_2,
                         scale,
                         glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
@@ -967,6 +994,7 @@ void Scene::ObjectsInitialization()
     Object temp_object( 10, // ID
                         model_matrix,
                         position,
+                        IBL_position,
                         _PI_2,
                         scale,
                         glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
@@ -1004,6 +1032,7 @@ void Scene::ObjectsInitialization()
   Object temp_object( 11,              // ID
                       model_matrix,   // model matrix
                       position,       // position
+                      IBL_position,
                       _PI_2,          // angle
                       scale,          // scale
                       glm::vec2( 6.0, 6.0 ),                          // uv scale
@@ -1041,6 +1070,7 @@ void Scene::ObjectsInitialization()
   temp_object = Object( 12,              // ID
                         model_matrix,   // model matrix
                         position,       // position
+                        IBL_position,
                         _PI_2,          // angle
                         scale,          // scale
                         glm::vec2( 6.0, 6.0 ),                          // uv scale
@@ -1122,6 +1152,7 @@ void Scene::ObjectsInitialization()
     Object temp_object( 13, // ID
                         model_matrix,
                         position,
+                        IBL_position,
                         _PI_2,
                         glm::vec3( _wall_size, 1.0, _wall_size ),
                         glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
@@ -1166,6 +1197,7 @@ void Scene::ObjectsInitialization()
     Object temp_object( 14, // ID
                         model_matrix,
                         position,
+                        IBL_position,
                         _PI_2,
                         scale,
                         glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
@@ -1207,6 +1239,7 @@ void Scene::ObjectsInitialization()
     Object temp_object( 15, // ID
                         model_matrix,
                         position,
+                        IBL_position,
                         _PI_2,
                         scale,
                         glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
@@ -1263,6 +1296,7 @@ void Scene::ObjectsInitialization()
     Object temp_object( 16, // ID
                         model_matrix,
                         position,
+                        IBL_position,
                         _PI_2,
                         scale,
                         glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
@@ -1302,6 +1336,7 @@ void Scene::ObjectsInitialization()
   temp_object = Object( 17,              // ID
                         model_matrix,   // model matrix
                         position,       // position
+                        IBL_position,
                         _PI_2,          // angle
                         scale,          // scale
                         glm::vec2( 6.0, 6.0 ),     // uv scale
@@ -1340,6 +1375,7 @@ void Scene::ObjectsInitialization()
   temp_object = Object( 18,              // ID
                         model_matrix,   // model matrix
                         position,       // position
+                        IBL_position,
                         _PI_2,          // angle
                         scale,          // scale
                         glm::vec2( 6.0, 6.0 ),                          // uv scale
@@ -1420,6 +1456,7 @@ void Scene::ObjectsInitialization()
     Object temp_object( 19, // ID
                         model_matrix,
                         position,
+                        IBL_position,
                         _PI_2,
                         glm::vec3( _wall_size, 1.0, _wall_size ),
                         glm::vec2( 6.0 / 3.0, 6.0 / 3.0 ),
@@ -1931,10 +1968,7 @@ void Scene::SceneForwardRendering()
   glUniform1f( glGetUniformLocation( _skybox_shader._program, "uBloomBrightness" ), 1.0 );
 
   glActiveTexture( GL_TEXTURE0 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _env_cubeMaps[ _current_env ] ); 
-  //glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] ); 
-  //glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] );
-  //glBindTexture( GL_TEXTURE_CUBE_MAP, _test_cubemap ); 
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _grounds_type1[ 0 ]._IBL_cubemaps[ _test ] ); 
 
   _window->_toolbox->RenderCube();
 
@@ -1990,9 +2024,9 @@ void Scene::SceneForwardRendering()
     glActiveTexture( GL_TEXTURE5 );
     glBindTexture( GL_TEXTURE_2D, _loaded_materials[ _grounds_type1[ ground_it ]._material_id ][ 5 ] ); 
     glActiveTexture( GL_TEXTURE7 );
-    glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _grounds_type1[ ground_it ]._IBL_cubemaps[ 1 ] );
     glActiveTexture( GL_TEXTURE8 );
-    glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); 
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _grounds_type1[ ground_it ]._IBL_cubemaps[ 2 ] ); 
     glActiveTexture( GL_TEXTURE9 );
     glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture );
     glActiveTexture( GL_TEXTURE10 );
@@ -2147,9 +2181,9 @@ void Scene::SceneForwardRendering()
   model_matrix = _ink_bottle._model_matrix;
 
   glActiveTexture( GL_TEXTURE7 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _ink_bottle._IBL_cubemaps[ 1 ] );
   glActiveTexture( GL_TEXTURE8 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); 
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _ink_bottle._IBL_cubemaps[ 2 ] ); 
   glActiveTexture( GL_TEXTURE9 );
   glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
   glActiveTexture( GL_TEXTURE10 );
@@ -2208,15 +2242,6 @@ void Scene::SceneForwardRendering()
   glCullFace( GL_BACK );
   _forward_pbr_shader.Use();
 
-  glActiveTexture( GL_TEXTURE7 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
-  glActiveTexture( GL_TEXTURE8 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _pre_filter_cubeMaps[ _current_env ] ); 
-  glActiveTexture( GL_TEXTURE9 );
-  glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
-  glActiveTexture( GL_TEXTURE10 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
-
   // Matrices uniforms
   glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
   glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
@@ -2238,6 +2263,16 @@ void Scene::SceneForwardRendering()
 
   for( int door_it = 0; door_it < _revolving_door.size(); door_it++ )
   { 
+    // IBL cubemap texture binding
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _revolving_door[ door_it ]._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _revolving_door[ door_it ]._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
     model_matrix = _revolving_door[ door_it ]._model_matrix;
 
     // Matrices uniforms
@@ -2678,12 +2713,51 @@ void Scene::DoorOpeningScript()
   }
 }
 
-void Scene::ObjectsEnvCubemapGeneration()
+void Scene::ObjectCubemapsGeneration( Object *     iObject,
+                                      bool         iNeedAllWalls,
+                                      unsigned int iWallID )
 {
+  iObject->_IBL_cubemaps.push_back( _window->_toolbox->GenEnvironmentCubemap( iObject->_IBL_position,
+                                                                              iNeedAllWalls,
+                                                                              iWallID ) );
+
+  iObject->_IBL_cubemaps.push_back( _window->_toolbox->GenIrradianceCubeMap( iObject->_IBL_cubemaps[ 0 ],
+                                                                            _res_irradiance_cubemap,
+                                                                            _diffuse_irradiance_shader,
+                                                                            _irradiance_sample_delta ) );
+
+  iObject->_IBL_cubemaps.push_back( _window->_toolbox->GenPreFilterCubeMap( iObject->_IBL_cubemaps[ 0 ],
+                                                                           _res_pre_filter_cubemap,
+                                                                           _specular_pre_filter_shader,
+                                                                           _pre_filter_sample_count,
+                                                                           _pre_filter_max_mip_Level ) );
+}
+
+void Scene::ObjectsIBLInitialization()
+{
+  // Scene's objects environment generation
+  //---------------------------------------
+  
   std::cout << "Scene's objects environment generation in progress..." << std::endl;
 
-  //_test_cubemap = _window->_toolbox->GenEnvironmentCubemap( &_ink_bottle );
+
+  for( int i = 0; i < _revolving_door.size(); i ++ )
+  {
+    ObjectCubemapsGeneration( &_revolving_door[ i ],
+                              true,
+                              0 );
+  }
+
+  for( int i = 0; i < _grounds_type1.size(); i ++ )
+  {
+    ObjectCubemapsGeneration( &_grounds_type1[ i ],
+                              true,
+                              0 );
+  }
+  
+  ObjectCubemapsGeneration( &_ink_bottle,
+                            true,
+                            0 );
 
   std::cout << "Scene's objects environment generation done.\n" << std::endl;
 }
-
