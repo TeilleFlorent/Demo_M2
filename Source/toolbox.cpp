@@ -1044,78 +1044,127 @@ unsigned int Toolbox::GenEnvironmentCubemap( glm::vec3    iPosition,
 
     // Draw walls type 1
     // -----------------
-    if( iNeedAllWalls )
+    for( unsigned int wall_it = 0; wall_it < _window->_scene->_walls_type1.size(); wall_it++ )
     {
-      for( unsigned int wall_it = 0; wall_it < _window->_scene->_walls_type1.size(); wall_it++ )
+      model_matrix = _window->_scene->_walls_type1[ wall_it ]._model_matrix;
+
+      // Textures binding
+      glActiveTexture( GL_TEXTURE0 );
+      glBindTexture( GL_TEXTURE_2D, _window->_scene->_loaded_materials[ _window->_scene->_walls_type1[ wall_it ]._material_id ][ 0 ] );  
+      glActiveTexture( GL_TEXTURE1 );
+      glBindTexture( GL_TEXTURE_2D, _window->_scene->_loaded_materials[ _window->_scene->_walls_type1[ wall_it ]._material_id ][ 1 ] ); 
+      glActiveTexture( GL_TEXTURE2 );
+      glBindTexture( GL_TEXTURE_2D, _window->_scene->_loaded_materials[ _window->_scene->_walls_type1[ wall_it ]._material_id ][ 2 ] ); 
+      glActiveTexture( GL_TEXTURE3 );
+      glBindTexture( GL_TEXTURE_2D, _window->_scene->_loaded_materials[ _window->_scene->_walls_type1[ wall_it ]._material_id ][ 3 ] ); 
+      glActiveTexture( GL_TEXTURE4 );
+      glBindTexture( GL_TEXTURE_2D, _window->_scene->_loaded_materials[ _window->_scene->_walls_type1[ wall_it ]._material_id ][ 4 ] ); 
+      glActiveTexture( GL_TEXTURE5 );
+      glBindTexture( GL_TEXTURE_2D, _window->_scene->_loaded_materials[ _window->_scene->_walls_type1[ wall_it ]._material_id ][ 5 ] ); 
+
+      // Matrices uniforms
+      glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_projection_matrix ) );
+      glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_view_matrices[ i ] ) );
+      glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+      glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uViewPos" ), 1, &iPosition[ 0 ] );
+
+      // Point lights uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uLightCount" ), _window->_scene->_lights.size() );
+      for( int i = 0; i < _window->_scene->_lights.size(); i++ )
       {
-        model_matrix = _window->_scene->_walls_type1[ wall_it ]._model_matrix;
-
-        // Textures binding
-        glActiveTexture( GL_TEXTURE0 );
-        glBindTexture( GL_TEXTURE_2D, _window->_scene->_loaded_materials[ _window->_scene->_walls_type1[ wall_it ]._material_id ][ 0 ] );  
-        glActiveTexture( GL_TEXTURE1 );
-        glBindTexture( GL_TEXTURE_2D, _window->_scene->_loaded_materials[ _window->_scene->_walls_type1[ wall_it ]._material_id ][ 1 ] ); 
-        glActiveTexture( GL_TEXTURE2 );
-        glBindTexture( GL_TEXTURE_2D, _window->_scene->_loaded_materials[ _window->_scene->_walls_type1[ wall_it ]._material_id ][ 2 ] ); 
-        glActiveTexture( GL_TEXTURE3 );
-        glBindTexture( GL_TEXTURE_2D, _window->_scene->_loaded_materials[ _window->_scene->_walls_type1[ wall_it ]._material_id ][ 3 ] ); 
-        glActiveTexture( GL_TEXTURE4 );
-        glBindTexture( GL_TEXTURE_2D, _window->_scene->_loaded_materials[ _window->_scene->_walls_type1[ wall_it ]._material_id ][ 4 ] ); 
-        glActiveTexture( GL_TEXTURE5 );
-        glBindTexture( GL_TEXTURE_2D, _window->_scene->_loaded_materials[ _window->_scene->_walls_type1[ wall_it ]._material_id ][ 5 ] ); 
-
-        // Matrices uniforms
-        glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_projection_matrix ) );
-        glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_view_matrices[ i ] ) );
-        glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-        glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uViewPos" ), 1, &iPosition[ 0 ] );
-
-        // Point lights uniforms
-        glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uLightCount" ), _window->_scene->_lights.size() );
-        for( int i = 0; i < _window->_scene->_lights.size(); i++ )
-        {
-          string temp = to_string( i );
-          glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_window->_scene->_lights[ i ]._position[ 0 ] );
-          glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_window->_scene->_lights[ i ]._color[ 0 ] );
-          glUniform1f(  glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _window->_scene->_lights[ i ]._intensity * 2.0f );
-        }
-
-        // Bloom uniforms
-        glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uBloom" ), false );
-
-        // IBL uniforms
-        glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uIBL" ), false );
-
-        // Omnidirectional shadow mapping uniforms
-        glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uReceivShadow" ), false );
-
-        // Opacity uniforms
-        glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uAlpha" ), _window->_scene->_walls_type1[ wall_it ]._alpha );
-        glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uOpacityMap" ), _window->_scene->_walls_type1[ wall_it ]._opacity_map );
-        glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
-        
-        // Displacement mapping uniforms
-        glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uNormalMap" ), _window->_scene->_walls_type1[ wall_it ]._normal_map );
-
-        // Emissive uniforms
-        glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uEmissive" ), _window->_scene->_walls_type1[ wall_it ]._emissive );
-        if( _window->_scene->_walls_type1[ wall_it ]._emissive )
-        {
-          glActiveTexture( GL_TEXTURE11 );
-          glBindTexture( GL_TEXTURE_2D, _window->_scene->_loaded_materials[ _window->_scene->_walls_type1[ wall_it ]._material_id ][ 6 ] );
-          glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uEmissiveFactor" ), _window->_scene->_walls_type1[ wall_it ]._emissive_factor );
-        }
-        
-        glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uID" ), _window->_scene->_walls_type1[ wall_it ]._id );  
-
-        // Bind correct VAO
-        ( _window->_scene->_walls_type1[ wall_it ]._id == 4 ) ? glBindVertexArray( _window->_scene->_wall2_VAO ) : glBindVertexArray( _window->_scene->_wall1_VAO );
-
-        glDrawElements( GL_TRIANGLES, _window->_scene->_wall1_indices.size(), GL_UNSIGNED_INT, 0 );
-
-        glBindVertexArray( 0 );
+        string temp = to_string( i );
+        glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_window->_scene->_lights[ i ]._position[ 0 ] );
+        glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_window->_scene->_lights[ i ]._color[ 0 ] );
+        glUniform1f(  glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _window->_scene->_lights[ i ]._intensity * 2.0f );
       }
+
+      // Bloom uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uBloom" ), false );
+
+      // IBL uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uIBL" ), false );
+
+      // Omnidirectional shadow mapping uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uReceivShadow" ), false );
+
+      // Opacity uniforms
+      glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uAlpha" ), _window->_scene->_walls_type1[ wall_it ]._alpha );
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uOpacityMap" ), _window->_scene->_walls_type1[ wall_it ]._opacity_map );
+      glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+      
+      // Displacement mapping uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uNormalMap" ), _window->_scene->_walls_type1[ wall_it ]._normal_map );
+
+      // Emissive uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uEmissive" ), _window->_scene->_walls_type1[ wall_it ]._emissive );
+      if( _window->_scene->_walls_type1[ wall_it ]._emissive )
+      {
+        glActiveTexture( GL_TEXTURE11 );
+        glBindTexture( GL_TEXTURE_2D, _window->_scene->_loaded_materials[ _window->_scene->_walls_type1[ wall_it ]._material_id ][ 6 ] );
+        glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uEmissiveFactor" ), _window->_scene->_walls_type1[ wall_it ]._emissive_factor );
+      }
+      
+      glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uID" ), _window->_scene->_walls_type1[ wall_it ]._id );  
+
+      // Bind correct VAO
+      ( _window->_scene->_walls_type1[ wall_it ]._id == 4 ) ? glBindVertexArray( _window->_scene->_wall2_VAO ) : glBindVertexArray( _window->_scene->_wall1_VAO );
+
+      glDrawElements( GL_TRIANGLES, _window->_scene->_wall1_indices.size(), GL_UNSIGNED_INT, 0 );
+
+      glBindVertexArray( 0 );
     }
+
+
+    // Draw revolving doors
+    // --------------------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+    for( unsigned int door_it = 0; door_it < _window->_scene->_revolving_door.size(); door_it++ )
+    {
+      model_matrix = _window->_scene->_revolving_door[ door_it ]._model_matrix;
+
+      // Matrices uniforms
+      glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_projection_matrix ) );
+      glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_view_matrices[ i ] ) );
+      glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+      glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uViewPos" ), 1, &iPosition[ 0 ] );
+
+      // Point lights uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uLightCount" ), _window->_scene->_lights.size() );
+      for( int i = 0; i < _window->_scene->_lights.size(); i++ )
+      {
+        string temp = to_string( i );
+        glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_window->_scene->_lights[ i ]._position[ 0 ] );
+        glUniform3fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_window->_scene->_lights[ i ]._color[ 0 ] );
+        glUniform1f(  glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _window->_scene->_lights[ i ]._intensity * 2.0f );
+      }
+
+      // Bloom uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uBloom" ), false );
+
+      // IBL uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uIBL" ), false );
+
+      // Omnidirectional shadow mapping uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uReceivShadow" ), false );
+
+      // Opacity uniforms
+      glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uAlpha" ), _window->_scene->_revolving_door[ door_it ]._alpha );
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uOpacityMap" ), _window->_scene->_revolving_door[ door_it ]._opacity_map );
+      glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+      
+      // Displacement mapping uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uNormalMap" ), _window->_scene->_revolving_door[ door_it ]._normal_map );
+
+      // Emissive uniforms
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uEmissive" ), _window->_scene->_revolving_door[ door_it ]._emissive );
+      
+      glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uID" ), _window->_scene->_revolving_door[ door_it ]._id );  
+
+      _window->_scene->_revolving_door_model->Draw( _window->_scene->_forward_pbr_shader, model_matrix );
+    }
+    glDisable( GL_CULL_FACE );
+
   }
 
   // generate mipmaps from first mip face ( combatting visible dots artifact )

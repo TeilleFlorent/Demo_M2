@@ -190,32 +190,14 @@ void Window::ManageEvents( Camera * iCamera )
           case 'a' :
             //_scene->_lights[ 0 ]._position.x += 0.1;
             
-            /*for( int i = 0; i < _scene->_grounds_type1.size(); i++ )
-            {
-              if( _scene->_grounds_type1[ i ]._id == 18 )
-              {
-                _scene->_grounds_type1[ i ]._emissive_factor += 0.5;
-                std::cout << "factor = " << _scene->_grounds_type1[ i ]._emissive_factor << std::endl;
-              }
-            }*/
-            
-            _scene->_test += 1;
+            _scene->_test += 1.0;
             std::cout << "_test = " << _scene->_test << std::endl;
             break;
 
           case 'e' :
             //_scene->_lights[ 0 ]._position.x -= 0.1;
-            
-            /*for( int i = 0; i < _scene->_grounds_type1.size(); i++ )
-            {
-              if( _scene->_grounds_type1[ i ]._id == 18 )
-              {
-                _scene->_grounds_type1[ i ]._emissive_factor -= 0.5;
-                std::cout << "factor = " << _scene->_grounds_type1[ i ]._emissive_factor << std::endl;
-              }
-            }*/
 
-            _scene->_test -= 1;
+            _scene->_test -= 1.0;
             std::cout << "_test = " << _scene->_test << std::endl;
             break;
 
@@ -261,8 +243,13 @@ void Window::ManageEvents( Camera * iCamera )
             break;
 
           case SDLK_F6 :
-            _scene->_door_open ? _scene->_door_open = false : _scene->_door_open = true;
-            std::cout << " _door_open = " << _scene->_door_open << std::endl; 
+            _scene->_revolving_door_open ? _scene->_revolving_door_open = false : _scene->_revolving_door_open = true;
+            std::cout << " _revolving_door_open = " << _scene->_revolving_door_open << std::endl; 
+            break;
+
+          case SDLK_F7 :
+            _scene->_simple_door_open ? _scene->_simple_door_open = false : _scene->_simple_door_open = true;
+            std::cout << " _simple_door_open = " << _scene->_simple_door_open << std::endl; 
             break;
 
           default:

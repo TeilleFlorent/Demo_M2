@@ -360,18 +360,9 @@ vec3 IBLAmbientReflectance( float    iNormalDotViewDir,
     vec3 bmin;
     vec3 pos; 
 
-    if( uIsWall )
-    {
-      bmax = vec3( 8.0, 8.0 / 3.0, 8.0 / 3.0 );
-      bmin = vec3( 0.0, 0.0, 0.0 );
-      pos  = vec3( -8.0 * 0.5, 0.0, -( 8.0 / 3.0 ) * 0.5 ) + vec3( uCubemapPos.x, 0.0, uCubemapPos.z );  
-    }
-    else
-    {
-      bmax = vec3( 8.0, 8.0 / 3.0, 8.0 );
-      bmin = vec3( 0.0, 0.0, 0.0 );
-      pos  = vec3( -8.0 * 0.5, 0.0, -8.0 * 0.5 ) + vec3( uCubemapPos.x, 0.0, uCubemapPos.z );
-    }
+    bmax = vec3( 8.0, 8.0 / 3.0, 8.0 );
+    bmin = vec3( 0.0, 0.0, 0.0 );
+    pos  = vec3( -8.0 * 0.5, 0.0, -8.0 * 0.5 ) + vec3( uCubemapPos.x, 0.0, uCubemapPos.z );
 
     bmax += pos;
     bmin += pos;
@@ -561,10 +552,12 @@ void main()
 
   // Main out color
   FragColor = vec4( final_color, opacity );
-  
+  if( uID == 20 )
+  {
+    FragColor = vec4( vec3( texture( uTextureAlbedo1, oUV ).rgb ), 1.0 );
+  }
   //FragColor = vec4( vec3( shadow_factor ), 1.0 );
   //FragColor = vec4( vec3( texture( uTextureAlbedo1, oUV ).rgb ), 1.0 );
-  //FragColor = vec4( vec3( normal ), 1.0 );
 
   // Second out color => draw only brightest fragments
   vec3 bright_color = vec3( 0.0 );

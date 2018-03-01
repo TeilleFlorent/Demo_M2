@@ -75,7 +75,9 @@ class Scene
 
     void AnimationsUpdate();
 
-    void DoorOpeningScript();
+    void RevolvingDoorScript();
+
+    void SimpleDoorScript();
 
 
     // Scene class members
@@ -200,6 +202,7 @@ class Scene
     std::vector< Object > _walls_type2;
     std::vector< Object > _grounds_type1;
     std::vector< Object > _revolving_door;
+    std::vector< Object > _simple_door;
     Object                _ink_bottle;
     float                 _ground_size;
     float                 _wall_size;
@@ -210,16 +213,23 @@ class Scene
     Model * _sphere_model;
     Model * _ink_bottle_model;
     Model * _revolving_door_model;
+    Model * _simple_door_model;
 
-    // Revolving rotation matrix
+    // Revolving door rotation matrix
     glm::mat4 _door_rotation_matrix;
     glm::mat4 _door1_rotation_matrix;
     glm::mat4 _door2_rotation_matrix;
     float     _door_angle;
-    bool      _door_open;
+    bool      _revolving_door_open;
 
-    unsigned int _test  = 0;
-    unsigned int _test2 = 0;
+    // Simple door translation matrix
+    glm::mat4 _door_translation_matrix1;
+    glm::mat4 _door_translation_matrix2;
+    glm::vec3 _door_position;
+    bool _simple_door_open;
+
+    float _test  = 0;
+    float _test2 = 0;
 };
 
 #endif  // SCENE_H

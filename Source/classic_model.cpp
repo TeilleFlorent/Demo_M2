@@ -86,6 +86,10 @@ void Mesh::Draw( Shader    iShader,
 	// Perform mesh local transform
 	glm::mat4 model_matrix;
 	model_matrix = iModelMatrix * _local_transform;
+  if( iModelID == 4 )
+  {
+    model_matrix = iModelMatrix;
+  } 
 	glUniformMatrix4fv( glGetUniformLocation( iShader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
 
 	// Draw only transparent mesh part
@@ -197,14 +201,22 @@ void Model::Draw( Shader    iShader,
   glm::mat4 rotation_matrix;
   glm::mat4 rotation_matrix1;
   glm::mat4 rotation_matrix2;
+  glm::mat4 translation_matrix1;
+  glm::mat4 translation_matrix2;
 
-  
-  // Set revolving door rotation
+  // Set revolving door rotations
   if( _model_id == 3 )
   { 
     rotation_matrix  = iModelMatrix * _scene->_door_rotation_matrix;
     rotation_matrix1 = iModelMatrix * _scene->_door1_rotation_matrix;
     rotation_matrix2 = iModelMatrix * _scene->_door2_rotation_matrix;
+  }
+
+  // Set simple door translations
+  if( _model_id == 4 )
+  { 
+    translation_matrix1 = iModelMatrix * _scene->_door_translation_matrix1;
+    translation_matrix2 = iModelMatrix * _scene->_door_translation_matrix2;
   }
 
 	// Draw non transparent model parts
@@ -238,6 +250,20 @@ void Model::Draw( Shader    iShader,
       if( i > 11 && i < 15 )
       {
         model_matrix = &rotation_matrix2;
+      }
+    }
+
+    // Perform simple door translations
+    if( _model_id == 4 )
+    {
+      if( i == 4 )
+      {
+        model_matrix = &translation_matrix1;
+      }
+
+      if( i == 5 )
+      {
+        model_matrix = &translation_matrix2;
       }
     }
 
@@ -729,6 +755,66 @@ vector< Texture > Model::LoadMeshTextures( aiString     iNodeName,
 
       *oOpacityMap = true;
     }
+  }
+
+
+  // Load simple door textures 
+  // -------------------------
+  if( this->_model_id == 4 )
+  { 
+    std::cout << "material index = " << iMaterialIndex << std::endl;
+
+    std::string texture_name( "" );
+    
+    if( iMaterialIndex == 3 )
+    {
+      texture_name += "door_";
+    }
+
+    if( iMaterialIndex == 0 )
+    {
+      texture_name += "bot_";
+    }
+
+    if( iMaterialIndex == 1 )
+    {
+      return textures;
+    }
+
+    if( iMaterialIndex == 2 )
+    {
+      return textures;
+    }
+    
+
+    // albedo
+    textures.push_back( LoadTexture( "uTextureAlbedo",
+                                     std::string( texture_name + "albedo.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+
+    // normal
+    textures.push_back( LoadTexture( "uTextureNormal",
+                                     std::string( texture_name + "normal.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+    // AO
+    textures.push_back( LoadTexture( "uTextureAO",
+                                     std::string( texture_name + "AO.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // roughness 
+    textures.push_back( LoadTexture( "uTextureRoughness",
+                                     std::string( texture_name + "roughness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // metalness
+    textures.push_back( LoadTexture( "uTextureMetalness",
+                                     std::string( texture_name + "metalness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
   }
 
   return textures;

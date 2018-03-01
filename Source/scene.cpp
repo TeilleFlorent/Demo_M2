@@ -62,9 +62,12 @@ Scene::Scene( Window * iParentWindow )
   _render_lights_volume = false;
 
   // Revolving door
-  _door_angle = 0.0;
-  _door_open  = false;
+  _door_angle          = 0.0;
+  _revolving_door_open = false;
 
+  // Simple door
+  _door_position    = glm::vec3( 0.0 );
+  _simple_door_open = false;
 
   // Scene data initialization
   // -------------------------
@@ -468,13 +471,6 @@ void Scene::SceneDataInitialization()
   _loaded_materials.push_back( _window->_toolbox->LoadMaterialTextures( "room3_walls",
                                                                         anisotropy_value,
                                                                         false ) );
-
-
-  // Load room3 roof material textures
-  // ---------------------------------
-  _loaded_materials.push_back( _window->_toolbox->LoadMaterialTextures( "room3_roof",
-                                                                        anisotropy_value,
-                                                                        true ) );
 
   std::cout << "Scene's data initialization done.\n" << std::endl;
 }
@@ -1430,7 +1426,7 @@ void Scene::ObjectsInitialization()
   position = glm::vec3( -(_ground_size * 0.5 ) + 0.0, 0.0, -(_ground_size * 0.5 ) + 0.0 );
   position += room3_offset_position;
   position += glm::vec3( 0.0, _wall_size, _ground_size );
-  IBL_position = room3_offset_position + glm::vec3( 0.0, _wall_size, 0.0 );
+  IBL_position = room3_offset_position + glm::vec3( 0.0, _wall_size * 0.95, 0.0 );
 
   model_matrix = glm::mat4();
   model_matrix = glm::translate( model_matrix, position );
@@ -1456,8 +1452,8 @@ void Scene::ObjectsInitialization()
                         false,          // height map
                         0.12,           // displacement factor
                         0.15,
-                        13,
-                        true,
+                        0,
+                        false,
                         17.0,
                         true,
                         true );        
@@ -1551,6 +1547,60 @@ void Scene::ObjectsInitialization()
     {
       _walls_type1.push_back( temp_object );
     }
+  }
+
+
+  // _simple_door object initialization
+  // ----------------------------------
+  for( int i = 0; i < 2; i ++ )
+  {   
+    scale = glm::vec3( 1.9, 2.2, 1.9 );
+
+    if( i == 0 )
+    {
+      position = glm::vec3( 0.0, 0.05, ( -_ground_size * 0.5 ) + 0.03 );
+      IBL_position = position;
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::scale( model_matrix, scale );
+    }
+
+    if( i == 1 )
+    {
+      position = glm::vec3( _ground_size * 0.5, 0.05, -_ground_size - _wall_size * 4.0 );  
+      IBL_position = position;
+
+      model_matrix = glm::mat4();
+      model_matrix = glm::translate( model_matrix, position );
+      model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 1.0, 0.0 ) );
+      model_matrix = glm::scale( model_matrix, scale );
+    }
+
+    _simple_door.push_back( Object( 20,              // ID
+                            model_matrix,   // model matrix
+                            position,       // position
+                            IBL_position,   // position use to generate IBL cubemaps
+                            _PI_2,          // angle
+                            scale,          // scale
+                            glm::vec2( 6.0, 6.0 ),   // uv scale
+                            1.0,            // alpha
+                            true,           // generate shadow
+                            true,           // receiv shadow
+                            1.0,            // shadow darkness
+                            0.035,          // shadow bias
+                            false,          // bloom
+                            0.99,           // bloom bright value
+                            false,          // opacity map
+                            true,           // normal map
+                            false,          // height map
+                            0.05,           // displacement factor
+                            0.85,           // tessellation factor
+                            0,              // material ID
+                            false,          // emissive
+                            5.0,            // emissive factor
+                            false,          // need parallax cubemap
+                            false ) );      // need IBL
   }
 
   std::cout << "Scene's objects initialization done.\n" << std::endl;
@@ -1869,6 +1919,14 @@ void Scene::ModelsLoading()
                                      _revolving_door[ 0 ]._height_map );
   _revolving_door_model->PrintInfos();
 
+  // simple door model loading
+  _simple_door_model = new Model( "../Models/simple_door/FinalPortalDoor.fbx", 
+                                  4, 
+                                  "SimpleDoor",
+                                  _simple_door[ 0 ]._normal_map,
+                                  _simple_door[ 0 ]._height_map );
+  _simple_door_model->PrintInfos();
+
   std::cout << "Scene's models loading done.\n" << std::endl;
 }
 
@@ -2039,8 +2097,9 @@ void Scene::SceneForwardRendering()
   glUniform1f( glGetUniformLocation( _skybox_shader._program, "uBloomBrightness" ), 1.0 );
 
   glActiveTexture( GL_TEXTURE0 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _grounds_type1[ _test ]._IBL_cubemaps[ _test2 ] ); 
-  //glBindTexture( GL_TEXTURE_CUBE_MAP, _walls_type1[ _test ]._IBL_cubemaps[ _test2 ] ); 
+  //glBindTexture( GL_TEXTURE_CUBE_MAP, _grounds_type1[ _test ]._IBL_cubemaps[ _test2 ] ); 
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _walls_type1[ _test ]._IBL_cubemaps[ _test2 ] ); 
+  //glBindTexture( GL_TEXTURE_CUBE_MAP, _revolving_door[ _test ]._IBL_cubemaps[ _test2 ] ); 
 
   _window->_toolbox->RenderCube();
 
@@ -2301,6 +2360,9 @@ void Scene::SceneForwardRendering()
   // Displacement mapping uniforms
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _ink_bottle._normal_map );
 
+  // Emissive uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _ink_bottle._emissive );
+
   // Omnidirectional shadow mapping uniforms
   glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _ink_bottle._receiv_shadow );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
@@ -2371,6 +2433,9 @@ void Scene::SceneForwardRendering()
     // Displacement mapping uniforms
     glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _revolving_door[ door_it ]._normal_map );
 
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _revolving_door[ door_it ]._emissive );
+
     // Omnidirectional shadow mapping uniforms
     glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _revolving_door[ door_it ]._receiv_shadow );
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
@@ -2381,6 +2446,81 @@ void Scene::SceneForwardRendering()
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _revolving_door[ door_it ]._id );      
 
     _revolving_door_model->Draw( _forward_pbr_shader, model_matrix );
+  }
+
+  glUseProgram( 0 );
+  glDisable( GL_CULL_FACE );
+
+
+  // Draw simple doors
+  // -----------------
+  glEnable( GL_CULL_FACE );
+  glCullFace( GL_BACK );
+  _forward_pbr_shader.Use();
+
+  // Matrices uniforms
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+  glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+  // Point lights uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+  for( int i = 0; i < _lights.size(); i++ )
+  {
+    string temp = to_string( i );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+    glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+  }
+
+  // IBL uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), true );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), false );
+
+
+  for( int door_it = 0; door_it < _simple_door.size(); door_it++ )
+  { 
+    // IBL cubemap texture binding
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _simple_door[ door_it ]._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _simple_door[ door_it ]._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    model_matrix = _simple_door[ door_it ]._model_matrix;
+
+    // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _simple_door[ door_it ]._bloom );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _simple_door[ door_it ]._bloom_brightness );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _simple_door[ door_it ]._alpha );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _simple_door[ door_it ]._opacity_map );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _simple_door[ door_it ]._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _simple_door[ door_it ]._emissive );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _simple_door[ door_it ]._receiv_shadow );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), 0 );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _simple_door[ door_it ]._shadow_bias );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _simple_door[ door_it ]._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _simple_door[ door_it ]._id );      
+
+    _simple_door_model->Draw( _forward_pbr_shader, model_matrix );
   }
 
   glUseProgram( 0 );
@@ -2778,19 +2918,43 @@ void Scene::AnimationsUpdate()
   _door2_rotation_matrix = glm::mat4();
   _door2_rotation_matrix = glm::rotate( _door2_rotation_matrix, _door_angle, glm::vec3( 0.0, 0.0, 1.0 ) );
 
-  DoorOpeningScript();
+
+  // Simple door translation matrix update
+  // -------------------------------------
+  _door_translation_matrix1 = glm::mat4();
+  _door_translation_matrix1 = glm::translate( _door_translation_matrix1, _door_position );
+
+  _door_translation_matrix2 = glm::mat4();
+  _door_translation_matrix2 = glm::translate( _door_translation_matrix2, -_door_position );
+  _door_translation_matrix2 = glm::rotate( _door_translation_matrix2, ( float )_PI, glm::vec3( 0.0, 1.0, 0.0 ) );
+
+  RevolvingDoorScript();
+  SimpleDoorScript();
 }
 
-void Scene::DoorOpeningScript()
+void Scene::RevolvingDoorScript()
 {
-  if( _door_open && _door_angle < 0.53 )
+  if( _revolving_door_open && _door_angle < 0.53 )
   {
     _door_angle += 0.1 * _clock->GetDeltaTime();
   }
 
-  if( !_door_open )
+  if( !_revolving_door_open )
   {
     _door_angle = 0.0;
+  }
+}
+
+void Scene::SimpleDoorScript()
+{
+  if( _simple_door_open && _door_position.x < 0.5 )
+  {
+    _door_position.x += 0.1 * _clock->GetDeltaTime();
+  }
+
+  if( !_simple_door_open )
+  {
+    _door_position.x = 0.0;
   }
 }
 
@@ -2825,6 +2989,13 @@ void Scene::ObjectsIBLInitialization()
   for( int i = 0; i < _revolving_door.size(); i++ )
   {
     ObjectCubemapsGeneration( &_revolving_door[ i ],
+                              true,
+                              0 );
+  }
+
+  for( int i = 0; i < _simple_door.size(); i++ )
+  {
+    ObjectCubemapsGeneration( &_simple_door[ i ],
                               true,
                               0 );
   }
