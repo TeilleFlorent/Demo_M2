@@ -552,12 +552,9 @@ void main()
 
   // Main out color
   FragColor = vec4( final_color, opacity );
-  if( uID == 20 )
-  {
-    FragColor = vec4( vec3( texture( uTextureAlbedo1, oUV ).rgb ), 1.0 );
-  }
+  //FragColor = vec4( normal, opacity );
   //FragColor = vec4( vec3( shadow_factor ), 1.0 );
-  //FragColor = vec4( vec3( texture( uTextureAlbedo1, oUV ).rgb ), 1.0 );
+  //FragColor = vec4( vec3( texture( uTextureNormal1, oUV ).rgb ), 1.0 );
 
   // Second out color => draw only brightest fragments
   vec3 bright_color = vec3( 0.0 );

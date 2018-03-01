@@ -229,7 +229,7 @@ class Scene
     bool _simple_door_open;
 
     float _test  = 0;
-    float _test2 = 0;
+    unsigned int _test2 = 0;
 };
 
 #endif  // SCENE_H

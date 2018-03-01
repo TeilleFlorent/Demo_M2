@@ -495,7 +495,8 @@ Mesh Model::ProcessMesh( aiMesh * 	 iMesh,
 
     if( _model_id == 2
      || _model_id == 3
-     || _model_id == 0 )
+     || _model_id == 0
+     || _model_id == 4 )
     { 
       // Assimp tangent
       vector.x = iMesh->mTangents[ i ].x;
@@ -783,7 +784,7 @@ vector< Texture > Model::LoadMeshTextures( aiString     iNodeName,
 
     if( iMaterialIndex == 2 )
     {
-      return textures;
+      texture_name += "frame_";
     }
     
 

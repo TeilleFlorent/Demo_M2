@@ -1558,8 +1558,8 @@ void Scene::ObjectsInitialization()
 
     if( i == 0 )
     {
-      position = glm::vec3( 0.0, 0.05, ( -_ground_size * 0.5 ) + 0.03 );
-      IBL_position = position;
+      position = glm::vec3( 0.0, 0.05, ( -_ground_size * 0.5 ) + 0.08 );
+      IBL_position = position + glm::vec3( 0.0, _wall_size * 0.5, 0.0 );
 
       model_matrix = glm::mat4();
       model_matrix = glm::translate( model_matrix, position );
@@ -1569,7 +1569,7 @@ void Scene::ObjectsInitialization()
     if( i == 1 )
     {
       position = glm::vec3( _ground_size * 0.5, 0.05, -_ground_size - _wall_size * 4.0 );  
-      IBL_position = position;
+      IBL_position = position + glm::vec3( 0.0, _wall_size * 0.5, 0.0 );
 
       model_matrix = glm::mat4();
       model_matrix = glm::translate( model_matrix, position );
@@ -1599,8 +1599,8 @@ void Scene::ObjectsInitialization()
                             0,              // material ID
                             false,          // emissive
                             5.0,            // emissive factor
-                            false,          // need parallax cubemap
-                            false ) );      // need IBL
+                            true,           // need parallax cubemap
+                            true ) );       // need IBL
   }
 
   std::cout << "Scene's objects initialization done.\n" << std::endl;
@@ -2097,9 +2097,10 @@ void Scene::SceneForwardRendering()
   glUniform1f( glGetUniformLocation( _skybox_shader._program, "uBloomBrightness" ), 1.0 );
 
   glActiveTexture( GL_TEXTURE0 );
-  //glBindTexture( GL_TEXTURE_CUBE_MAP, _grounds_type1[ _test ]._IBL_cubemaps[ _test2 ] ); 
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _walls_type1[ _test ]._IBL_cubemaps[ _test2 ] ); 
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _grounds_type1[ _test2 ]._IBL_cubemaps[ 0 ] ); 
+  //glBindTexture( GL_TEXTURE_CUBE_MAP, _walls_type1[ _test ]._IBL_cubemaps[ _test2 ] ); 
   //glBindTexture( GL_TEXTURE_CUBE_MAP, _revolving_door[ _test ]._IBL_cubemaps[ _test2 ] ); 
+  //glBindTexture( GL_TEXTURE_CUBE_MAP, _simple_door[ 1 ]._IBL_cubemaps[ _test2 ] ); 
 
   _window->_toolbox->RenderCube();
 
@@ -2980,6 +2981,9 @@ void Scene::ObjectCubemapsGeneration( Object *     iObject,
 
 void Scene::ObjectsIBLInitialization()
 {
+  AnimationsUpdate();
+
+  
   // Scene's objects environment generation
   //---------------------------------------
   
