@@ -90,6 +90,7 @@ void Mesh::Draw( Shader    iShader,
 	// Perform mesh local transform
 	glm::mat4 model_matrix;
 	model_matrix = iModelMatrix * _local_transform;
+
   if( iModelID == 4 )
   {
     model_matrix = iModelMatrix;
@@ -901,6 +902,103 @@ vector< Texture > Model::LoadMeshTextures( aiString     iNodeName,
                                      std::string( texture_name + "emissive.png" ),
                                      GL_RGB,
                                      GL_RGB ) );
+  }
+
+
+  // Load room1 table1 textures 
+  // --------------------------
+  if( this->_model_id == 7 )
+  { 
+    std::string texture_name( "" );
+    
+    // albedo
+    textures.push_back( LoadTexture( "uTextureAlbedo",
+                                     std::string( texture_name + "albedo.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+
+    // normal
+    textures.push_back( LoadTexture( "uTextureNormal",
+                                     std::string( texture_name + "normal.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+    // AO
+    textures.push_back( LoadTexture( "uTextureAO",
+                                     std::string( texture_name + "AO.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // roughness 
+    textures.push_back( LoadTexture( "uTextureRoughness",
+                                     std::string( texture_name + "roughness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // metalness
+    textures.push_back( LoadTexture( "uTextureMetalness",
+                                     std::string( texture_name + "metalness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+  }
+
+
+  // Load bottle textures 
+  // --------------------
+  if( this->_model_id == 8 )
+  { 
+    std::string texture_name( "" );
+    
+    std::cout << "material index = " << iMaterialIndex << std::endl;
+
+    if( iMaterialIndex == 0 )
+    {
+      texture_name += "bottle_";
+    }
+
+    if( iMaterialIndex == 1 )
+    {
+      texture_name += "bottle_";
+    }
+
+    if( iMaterialIndex == 2 )
+    {
+      texture_name += "strap_";
+    }
+
+    if( iMaterialIndex == 3 )
+    {
+      texture_name += "strap_";
+    }
+
+    // albedo
+    textures.push_back( LoadTexture( "uTextureAlbedo",
+                                     std::string( texture_name + "albedo.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+
+    // normal
+    textures.push_back( LoadTexture( "uTextureNormal",
+                                     std::string( texture_name + "normal.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+    // AO
+    textures.push_back( LoadTexture( "uTextureAO",
+                                     std::string( texture_name + "AO.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // roughness 
+    textures.push_back( LoadTexture( "uTextureRoughness",
+                                     std::string( texture_name + "roughness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // metalness
+    textures.push_back( LoadTexture( "uTextureMetalness",
+                                     std::string( texture_name + "metalness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
   }
 
   return textures;

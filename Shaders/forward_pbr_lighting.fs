@@ -555,7 +555,7 @@ void main()
   //FragColor = vec4( vec3( shadow_factor ), 1.0 );
   //FragColor = vec4( vec3( texture( uTexture, oUV ).rgb ), 1.0 );
 
-  if( uID == 22 )
+  if( uID == 23 )
   {
     //FragColor = vec4( normal, opacity );
   }

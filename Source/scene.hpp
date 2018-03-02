@@ -206,6 +206,8 @@ class Scene
     std::vector< Object > _top_light;
     std::vector< Object > _wall_light;
     Object                _ink_bottle;
+    Object                _room1_table1;
+    Object                _bottle;
     float                 _ground_size;
     float                 _wall_size;
 
@@ -218,6 +220,8 @@ class Scene
     Model * _simple_door_model;
     Model * _top_light_model;
     Model * _wall_light_model;
+    Model * _room1_table1_model;
+    Model * _bottle_model;
 
     // Revolving door rotation matrix
     glm::mat4 _door_rotation_matrix;

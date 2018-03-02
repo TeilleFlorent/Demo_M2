@@ -714,7 +714,7 @@ void Scene::ObjectsInitialization()
                         1.0,
                         false,
                         true,
-                        1.0,
+                        0.5,
                         0.035,
                         false,
                         0.99,
@@ -1763,11 +1763,84 @@ void Scene::ObjectsInitialization()
                                    0.05,           // displacement factor
                                    0.85,           // tessellation factor
                                    0,              // material ID
-                                   true,          // emissive
+                                   true,           // emissive
                                    15.0,           // emissive factor
                                    false,          // need parallax cubemap
                                    true ) );       // need IBL
   }
+
+
+  // _room1_table1 object initialization
+  // -----------------------------------
+  scale = glm::vec3( 0.8 );
+  position = glm::vec3( 2.5, 0.43, 2.5 );
+  IBL_position = position;
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2 * ( float )0.5, glm::vec3( 0.0, 1.0, 0.0 ) );
+  model_matrix = glm::scale( model_matrix, scale );
+
+  _room1_table1.Set( Object( 23,             // ID
+                             model_matrix,   // model matrix
+                             position,       // position
+                             IBL_position,   // position use to generate IBL cubemaps
+                             _PI_2,          // angle
+                             scale,          // scale
+                             glm::vec2( 6.0, 6.0 ),   // uv scale
+                             1.0,            // alpha
+                             true,          // generate shadow
+                             true,           // receiv shadow
+                             1.0,            // shadow darkness
+                             0.035,          // shadow bias
+                             false,          // bloom
+                             0.99,           // bloom bright value
+                             false,          // opacity map
+                             true,           // normal map
+                             false,          // height map
+                             0.05,           // displacement factor
+                             0.85,           // tessellation factor
+                             0,              // material ID
+                             false,          // emissive
+                             15.0,           // emissive factor
+                             false,          // need parallax cubemap
+                             true ) );       // need IBL
+
+
+  // _bottle object initialization
+  // -----------------------------------
+  scale = glm::vec3( 0.005 );
+  position = glm::vec3( 0.0, 0.5, 0.0 );
+  IBL_position = position;
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::scale( model_matrix, scale );
+
+  _bottle.Set( Object( 24,             // ID
+                       model_matrix,   // model matrix
+                       position,       // position
+                       IBL_position,   // position use to generate IBL cubemaps
+                       _PI_2,          // angle
+                       scale,          // scale
+                       glm::vec2( 6.0, 6.0 ),   // uv scale
+                       1.0,            // alpha
+                       true,          // generate shadow
+                       true,           // receiv shadow
+                       1.0,            // shadow darkness
+                       0.035,          // shadow bias
+                       false,          // bloom
+                       0.99,           // bloom bright value
+                       false,          // opacity map
+                       true,           // normal map
+                       false,          // height map
+                       0.05,           // displacement factor
+                       0.85,           // tessellation factor
+                       0,              // material ID
+                       false,          // emissive
+                       15.0,           // emissive factor
+                       false,          // need parallax cubemap
+                       true ) );       // need IBL
 
   std::cout << "Scene's objects initialization done.\n" << std::endl;
 }
@@ -2109,6 +2182,22 @@ void Scene::ModelsLoading()
                                   _wall_light[ 0 ]._height_map );
   _wall_light_model->PrintInfos();
 
+  // room1 table1 model loading
+  _room1_table1_model = new Model( "../Models/room1_table1/room1_table1.dae", 
+                                   7, 
+                                   "Room1Table1",
+                                   _room1_table1._normal_map,
+                                   _room1_table1._height_map );
+  _room1_table1_model->PrintInfos();
+
+  // bottle model loading
+  _bottle_model = new Model( "../Models/bottle/bottle.FBX", 
+                             8, 
+                             "Bottle",
+                             _bottle._normal_map,
+                             _bottle._height_map );
+  _bottle_model->PrintInfos();
+
   std::cout << "Scene's models loading done.\n" << std::endl;
 }
 
@@ -2231,6 +2320,13 @@ void Scene::SceneDepthPass()
   glUniform3fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uLightPosition" ), 1, &_lights[ _current_shadow_light_source ]._position[ 0 ] );
 
 
+  // Draw revolving door depth
+  // -------------------------
+  model_matrix = _revolving_door[ 0 ]._model_matrix;
+  glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+  _revolving_door_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
+
+
   // Draw ink bottle depth
   // ---------------------
   model_matrix = _ink_bottle._model_matrix;
@@ -2238,11 +2334,18 @@ void Scene::SceneDepthPass()
   _ink_bottle_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
 
 
-  // Draw revolving door depth
-  // -------------------------
-  model_matrix = _revolving_door[ 0 ]._model_matrix;
+  // Draw room1 table1 depth
+  // -----------------------
+  model_matrix = _room1_table1._model_matrix;
   glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  _revolving_door_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
+  _room1_table1_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
+
+
+  // Draw bottle depth
+  // -----------------
+  model_matrix = _bottle._model_matrix;
+  glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+  _bottle_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
 
 
   glUseProgram( 0 );
@@ -2282,7 +2385,7 @@ void Scene::SceneForwardRendering()
   //glBindTexture( GL_TEXTURE_CUBE_MAP, _grounds_type1[ _test2 ]._IBL_cubemaps[ 0 ] ); 
   //glBindTexture( GL_TEXTURE_CUBE_MAP, _walls_type1[ _test2 ]._IBL_cubemaps[ 0 ] ); 
   //glBindTexture( GL_TEXTURE_CUBE_MAP, _revolving_door[ _test2 ]._IBL_cubemaps[ _test2 ] ); 
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _ink_bottle._IBL_cubemaps[ _test2 ] ); 
+  //glBindTexture( GL_TEXTURE_CUBE_MAP, _room1_table1._IBL_cubemaps[ _test2 ] ); 
 
   _window->_toolbox->RenderCube();
 
@@ -2570,15 +2673,26 @@ void Scene::SceneForwardRendering()
   glUseProgram( 0 );
 
 
-  // Draw revolving doors
-  // --------------------
-  glEnable( GL_CULL_FACE );
-  glCullFace( GL_BACK );
+  // Draw room1 table1
+  // -----------------
   _forward_pbr_shader.Use();
+
+  model_matrix = _room1_table1._model_matrix;
+
+  glActiveTexture( GL_TEXTURE7 );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _room1_table1._IBL_cubemaps[ 1 ] );
+  glActiveTexture( GL_TEXTURE8 );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _room1_table1._IBL_cubemaps[ 2 ] ); 
+  glActiveTexture( GL_TEXTURE9 );
+  glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+  glActiveTexture( GL_TEXTURE10 );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
 
   // Matrices uniforms
   glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
   glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+
   glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
 
   // Point lights uniforms
@@ -2591,58 +2705,105 @@ void Scene::SceneForwardRendering()
     glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
   }
 
+  // Bloom uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _room1_table1._bloom );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _room1_table1._bloom_brightness );
+
   // IBL uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), true );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), _room1_table1._IBL );
   glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), false );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), _room1_table1._parallax_cubemap );
 
+  // Opacity uniforms
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _room1_table1._alpha );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _room1_table1._opacity_map );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+  
+  // Displacement mapping uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _room1_table1._normal_map );
 
-  for( int door_it = 0; door_it < _revolving_door.size(); door_it++ )
-  { 
-    // IBL cubemap texture binding
-    glActiveTexture( GL_TEXTURE7 );
-    glBindTexture( GL_TEXTURE_CUBE_MAP, _revolving_door[ door_it ]._IBL_cubemaps[ 1 ] );
-    glActiveTexture( GL_TEXTURE8 );
-    glBindTexture( GL_TEXTURE_CUBE_MAP, _revolving_door[ door_it ]._IBL_cubemaps[ 2 ] ); 
-    glActiveTexture( GL_TEXTURE9 );
-    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
-    glActiveTexture( GL_TEXTURE10 );
-    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+  // Emissive uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _room1_table1._emissive );
 
-    model_matrix = _revolving_door[ door_it ]._model_matrix;
+  // Omnidirectional shadow mapping uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _room1_table1._receiv_shadow );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _room1_table1._shadow_bias );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _room1_table1._shadow_darkness );
 
-    // Matrices uniforms
-    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _room1_table1._id );      
 
-    // Bloom uniforms
-    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _revolving_door[ door_it ]._bloom );
-    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _revolving_door[ door_it ]._bloom_brightness );
-
-    // Opacity uniforms
-    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _revolving_door[ door_it ]._alpha );
-    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _revolving_door[ door_it ]._opacity_map );
-    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
-    
-    // Displacement mapping uniforms
-    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _revolving_door[ door_it ]._normal_map );
-
-    // Emissive uniforms
-    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _revolving_door[ door_it ]._emissive );
-
-    // Omnidirectional shadow mapping uniforms
-    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _revolving_door[ door_it ]._receiv_shadow );
-    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
-    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
-    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _revolving_door[ door_it ]._shadow_bias );
-    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _revolving_door[ door_it ]._shadow_darkness );
-
-    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _revolving_door[ door_it ]._id );      
-
-    _revolving_door_model->Draw( _forward_pbr_shader, model_matrix );
-  }
+  _room1_table1_model->Draw( _forward_pbr_shader, model_matrix );
 
   glUseProgram( 0 );
-  glDisable( GL_CULL_FACE );
+
+
+  // Draw bottle
+  // -----------
+  _forward_pbr_shader.Use();
+
+  model_matrix = _bottle._model_matrix;
+
+  glActiveTexture( GL_TEXTURE7 );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _bottle._IBL_cubemaps[ 1 ] );
+  glActiveTexture( GL_TEXTURE8 );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _bottle._IBL_cubemaps[ 2 ] ); 
+  glActiveTexture( GL_TEXTURE9 );
+  glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+  glActiveTexture( GL_TEXTURE10 );
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+  // Matrices uniforms
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+
+  glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+  // Point lights uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+  for( int i = 0; i < _lights.size(); i++ )
+  {
+    string temp = to_string( i );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+    glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+  }
+
+  // Bloom uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _bottle._bloom );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _bottle._bloom_brightness );
+
+  // IBL uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), _bottle._IBL );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), _bottle._parallax_cubemap );
+
+  // Opacity uniforms
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _bottle._alpha );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _bottle._opacity_map );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+  
+  // Displacement mapping uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _bottle._normal_map );
+
+  // Emissive uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _bottle._emissive );
+
+  // Omnidirectional shadow mapping uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _bottle._receiv_shadow );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _bottle._shadow_bias );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _bottle._shadow_darkness );
+
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _bottle._id );      
+
+  _bottle_model->Draw( _forward_pbr_shader, model_matrix );
+
+  glUseProgram( 0 );
+  
 
 
   // Draw simple doors
@@ -2860,6 +3021,81 @@ void Scene::SceneForwardRendering()
     glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _wall_light[ light_it ]._id );      
 
     _wall_light_model->Draw( _forward_pbr_shader, model_matrix );
+  }
+
+  glUseProgram( 0 );
+  glDisable( GL_CULL_FACE );
+
+
+  // Draw revolving doors
+  // --------------------
+  glEnable( GL_CULL_FACE );
+  glCullFace( GL_BACK );
+  _forward_pbr_shader.Use();
+
+  // Matrices uniforms
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+  glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+  // Point lights uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+  for( int i = 0; i < _lights.size(); i++ )
+  {
+    string temp = to_string( i );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+    glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+  }
+
+  // IBL uniforms
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), true );
+  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), false );
+
+
+  for( int door_it = 0; door_it < _revolving_door.size(); door_it++ )
+  { 
+    // IBL cubemap texture binding
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _revolving_door[ door_it ]._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _revolving_door[ door_it ]._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    model_matrix = _revolving_door[ door_it ]._model_matrix;
+
+    // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _revolving_door[ door_it ]._bloom );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _revolving_door[ door_it ]._bloom_brightness );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _revolving_door[ door_it ]._alpha );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _revolving_door[ door_it ]._opacity_map );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _revolving_door[ door_it ]._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _revolving_door[ door_it ]._emissive );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _revolving_door[ door_it ]._receiv_shadow );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _revolving_door[ door_it ]._shadow_bias );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _revolving_door[ door_it ]._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _revolving_door[ door_it ]._id );      
+
+    _revolving_door_model->Draw( _forward_pbr_shader, model_matrix );
   }
 
   glUseProgram( 0 );
@@ -3403,6 +3639,14 @@ void Scene::ObjectsIBLInitialization()
   }
   
   ObjectCubemapsGeneration( &_ink_bottle,
+                            true,
+                            0 );
+
+  ObjectCubemapsGeneration( &_room1_table1,
+                            true,
+                            0 );
+
+  ObjectCubemapsGeneration( &_bottle,
                             true,
                             0 );
 

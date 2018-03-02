@@ -205,13 +205,11 @@ void Window::ManageEvents( Camera * iCamera )
             _scene->_test2 += 1;
             
             std::cout << "_test2 = " << _scene->_test2 << std::endl;
-            _scene->_current_shadow_light_source = _scene->_test2;
             break;
 
           case 't' :
             _scene->_test2 -= 1;
             std::cout << "_test2 = " << _scene->_test2 << std::endl;
-            _scene->_current_shadow_light_source = _scene->_test2;
             break;
        
           case SDLK_F1 :
