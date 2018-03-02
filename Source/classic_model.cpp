@@ -73,6 +73,10 @@ void Mesh::Draw( Shader    iShader,
     	n = 6;
     	glUniform1i( glGetUniformLocation( iShader._program, "uOpacityMap" ), true );
     }
+    if( name == "uTextureEmissive" )
+    {
+      n = 11;
+    }
     
     glActiveTexture( GL_TEXTURE0 + n );
     glBindTexture( GL_TEXTURE_2D, this->_textures[ i ]._id );
@@ -493,10 +497,7 @@ Mesh Model::ProcessMesh( aiMesh * 	 iMesh,
       UV_warning = true;
     }
 
-    if( _model_id == 2
-     || _model_id == 3
-     || _model_id == 0
-     || _model_id == 4 )
+    if( _model_id != 1 )
     { 
       // Assimp tangent
       vector.x = iMesh->mTangents[ i ].x;
@@ -763,8 +764,6 @@ vector< Texture > Model::LoadMeshTextures( aiString     iNodeName,
   // -------------------------
   if( this->_model_id == 4 )
   { 
-    std::cout << "material index = " << iMaterialIndex << std::endl;
-
     std::string texture_name( "" );
     
     if( iMaterialIndex == 3 )
@@ -816,6 +815,92 @@ vector< Texture > Model::LoadMeshTextures( aiString     iNodeName,
                                      std::string( texture_name + "metalness.png" ),
                                      GL_R8,
                                      GL_RED ) );
+  }
+
+
+  // Load top light textures 
+  // -----------------------
+  if( this->_model_id == 5 )
+  { 
+    std::string texture_name( "" );
+    
+    // albedo
+    textures.push_back( LoadTexture( "uTextureAlbedo",
+                                     std::string( texture_name + "albedo.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+
+    // normal
+    textures.push_back( LoadTexture( "uTextureNormal",
+                                     std::string( texture_name + "normal.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+    // AO
+    textures.push_back( LoadTexture( "uTextureAO",
+                                     std::string( texture_name + "AO.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // roughness 
+    textures.push_back( LoadTexture( "uTextureRoughness",
+                                     std::string( texture_name + "roughness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // metalness
+    textures.push_back( LoadTexture( "uTextureMetalness",
+                                     std::string( texture_name + "metalness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // emissive
+    textures.push_back( LoadTexture( "uTextureEmissive",
+                                     std::string( texture_name + "emissive.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+  }
+
+
+  // Load wall light textures 
+  // ------------------------
+  if( this->_model_id == 6 )
+  { 
+    std::string texture_name( "" );
+    
+    // albedo
+    textures.push_back( LoadTexture( "uTextureAlbedo",
+                                     std::string( texture_name + "albedo.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+
+    // normal
+    textures.push_back( LoadTexture( "uTextureNormal",
+                                     std::string( texture_name + "normal.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+    // AO
+    textures.push_back( LoadTexture( "uTextureAO",
+                                     std::string( texture_name + "AO.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // roughness 
+    textures.push_back( LoadTexture( "uTextureRoughness",
+                                     std::string( texture_name + "roughness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // metalness
+    textures.push_back( LoadTexture( "uTextureMetalness",
+                                     std::string( texture_name + "metalness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // emissive
+    textures.push_back( LoadTexture( "uTextureEmissive",
+                                     std::string( texture_name + "emissive.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
   }
 
   return textures;

@@ -133,6 +133,7 @@ class Toolbox
                                                       bool        iEmissive );
 
     unsigned int GenEnvironmentCubemap( glm::vec3    iPosition,
+                                        int          iID,
                                         bool         iNeedAllWalls,
                                         unsigned int iWallID );
 

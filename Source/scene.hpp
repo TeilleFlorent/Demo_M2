@@ -203,6 +203,8 @@ class Scene
     std::vector< Object > _grounds_type1;
     std::vector< Object > _revolving_door;
     std::vector< Object > _simple_door;
+    std::vector< Object > _top_light;
+    std::vector< Object > _wall_light;
     Object                _ink_bottle;
     float                 _ground_size;
     float                 _wall_size;
@@ -214,6 +216,8 @@ class Scene
     Model * _ink_bottle_model;
     Model * _revolving_door_model;
     Model * _simple_door_model;
+    Model * _top_light_model;
+    Model * _wall_light_model;
 
     // Revolving door rotation matrix
     glm::mat4 _door_rotation_matrix;
@@ -227,6 +231,18 @@ class Scene
     glm::mat4 _door_translation_matrix2;
     glm::vec3 _door_position;
     bool _simple_door_open;
+
+    // current room
+    int _current_room;
+    int _current_shadow_light_source;
+
+    // walls render iterators
+    unsigned int _walls_start_it;
+    unsigned int _walls_end_it;
+
+    // grounds render iterators
+    unsigned int _grounds_start_it;
+    unsigned int _grounds_end_it;
 
     float _test  = 0;
     unsigned int _test2 = 0;
