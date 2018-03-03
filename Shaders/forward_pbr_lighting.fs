@@ -313,7 +313,7 @@ vec3 PointLightReflectance( vec2     iUV,
     } 
     else
     {
-      shadow_factor = iShadowFactor * 0.5;
+      shadow_factor = min( iShadowFactor + 0.25, 1.0 );
     }
 
     Lo += shadow_factor * ( ( kD * ( albedo_by_PI ) ) + light_specular ) * light_radiance * normal_dot_light_dir;  // already multiplied the specular by the Fresnel ( kS )
@@ -475,7 +475,7 @@ vec3 PBRLightingCalculation( vec3 iNormal,
 
   // Return fragment final PBR lighting 
   // ----------------------------------
-  return clamp( IBL_ambient_reflectance, ZERO, 1.0 ) + point_lights_reflectance;
+  return clamp( ( IBL_ambient_reflectance * min( iShadowFactor + 0.8, 1.0 ) ), ZERO, 1.0 ) + point_lights_reflectance;
 }
 
 
@@ -560,10 +560,9 @@ void main()
   //FragColor = vec4( vec3( shadow_factor ), 1.0 );
   //FragColor = vec4( vec3( texture( uTexture, oUV ).rgb ), 1.0 );
 
-  if( uID == 27 )
+  if( uID == 34 )  
   {
-    //FragColor = vec4( vec3( texture( uTextureNormal1, oUV ).rgb ), 1.0 );
-  //FragColor = vec4( normal, opacity );
+    //FragColor = vec4( vec3( texture( uTextureMetalness1, oUV ).r ), 1.0 );
   }
 
   // Second out color => draw only brightest fragments

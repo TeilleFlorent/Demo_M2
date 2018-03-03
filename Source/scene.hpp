@@ -214,6 +214,10 @@ class Scene
     Object                _sofa;
     Object                _sack;
     Object                _room1_table2;
+    Object                _book;
+    Object                _radio;
+    Object                _screen;
+    Object                _bike;
     float                 _ground_size;
     float                 _wall_size;
 
@@ -232,6 +236,10 @@ class Scene
     Model * _sofa_model;
     Model * _sack_model;
     Model * _room1_table2_model;
+    Model * _book_model;
+    Model * _radio_model;
+    Model * _screen_model;
+    Model * _bike_model;
 
     // Revolving door rotation matrix
     glm::mat4 _door_rotation_matrix;
@@ -258,7 +266,7 @@ class Scene
     unsigned int _grounds_start_it;
     unsigned int _grounds_end_it;
 
-    float _test  = 0;
+    float _test         = 0.0;
     unsigned int _test2 = 0;
 };
 

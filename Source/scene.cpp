@@ -69,8 +69,8 @@ Scene::Scene( Window * iParentWindow )
   _door_position    = glm::vec3( 0.0 );
   _simple_door_open = false;
 
-  _current_room                = 1;
-  _current_shadow_light_source = 2;
+  _current_room                = 2;
+  _current_shadow_light_source = 3;
 
 
   // Scene data initialization
@@ -485,14 +485,15 @@ void Scene::LightsInitialization()
   
   PointLight::SetLightsMultiplier( 30.0 );
 
-
-  // Top lights
-  // ----------
+  
   _lights.push_back( PointLight( glm::vec3( -_ground_size * 1.15, _wall_size * 0.5, 0.0 ),
                                  glm::vec3( 1.0, 1.0, 1.0 ),
                                  0.2,
                                  3.0 ) );
 
+
+  // Top lights
+  // ----------
   _lights.push_back( PointLight( _top_light[ 0 ]._IBL_position + glm::vec3( 0.0, 0.2, 0.0 ),
                                  glm::vec3( 1.0, 1.0, 1.0 ),
                                  0.25,
@@ -503,22 +504,22 @@ void Scene::LightsInitialization()
                                  0.25,
                                  3.0 ) );
 
-  _lights.push_back( PointLight( _top_light[ 2 ]._IBL_position + glm::vec3( 0.0, 0.2, 0.0 ),
-                                 glm::vec3( 1.0, 1.0, 1.0 ),
-                                 0.25,
-                                 3.0 ) );  
-
-  _lights.push_back( PointLight( _top_light[ 3 ]._IBL_position + glm::vec3( 0.0, 0.2, 0.0 ),
-                                 glm::vec3( 1.0, 1.0, 1.0 ),
-                                 0.25,
-                                 3.0 ) ); 
-
   _lights.push_back( PointLight( _top_light[ 4 ]._IBL_position + glm::vec3( 0.0, 0.2, 0.0 ),
                                  glm::vec3( 1.0, 1.0, 1.0 ),
                                  0.25,
                                  3.0 ) ); 
 
   _lights.push_back( PointLight( _top_light[ 5 ]._IBL_position + glm::vec3( 0.0, 0.2, 0.0 ),
+                                 glm::vec3( 1.0, 1.0, 1.0 ),
+                                 0.25,
+                                 3.0 ) ); 
+
+  _lights.push_back( PointLight( _top_light[ 2 ]._IBL_position + glm::vec3( 0.0, 0.2, 0.0 ),
+                                 glm::vec3( 1.0, 1.0, 1.0 ),
+                                 0.25,
+                                 3.0 ) );  
+
+  _lights.push_back( PointLight( _top_light[ 3 ]._IBL_position + glm::vec3( 0.0, 0.2, 0.0 ),
                                  glm::vec3( 1.0, 1.0, 1.0 ),
                                  0.25,
                                  3.0 ) ); 
@@ -1944,7 +1945,7 @@ void Scene::ObjectsInitialization()
                      1.0,            // alpha
                      true,           // generate shadow
                      true,          // receiv shadow
-                     2.0,            // shadow darkness
+                     1.0,            // shadow darkness
                      0.035,          // shadow bias
                      false,          // bloom
                      0.5,            // bloom bright value
@@ -2015,9 +2016,9 @@ void Scene::ObjectsInitialization()
                              glm::vec2( 6.0, 6.0 ),   // uv scale
                              1.0,            // alpha
                              true,           // generate shadow
-                             true,          // receiv shadow
+                             true,           // receiv shadow
                              1.0,            // shadow darkness
-                             0.035,          // shadow bias
+                             0.013,          // shadow bias
                              false,          // bloom
                              0.5,            // bloom bright value
                              false,          // opacity map
@@ -2029,19 +2030,19 @@ void Scene::ObjectsInitialization()
                              false,          // emissive
                              15.0,           // emissive factor
                              false,          // need parallax cubemap
-                             true ) );      // need IBL
+                             true ) );       // need IBL
 
 
   // _ink_bottle object initialization
   // ---------------------------------
-  scale = glm::vec3( 0.0095, 0.0095, 0.0095 );
+  scale = glm::vec3( 0.011, 0.011, 0.011 );
 
-  position = _room1_table2._position + glm::vec3( -0.85, 0.30, 0.0 );
+  position = _room1_table2._position + glm::vec3( -1.2, 0.345, 0.3 );
   IBL_position = position;
 
   model_matrix = glm::mat4();
   model_matrix = glm::translate( model_matrix, position );
-  model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 1.0 , 0.0 ) );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2 * ( float )1.5, glm::vec3( 0.0, 1.0 , 0.0 ) );
   model_matrix = glm::scale( model_matrix, scale );
 
   _ink_bottle.Set( Object( 2, // ID
@@ -2068,6 +2069,157 @@ void Scene::ObjectsInitialization()
                            1.0,
                            false,
                            true ) );
+
+
+  // _book object initialization
+  // ---------------------------
+  scale = glm::vec3( 0.008 );
+  position = _room1_table2._position + glm::vec3( -0.9, 0.27, 0.0 );
+  IBL_position = position;
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI, glm::vec3( 0.0, 1.0 , 0.0 ) );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( -1.0, 0.0 , 0.0 ) );
+  model_matrix = glm::scale( model_matrix, scale );
+
+  _book.Set( Object( 31,             // ID
+                     model_matrix,   // model matrix
+                     position,       // position
+                     IBL_position,   // position use to generate IBL cubemaps
+                     _PI_2,          // angle
+                     scale,          // scale
+                     glm::vec2( 6.0, 6.0 ),   // uv scale
+                     1.0,            // alpha
+                     true,           // generate shadow
+                     true,          // receiv shadow
+                     1.0,            // shadow darkness
+                     0.035,          // shadow bias
+                     false,          // bloom
+                     0.5,            // bloom bright value
+                     false,          // opacity map
+                     true,           // normal map
+                     false,          // height map
+                     0.1,            // displacement factor
+                     0.3,            // tessellation factor
+                     0,              // material ID
+                     false,          // emissive
+                     15.0,           // emissive factor
+                     false,          // need parallax cubemap
+                     true ) );      // need IBL
+
+
+  // _radio object initialization
+  // ---------------------------
+  scale = glm::vec3( 0.12 );
+  position = _room1_table2._position + glm::vec3( -1.35, 0.35, -0.25 );
+  IBL_position = position;
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2 * ( float )0.65, glm::vec3( 0.0, 1.0 , 0.0 ) );
+  model_matrix = glm::scale( model_matrix, scale );
+
+  _radio.Set( Object( 32,             // ID
+                      model_matrix,   // model matrix
+                      position,       // position
+                      IBL_position,   // position use to generate IBL cubemaps
+                      _PI_2,          // angle
+                      scale,          // scale
+                      glm::vec2( 6.0, 6.0 ),   // uv scale
+                      1.0,            // alpha
+                      true,           // generate shadow
+                      true,          // receiv shadow
+                      1.0,            // shadow darkness
+                      0.035,          // shadow bias
+                      false,          // bloom
+                      0.5,            // bloom bright value
+                      false,          // opacity map
+                      true,           // normal map
+                      false,          // height map
+                      0.1,            // displacement factor
+                      0.3,            // tessellation factor
+                      0,              // material ID
+                      false,          // emissive
+                      15.0,           // emissive factor
+                      false,          // need parallax cubemap
+                      true ) );      // need IBL
+
+
+  // _screen object initialization
+  // -----------------------------
+  scale = glm::vec3( 1.3 );
+  position = room2_offset_position + glm::vec3( -2.25, 0.975, -2.25 );
+  IBL_position = position;
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2 * ( float )0.5, glm::vec3( 0.0, 1.0 , 0.0 ) );
+  model_matrix = glm::scale( model_matrix, scale );
+
+  _screen.Set( Object( 33,             // ID
+                      model_matrix,   // model matrix
+                      position,       // position
+                      IBL_position,   // position use to generate IBL cubemaps
+                      _PI_2,          // angle
+                      scale,          // scale
+                      glm::vec2( 6.0, 6.0 ),   // uv scale
+                      1.0,            // alpha
+                      true,           // generate shadow
+                      false,          // receiv shadow
+                      1.0,            // shadow darkness
+                      0.035,          // shadow bias
+                      false,          // bloom
+                      0.5,            // bloom bright value
+                      true,          // opacity map
+                      true,           // normal map
+                      false,          // height map
+                      0.1,            // displacement factor
+                      0.3,            // tessellation factor
+                      0,              // material ID
+                      true,           // emissive
+                      7.0,           // emissive factor
+                      false,          // need parallax cubemap
+                      true ) );       // need IBL
+
+
+  // _bike object initialization
+  // -----------------------------
+  scale = glm::vec3( 0.0067 );
+  position = room2_offset_position + glm::vec3( 1.4, 0.0, -2.0 );
+  IBL_position = position + + glm::vec3( 0.0, 0.8, 0.0);
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( -1.0, 0.0 , 0.0 ) );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2 * ( float )0.75, glm::vec3( 0.0, 0.0 , -1.0 ) );
+  model_matrix = glm::scale( model_matrix, scale );
+
+  _bike.Set( Object( 34,             // ID
+                     model_matrix,   // model matrix
+                     position,       // position
+                     IBL_position,   // position use to generate IBL cubemaps
+                     _PI_2,          // angle
+                     scale,          // scale
+                     glm::vec2( 6.0, 6.0 ),   // uv scale
+                     1.0,            // alpha
+                     true,           // generate shadow
+                     false,          // receiv shadow
+                     1.0,            // shadow darkness
+                     0.035,          // shadow bias
+                     false,          // bloom
+                     0.5,            // bloom bright value
+                     true,          // opacity map
+                     true,           // normal map
+                     false,          // height map
+                     0.1,            // displacement factor
+                     0.3,            // tessellation factor
+                     0,              // material ID
+                     false,           // emissive
+                     17.0,           // emissive factor
+                     false,          // need parallax cubemap
+                     true ) );       // need IBL
+
 
   std::cout << "Scene's objects initialization done.\n" << std::endl;
 }
@@ -2361,14 +2513,6 @@ void Scene::ModelsLoading()
                              false );
   _sphere_model->PrintInfos();
 
-  // Ink bottle model loading
-  _ink_bottle_model = new Model( "../Models/ink_bottle/ink_bottle.FBX", 
-                                 2, 
-                                 "InkBottle",
-                                 _ink_bottle._normal_map,
-                                 _ink_bottle._height_map );
-  _ink_bottle_model->PrintInfos();
-
   // revolving door model loading
   _revolving_door_model = new Model( "../Models/revolving_door/RevolvingDoor.FBX", 
                                      3, 
@@ -2400,6 +2544,14 @@ void Scene::ModelsLoading()
                                   _wall_light[ 0 ]._normal_map,
                                   _wall_light[ 0 ]._height_map );
   _wall_light_model->PrintInfos();
+
+  // Ink bottle model loading
+  /*_ink_bottle_model = new Model( "../Models/ink_bottle/ink_bottle.FBX", 
+                                 2, 
+                                 "InkBottle",
+                                 _ink_bottle._normal_map,
+                                 _ink_bottle._height_map );
+  _ink_bottle_model->PrintInfos();
 
   // room1 table1 model loading
   _room1_table1_model = new Model( "../Models/room1_table1/room1_table1.dae", 
@@ -2464,6 +2616,38 @@ void Scene::ModelsLoading()
                              _room1_table2._normal_map,
                              _room1_table2._height_map );
   _room1_table2_model->PrintInfos();
+
+  // _book model loading
+  _book_model = new Model( "../Models/book/book.fbx", 
+                           15, 
+                           "book",
+                           _book._normal_map,
+                           _book._height_map );
+  _book_model->PrintInfos();
+
+  // _radio model loading
+  _radio_model = new Model( "../Models/radio/radio.dae", 
+                            16, 
+                            "radio",
+                            _radio._normal_map,
+                            _radio._height_map );
+  _radio_model->PrintInfos();*/
+
+  // _screen model loading
+  _screen_model = new Model( "../Models/screen/screen.dae", 
+                            17, 
+                            "screen",
+                            _screen._normal_map,
+                            _screen._height_map );
+  _screen_model->PrintInfos();
+
+  // _bike model loading
+  _bike_model = new Model( "../Models/bike/bike.fbx", 
+                           18, 
+                           "bike",
+                           _bike._normal_map,
+                           _bike._height_map );
+  _bike_model->PrintInfos();
 
   std::cout << "Scene's models loading done.\n" << std::endl;
 }
@@ -2594,67 +2778,101 @@ void Scene::SceneDepthPass()
   _revolving_door_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
 
 
-  // Draw ink bottle depth
-  // ---------------------
-  model_matrix = _ink_bottle._model_matrix;
-  glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  _ink_bottle_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
+  if( _current_room == 1 )
+  {
+    // Draw ink bottle depth
+    // ---------------------
+    model_matrix = _ink_bottle._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _ink_bottle_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
 
 
-  // Draw room1 table1 depth
-  // -----------------------
-  model_matrix = _room1_table1._model_matrix;
-  glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  _room1_table1_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
+    // Draw room1 table1 depth
+    // -----------------------
+    model_matrix = _room1_table1._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _room1_table1_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
 
 
-  // Draw bottle depth
-  // -----------------
-  model_matrix = _bottle._model_matrix;
-  glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  _bottle_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
+    // Draw bottle depth
+    // -----------------
+    model_matrix = _bottle._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _bottle_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
 
 
-  // Draw ball depth
-  // -----------------
-  model_matrix = _ball._model_matrix;
-  glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  _ball_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
+    // Draw ball depth
+    // -----------------
+    model_matrix = _ball._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _ball_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
 
 
-  // Draw _box_bag depth
-  // -------------------
-  model_matrix = _box_bag._model_matrix;
-  glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  _box_bag_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
+    // Draw _box_bag depth
+    // -------------------
+    model_matrix = _box_bag._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _box_bag_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
 
 
-  // Draw _chest depth
-  // -----------------
-  model_matrix = _chest._model_matrix;
-  glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  _chest_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
+    // Draw _chest depth
+    // -----------------
+    model_matrix = _chest._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _chest_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
 
 
-  // Draw _sofa depth
-  // -----------------
-  model_matrix = _sofa._model_matrix;
-  glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  _sofa_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
+    // Draw _sofa depth
+    // -----------------
+    model_matrix = _sofa._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _sofa_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
 
 
-  // Draw _sack depth
-  // -----------------
-  model_matrix = _sack._model_matrix;
-  glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  _sack_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
+    // Draw _sack depth
+    // -----------------
+    model_matrix = _sack._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _sack_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
 
 
-  // Draw _room1_table2 depth
-  // -----------------------
-  model_matrix = _room1_table2._model_matrix;
-  glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  _room1_table2_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
+    // Draw _room1_table2 depth
+    // -----------------------
+    model_matrix = _room1_table2._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _room1_table2_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
+
+
+    // Draw _book depth
+    // ----------------
+    model_matrix = _book._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _book_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
+
+
+    // Draw _radio depth
+    // ----------------
+    model_matrix = _radio._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _radio_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
+  }
+
+  if( _current_room == 2 )
+  {
+
+    // Draw _screen depth
+    // ------------------
+    model_matrix = _screen._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _screen_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
+
+
+    // Draw _bike depth
+    // ----------------
+    model_matrix = _bike._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _bike_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
+  }
 
 
   glUseProgram( 0 );
@@ -2695,7 +2913,7 @@ void Scene::SceneForwardRendering()
   //glBindTexture( GL_TEXTURE_CUBE_MAP, _walls_type1[ _test2 ]._IBL_cubemaps[ 0 ] ); 
   //glBindTexture( GL_TEXTURE_CUBE_MAP, _revolving_door[ _test2 ]._IBL_cubemaps[ _test2 ] ); 
   //glBindTexture( GL_TEXTURE_CUBE_MAP, _room1_table1._IBL_cubemaps[ _test2 ] ); 
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _room1_table2._IBL_cubemaps[ _test2 ] ); 
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _bike._IBL_cubemaps[ _test2 ] ); 
 
   _window->_toolbox->RenderCube();
 
@@ -2915,640 +3133,6 @@ void Scene::SceneForwardRendering()
     glBindVertexArray( 0 );
     glUseProgram( 0 );
   }
-  
-
-  // Draw ink bottle
-  // ---------------
-  _forward_pbr_shader.Use();
-
-  model_matrix = _ink_bottle._model_matrix;
-
-  glActiveTexture( GL_TEXTURE7 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _ink_bottle._IBL_cubemaps[ 1 ] );
-  glActiveTexture( GL_TEXTURE8 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _ink_bottle._IBL_cubemaps[ 2 ] ); 
-  glActiveTexture( GL_TEXTURE9 );
-  glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
-  glActiveTexture( GL_TEXTURE10 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
-
-  // Matrices uniforms
-  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
-
-  glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
-
-  // Point lights uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
-  for( int i = 0; i < _lights.size(); i++ )
-  {
-    string temp = to_string( i );
-    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
-    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
-    glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
-  }
-
-  // Bloom uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _ink_bottle._bloom );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _ink_bottle._bloom_brightness );
-
-  // IBL uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), true );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), false );
-
-  // Opacity uniforms
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _ink_bottle._alpha );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _ink_bottle._opacity_map );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
-  
-  // Displacement mapping uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _ink_bottle._normal_map );
-
-  // Emissive uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _ink_bottle._emissive );
-
-  // Omnidirectional shadow mapping uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _ink_bottle._receiv_shadow );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _ink_bottle._shadow_bias );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _ink_bottle._shadow_darkness );
-
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ink_bottle._id );      
-
-  _ink_bottle_model->Draw( _forward_pbr_shader, model_matrix );
-
-  glUseProgram( 0 );
-
-
-  // Draw room1 table1
-  // -----------------
-  _forward_pbr_shader.Use();
-
-  model_matrix = _room1_table1._model_matrix;
-
-  glActiveTexture( GL_TEXTURE7 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _room1_table1._IBL_cubemaps[ 1 ] );
-  glActiveTexture( GL_TEXTURE8 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _room1_table1._IBL_cubemaps[ 2 ] ); 
-  glActiveTexture( GL_TEXTURE9 );
-  glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
-  glActiveTexture( GL_TEXTURE10 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
-
-  // Matrices uniforms
-  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
-
-  glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
-
-  // Point lights uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
-  for( int i = 0; i < _lights.size(); i++ )
-  {
-    string temp = to_string( i );
-    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
-    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
-    glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
-  }
-
-  // Bloom uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _room1_table1._bloom );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _room1_table1._bloom_brightness );
-
-  // IBL uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), _room1_table1._IBL );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), _room1_table1._parallax_cubemap );
-
-  // Opacity uniforms
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _room1_table1._alpha );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _room1_table1._opacity_map );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
-  
-  // Displacement mapping uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _room1_table1._normal_map );
-
-  // Emissive uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _room1_table1._emissive );
-
-  // Omnidirectional shadow mapping uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _room1_table1._receiv_shadow );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _room1_table1._shadow_bias );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _room1_table1._shadow_darkness );
-
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _room1_table1._id );      
-
-  _room1_table1_model->Draw( _forward_pbr_shader, model_matrix );
-
-  glUseProgram( 0 );
-
-
-  // Draw bottle
-  // -----------
-  glEnable( GL_CULL_FACE );
-  glCullFace( GL_BACK );
-
-  _forward_pbr_shader.Use();
-
-  model_matrix = _bottle._model_matrix;
-
-  glActiveTexture( GL_TEXTURE7 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _bottle._IBL_cubemaps[ 1 ] );
-  glActiveTexture( GL_TEXTURE8 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _bottle._IBL_cubemaps[ 2 ] ); 
-  glActiveTexture( GL_TEXTURE9 );
-  glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
-  glActiveTexture( GL_TEXTURE10 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
-
-  // Matrices uniforms
-  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
-
-  glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
-
-  // Point lights uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
-  for( int i = 0; i < _lights.size(); i++ )
-  {
-    string temp = to_string( i );
-    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
-    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
-    glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
-  }
-
-  // Bloom uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _bottle._bloom );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _bottle._bloom_brightness );
-
-  // IBL uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), _bottle._IBL );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), _bottle._parallax_cubemap );
-
-  // Opacity uniforms
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _bottle._alpha );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _bottle._opacity_map );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
-  
-  // Displacement mapping uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _bottle._normal_map );
-
-  // Emissive uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _bottle._emissive );
-
-  // Omnidirectional shadow mapping uniforms
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _bottle._receiv_shadow );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
-  glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _bottle._shadow_bias );
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _bottle._shadow_darkness );
-
-  glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _bottle._id );      
-
-  _bottle_model->Draw( _forward_pbr_shader, model_matrix );
-
-  glUseProgram( 0 );
-  glDisable( GL_CULL_FACE );
-
-
-  // Draw ball
-  // ---------
-  glEnable( GL_CULL_FACE );
-  glCullFace( GL_BACK );
-
-  ( _ball._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
-
-  current_shader->Use();
-
-  model_matrix = _ball._model_matrix;
-
-  glActiveTexture( GL_TEXTURE7 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _ball._IBL_cubemaps[ 1 ] );
-  glActiveTexture( GL_TEXTURE8 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _ball._IBL_cubemaps[ 2 ] ); 
-  glActiveTexture( GL_TEXTURE9 );
-  glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
-  glActiveTexture( GL_TEXTURE10 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
-
-  // Matrices uniforms
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
-
-  glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
-
-  // Point lights uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
-  for( int i = 0; i < _lights.size(); i++ )
-  {
-    string temp = to_string( i );
-    glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
-    glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
-    glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
-  }
-
-  // Bloom uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _ball._bloom );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _ball._bloom_brightness );
-
-  // IBL uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), _ball._IBL );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uParallaxCubemap" ), _ball._parallax_cubemap );
-
-  // Opacity uniforms
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _ball._alpha );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _ball._opacity_map );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
-  
-  // Displacement mapping uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _ball._normal_map );
-
-  // Emissive uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uEmissive" ), _ball._emissive );
-
-  // Omnidirectional shadow mapping uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uReceivShadow" ), _ball._receiv_shadow );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uLightSourceIt" ), _current_shadow_light_source );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowBias" ), _ball._shadow_bias );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _ball._shadow_darkness );
-
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _ball._id );      
-
-  _ball_model->Draw( *current_shader, model_matrix );
-
-  glUseProgram( 0 );
-  glDisable( GL_CULL_FACE );
-
-
-  // Draw box bag
-  // ------------
-  glEnable( GL_CULL_FACE );
-  glCullFace( GL_BACK );
-
-  ( _box_bag._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
-
-  current_shader->Use();
-
-  model_matrix = _box_bag._model_matrix;
-
-  glActiveTexture( GL_TEXTURE7 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _box_bag._IBL_cubemaps[ 1 ] );
-  glActiveTexture( GL_TEXTURE8 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _box_bag._IBL_cubemaps[ 2 ] ); 
-  glActiveTexture( GL_TEXTURE9 );
-  glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
-  glActiveTexture( GL_TEXTURE10 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
-
-  // Matrices uniforms
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
-
-  glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
-
-  // Point lights uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
-  for( int i = 0; i < _lights.size(); i++ )
-  {
-    string temp = to_string( i );
-    glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
-    glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
-    glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
-  }
-
-  // Bloom uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _box_bag._bloom );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _box_bag._bloom_brightness );
-
-  // IBL uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), _box_bag._IBL );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uParallaxCubemap" ), _box_bag._parallax_cubemap );
-
-  // Opacity uniforms
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _box_bag._alpha );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _box_bag._opacity_map );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
-  
-  // Displacement mapping uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _box_bag._normal_map );
-
-  // Emissive uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uEmissive" ), _box_bag._emissive );
-
-  // Omnidirectional shadow mapping uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uReceivShadow" ), _box_bag._receiv_shadow );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uLightSourceIt" ), _current_shadow_light_source );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowBias" ), _box_bag._shadow_bias );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _box_bag._shadow_darkness );
-
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _box_bag._id );      
-
-  _box_bag_model->Draw( *current_shader, model_matrix );
-
-  glUseProgram( 0 );
-  glDisable( GL_CULL_FACE );
-
-
-  // Draw chest
-  // ----------
-  glEnable( GL_CULL_FACE );
-  glCullFace( GL_BACK );
-
-  ( _chest._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
-
-  current_shader->Use();
-
-  model_matrix = _chest._model_matrix;
-
-  glActiveTexture( GL_TEXTURE7 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _chest._IBL_cubemaps[ 1 ] );
-  glActiveTexture( GL_TEXTURE8 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _chest._IBL_cubemaps[ 2 ] ); 
-  glActiveTexture( GL_TEXTURE9 );
-  glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
-  glActiveTexture( GL_TEXTURE10 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
-
-  // Matrices uniforms
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
-
-  glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
-
-  // Point lights uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
-  for( int i = 0; i < _lights.size(); i++ )
-  {
-    string temp = to_string( i );
-    glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
-    glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
-    glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
-  }
-
-  // Bloom uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _chest._bloom );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _chest._bloom_brightness );
-
-  // IBL uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), _chest._IBL );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uParallaxCubemap" ), _chest._parallax_cubemap );
-
-  // Opacity uniforms
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _chest._alpha );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _chest._opacity_map );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
-  
-  // Displacement mapping uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _chest._normal_map );
-
-  // Emissive uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uEmissive" ), _chest._emissive );
-
-  // Omnidirectional shadow mapping uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uReceivShadow" ), _chest._receiv_shadow );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uLightSourceIt" ), _current_shadow_light_source );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowBias" ), _chest._shadow_bias );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _chest._shadow_darkness );
-
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _chest._id );      
-
-  _chest_model->Draw( *current_shader, model_matrix );
-
-  glUseProgram( 0 );
-  glDisable( GL_CULL_FACE );
-
-
-  // Draw sofa
-  // ----------
-  glEnable( GL_CULL_FACE );
-  glCullFace( GL_BACK );
-
-  ( _sofa._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
-
-  current_shader->Use();
-
-  model_matrix = _sofa._model_matrix;
-
-  glActiveTexture( GL_TEXTURE7 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _sofa._IBL_cubemaps[ 1 ] );
-  glActiveTexture( GL_TEXTURE8 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _sofa._IBL_cubemaps[ 2 ] ); 
-  glActiveTexture( GL_TEXTURE9 );
-  glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
-  glActiveTexture( GL_TEXTURE10 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
-
-  // Matrices uniforms
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
-
-  glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
-
-  // Point lights uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
-  for( int i = 0; i < _lights.size(); i++ )
-  {
-    string temp = to_string( i );
-    glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
-    glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
-    glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
-  }
-
-  // Bloom uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _sofa._bloom );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _sofa._bloom_brightness );
-
-  // IBL uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), _sofa._IBL );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uParallaxCubemap" ), _sofa._parallax_cubemap );
-
-  // Opacity uniforms
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _sofa._alpha );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _sofa._opacity_map );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
-  
-  // Displacement mapping uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _sofa._normal_map );
-
-  // Emissive uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uEmissive" ), _sofa._emissive );
-
-  // Omnidirectional shadow mapping uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uReceivShadow" ), _sofa._receiv_shadow );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uLightSourceIt" ), _current_shadow_light_source );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowBias" ), _sofa._shadow_bias );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _sofa._shadow_darkness );
-
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _sofa._id );      
-
-  _sofa_model->Draw( *current_shader, model_matrix );
-
-  glUseProgram( 0 );
-  glDisable( GL_CULL_FACE );
-
-
-  // Draw sack
-  // -----------
-  glEnable( GL_CULL_FACE );
-  glCullFace( GL_BACK );
-
-  ( _sack._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
-
-  current_shader->Use();
-
-  model_matrix = _sack._model_matrix;
-
-  glActiveTexture( GL_TEXTURE7 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _sack._IBL_cubemaps[ 1 ] );
-  glActiveTexture( GL_TEXTURE8 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _sack._IBL_cubemaps[ 2 ] ); 
-  glActiveTexture( GL_TEXTURE9 );
-  glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
-  glActiveTexture( GL_TEXTURE10 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
-
-  // Matrices uniforms
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
-
-  glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
-
-  // Point lights uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
-  for( int i = 0; i < _lights.size(); i++ )
-  {
-    string temp = to_string( i );
-    glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
-    glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
-    glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
-  }
-
-  // Bloom uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _sack._bloom );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _sack._bloom_brightness );
-
-  // IBL uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), _sack._IBL );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uParallaxCubemap" ), _sack._parallax_cubemap );
-
-  // Opacity uniforms
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _sack._alpha );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _sack._opacity_map );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
-  
-  // Displacement mapping uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _sack._normal_map );
-
-  // Emissive uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uEmissive" ), _sack._emissive );
-
-  // Omnidirectional shadow mapping uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uReceivShadow" ), _sack._receiv_shadow );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uLightSourceIt" ), _current_shadow_light_source );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowBias" ), _sack._shadow_bias );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _sack._shadow_darkness );
-
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _sack._id );      
-
-  _sack_model->Draw( *current_shader, model_matrix );
-
-  glUseProgram( 0 );
-  glDisable( GL_CULL_FACE );
-
-
-  // Draw room1_table2
-  // -----------------
-  glEnable( GL_CULL_FACE );
-  glCullFace( GL_BACK );
-
-  ( _room1_table2._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
-
-  current_shader->Use();
-
-  model_matrix = _room1_table2._model_matrix;
-
-  glActiveTexture( GL_TEXTURE7 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _room1_table2._IBL_cubemaps[ 1 ] );
-  glActiveTexture( GL_TEXTURE8 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _room1_table2._IBL_cubemaps[ 2 ] ); 
-  glActiveTexture( GL_TEXTURE9 );
-  glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
-  glActiveTexture( GL_TEXTURE10 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
-
-  // Matrices uniforms
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-  glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
-
-  glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
-
-  // Point lights uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
-  for( int i = 0; i < _lights.size(); i++ )
-  {
-    string temp = to_string( i );
-    glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
-    glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
-    glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
-  }
-
-  // Bloom uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _room1_table2._bloom );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _room1_table2._bloom_brightness );
-
-  // IBL uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), _room1_table2._IBL );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uParallaxCubemap" ), _room1_table2._parallax_cubemap );
-
-  // Opacity uniforms
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _room1_table2._alpha );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _room1_table2._opacity_map );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
-  
-  // Displacement mapping uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _room1_table2._normal_map );
-
-  // Emissive uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uEmissive" ), _room1_table2._emissive );
-
-  // Omnidirectional shadow mapping uniforms
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uReceivShadow" ), _room1_table2._receiv_shadow );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
-  glUniform1i( glGetUniformLocation( current_shader->_program, "uLightSourceIt" ), _current_shadow_light_source );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowBias" ), _room1_table2._shadow_bias );
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _room1_table2._shadow_darkness );
-
-  glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _room1_table2._id );      
-
-  _room1_table2_model->Draw( *current_shader, model_matrix );
-
-  glUseProgram( 0 );
-  glDisable( GL_CULL_FACE );
 
 
   // Draw simple doors
@@ -3770,6 +3354,926 @@ void Scene::SceneForwardRendering()
 
   glUseProgram( 0 );
   glDisable( GL_CULL_FACE );
+
+
+  if( _current_room == 1 )
+  {
+    // Draw room1 table1
+    // -----------------
+    _forward_pbr_shader.Use();
+
+    model_matrix = _room1_table1._model_matrix;
+
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _room1_table1._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _room1_table1._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _room1_table1._bloom );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _room1_table1._bloom_brightness );
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), _room1_table1._IBL );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), _room1_table1._parallax_cubemap );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _room1_table1._alpha );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _room1_table1._opacity_map );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _room1_table1._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _room1_table1._emissive );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _room1_table1._receiv_shadow );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _room1_table1._shadow_bias );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _room1_table1._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _room1_table1._id );      
+
+    _room1_table1_model->Draw( _forward_pbr_shader, model_matrix );
+
+    glUseProgram( 0 );
+
+
+    // Draw bottle
+    // -----------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+
+    _forward_pbr_shader.Use();
+
+    model_matrix = _bottle._model_matrix;
+
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _bottle._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _bottle._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _bottle._bloom );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _bottle._bloom_brightness );
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), _bottle._IBL );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), _bottle._parallax_cubemap );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _bottle._alpha );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _bottle._opacity_map );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _bottle._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _bottle._emissive );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _bottle._receiv_shadow );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _bottle._shadow_bias );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _bottle._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _bottle._id );      
+
+    _bottle_model->Draw( _forward_pbr_shader, model_matrix );
+
+    glUseProgram( 0 );
+    glDisable( GL_CULL_FACE );
+
+
+    // Draw ball
+    // ---------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+
+    ( _ball._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
+
+    current_shader->Use();
+
+    model_matrix = _ball._model_matrix;
+
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _ball._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _ball._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+
+    glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _ball._bloom );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _ball._bloom_brightness );
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), _ball._IBL );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uParallaxCubemap" ), _ball._parallax_cubemap );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _ball._alpha );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _ball._opacity_map );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _ball._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uEmissive" ), _ball._emissive );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uReceivShadow" ), _ball._receiv_shadow );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowBias" ), _ball._shadow_bias );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _ball._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _ball._id );      
+
+    _ball_model->Draw( *current_shader, model_matrix );
+
+    glUseProgram( 0 );
+    glDisable( GL_CULL_FACE );
+
+
+    // Draw box bag
+    // ------------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+
+    ( _box_bag._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
+
+    current_shader->Use();
+
+    model_matrix = _box_bag._model_matrix;
+
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _box_bag._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _box_bag._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+
+    glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _box_bag._bloom );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _box_bag._bloom_brightness );
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), _box_bag._IBL );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uParallaxCubemap" ), _box_bag._parallax_cubemap );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _box_bag._alpha );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _box_bag._opacity_map );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _box_bag._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uEmissive" ), _box_bag._emissive );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uReceivShadow" ), _box_bag._receiv_shadow );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowBias" ), _box_bag._shadow_bias );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _box_bag._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _box_bag._id );      
+
+    _box_bag_model->Draw( *current_shader, model_matrix );
+
+    glUseProgram( 0 );
+    glDisable( GL_CULL_FACE );
+
+
+    // Draw chest
+    // ----------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+
+    ( _chest._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
+
+    current_shader->Use();
+
+    model_matrix = _chest._model_matrix;
+
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _chest._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _chest._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+
+    glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _chest._bloom );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _chest._bloom_brightness );
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), _chest._IBL );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uParallaxCubemap" ), _chest._parallax_cubemap );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _chest._alpha );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _chest._opacity_map );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _chest._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uEmissive" ), _chest._emissive );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uReceivShadow" ), _chest._receiv_shadow );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowBias" ), _chest._shadow_bias );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _chest._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _chest._id );      
+
+    _chest_model->Draw( *current_shader, model_matrix );
+
+    glUseProgram( 0 );
+    glDisable( GL_CULL_FACE );
+
+
+    // Draw sofa
+    // ----------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+
+    ( _sofa._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
+
+    current_shader->Use();
+
+    model_matrix = _sofa._model_matrix;
+
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _sofa._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _sofa._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+
+    glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _sofa._bloom );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _sofa._bloom_brightness );
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), _sofa._IBL );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uParallaxCubemap" ), _sofa._parallax_cubemap );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _sofa._alpha );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _sofa._opacity_map );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _sofa._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uEmissive" ), _sofa._emissive );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uReceivShadow" ), _sofa._receiv_shadow );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowBias" ), _sofa._shadow_bias );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _sofa._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _sofa._id );      
+
+    _sofa_model->Draw( *current_shader, model_matrix );
+
+    glUseProgram( 0 );
+    glDisable( GL_CULL_FACE );
+
+
+    // Draw sack
+    // ---------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+
+    ( _sack._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
+
+    current_shader->Use();
+
+    model_matrix = _sack._model_matrix;
+
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _sack._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _sack._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+
+    glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _sack._bloom );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _sack._bloom_brightness );
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), _sack._IBL );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uParallaxCubemap" ), _sack._parallax_cubemap );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _sack._alpha );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _sack._opacity_map );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _sack._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uEmissive" ), _sack._emissive );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uReceivShadow" ), _sack._receiv_shadow );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowBias" ), _sack._shadow_bias );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _sack._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _sack._id );      
+
+    _sack_model->Draw( *current_shader, model_matrix );
+
+    glUseProgram( 0 );
+    glDisable( GL_CULL_FACE );
+
+
+    // Draw room1_table2
+    // -----------------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+
+    ( _room1_table2._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
+
+    current_shader->Use();
+
+    model_matrix = _room1_table2._model_matrix;
+
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _room1_table2._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _room1_table2._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+
+    glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _room1_table2._bloom );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _room1_table2._bloom_brightness );
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), _room1_table2._IBL );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uParallaxCubemap" ), _room1_table2._parallax_cubemap );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _room1_table2._alpha );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _room1_table2._opacity_map );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _room1_table2._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uEmissive" ), _room1_table2._emissive );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uReceivShadow" ), _room1_table2._receiv_shadow );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowBias" ), _room1_table2._shadow_bias );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _room1_table2._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _room1_table2._id );      
+
+    _room1_table2_model->Draw( *current_shader, model_matrix );
+
+    glUseProgram( 0 );
+    glDisable( GL_CULL_FACE );
+
+
+    // Draw book
+    // ---------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+
+    ( _book._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
+
+    current_shader->Use();
+
+    model_matrix = _book._model_matrix;
+
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _book._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _book._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+
+    glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _book._bloom );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _book._bloom_brightness );
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), _book._IBL );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uParallaxCubemap" ), _book._parallax_cubemap );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _book._alpha );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _book._opacity_map );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _book._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uEmissive" ), _book._emissive );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uReceivShadow" ), _book._receiv_shadow );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowBias" ), _book._shadow_bias );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _book._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _book._id );      
+
+    _book_model->Draw( *current_shader, model_matrix );
+
+    glUseProgram( 0 );
+    glDisable( GL_CULL_FACE );
+
+
+    // Draw radio
+    // ----------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+
+    ( _radio._height_map == true ) ? current_shader = &_forward_displacement_pbr_shader : current_shader = &_forward_pbr_shader; 
+
+    current_shader->Use();
+
+    model_matrix = _radio._model_matrix;
+
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _radio._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _radio._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( current_shader->_program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+
+    glUniform3fv( glGetUniformLocation( current_shader->_program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( current_shader->_program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( current_shader->_program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uBloom" ), _radio._bloom );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uBloomBrightness" ), _radio._bloom_brightness );
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uIBL" ), _radio._IBL );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uParallaxCubemap" ), _radio._parallax_cubemap );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uAlpha" ), _radio._alpha );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uOpacityMap" ), _radio._opacity_map );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uNormalMap" ), _radio._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uEmissive" ), _radio._emissive );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uReceivShadow" ), _radio._receiv_shadow );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( current_shader->_program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowBias" ), _radio._shadow_bias );
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uShadowDarkness" ), _radio._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( current_shader->_program, "uID" ), _radio._id );      
+
+    _radio_model->Draw( *current_shader, model_matrix );
+
+    glUseProgram( 0 );
+    glDisable( GL_CULL_FACE );
+
+
+    // Draw ink bottle
+    // ---------------
+    _forward_pbr_shader.Use();
+
+    model_matrix = _ink_bottle._model_matrix;
+
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _ink_bottle._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _ink_bottle._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _ink_bottle._bloom );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _ink_bottle._bloom_brightness );
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), true );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), false );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _ink_bottle._alpha );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _ink_bottle._opacity_map );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _ink_bottle._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _ink_bottle._emissive );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _ink_bottle._receiv_shadow );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _ink_bottle._shadow_bias );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _ink_bottle._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _ink_bottle._id );      
+
+    _ink_bottle_model->Draw( _forward_pbr_shader, model_matrix );
+
+    glUseProgram( 0 );
+  }
+
+  if( _current_room == 2 )
+  {
+
+    // Draw screen
+    // -----------
+    _forward_pbr_shader.Use();
+
+    // IBL cubemap texture binding
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _screen._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _screen._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    model_matrix = _screen._model_matrix;
+
+     // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), _screen._IBL );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), _screen._parallax_cubemap );
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _screen._bloom );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _screen._bloom_brightness );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _screen._alpha );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _screen._opacity_map );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _screen._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _screen._emissive );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uEmissiveFactor" ), _screen._emissive_factor );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _screen._receiv_shadow );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _screen._shadow_bias );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _screen._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _screen._id );      
+
+    _screen_model->Draw( _forward_pbr_shader, model_matrix );
+    glUseProgram( 0 );
+
+
+    // Draw bike
+    // ---------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+    _forward_pbr_shader.Use();
+
+    // IBL cubemap texture binding
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _bike._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _bike._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    model_matrix = _bike._model_matrix;
+
+     // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), _bike._IBL );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), _bike._parallax_cubemap );
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _bike._bloom );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _bike._bloom_brightness );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _bike._alpha );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _bike._opacity_map );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _bike._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _bike._emissive );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uEmissiveFactor" ), _bike._emissive_factor );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _bike._receiv_shadow );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _bike._shadow_bias );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _bike._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _bike._id );      
+
+    _bike_model->Draw( _forward_pbr_shader, model_matrix );
+    glUseProgram( 0 );
+    glDisable( GL_CULL_FACE );
+
+  }
 
 
   // Draw revolving doors
@@ -4416,6 +4920,22 @@ void Scene::ObjectsIBLInitialization()
                             0 );
 
   ObjectCubemapsGeneration( &_room1_table2,
+                            true,
+                            0 );
+
+  ObjectCubemapsGeneration( &_book,
+                            true,
+                            0 );
+
+  ObjectCubemapsGeneration( &_radio,
+                            true,
+                            0 );
+
+  ObjectCubemapsGeneration( &_screen,
+                            true,
+                            0 );
+
+  ObjectCubemapsGeneration( &_bike,
                             true,
                             0 );
 
