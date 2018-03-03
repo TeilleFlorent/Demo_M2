@@ -190,14 +190,14 @@ void Window::ManageEvents( Camera * iCamera )
           case 'a' :
             //_scene->_lights[ 0 ]._position.x += 0.1;
             
-            _scene->_test += 1.0;
+            _scene->_test += 0.02;
             std::cout << "_test = " << _scene->_test << std::endl;
             break;
 
           case 'e' :
             //_scene->_lights[ 0 ]._position.x -= 0.1;
 
-            _scene->_test -= 1.0;
+            _scene->_test -= 0.02;
             std::cout << "_test = " << _scene->_test << std::endl;
             break;
 

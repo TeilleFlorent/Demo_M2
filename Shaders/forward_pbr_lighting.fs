@@ -175,7 +175,7 @@ float DistributionGGX( vec3  iNormal,
 {
   float a  = iRoughness * iRoughness;
   float a2 = a * a;
-  float NdotH  = max( dot( iNormal, iHalfway ), ZERO ); 
+  float NdotH  = clamp( dot( iNormal, iHalfway ), ZERO, 1.0 ); 
   float NdotH2 = NdotH * NdotH;
 
   float nom   = a2;
@@ -203,8 +203,8 @@ float GeometrySmith( vec3 iNormal,
                      vec3 iLightDir,
                      float iRoughness )
 {
-  float NdotV = max( dot( iNormal, iViewDir ), ZERO );
-  float NdotL = max( dot( iNormal, iLightDir ), ZERO );
+  float NdotV = clamp( dot( iNormal, iViewDir ), ZERO, 1.0 );
+  float NdotL = clamp( dot( iNormal, iLightDir ), ZERO, 1.0 );
 
   float ggx2  = GeometrySchlickGGX( NdotV, iRoughness );
   float ggx1  = GeometrySchlickGGX( NdotL, iRoughness );
@@ -276,11 +276,11 @@ vec3 PointLightReflectance( vec2     iUV,
 
     // Specular BRDF calculation
     float NDF = DistributionGGX( iNormal, halfway, iMaterial._roughness );   
-    vec3  F   = FresnelSchlick( max( dot( halfway, iViewDir ), ZERO ), iF0 );
+    vec3  F   = FresnelSchlick( clamp( dot( halfway, iViewDir ), ZERO, 1.0 ), iF0 );
     float G   = GeometrySmith( iNormal, iViewDir, light_dir, iMaterial._roughness );      
     
     vec3  nominator      = NDF * F * G; 
-    float denominator    = ( IV_N_dot_V * max( dot( iNormal, light_dir ), ZERO ) ) + 0.001; // 0.001 to prevent divide by zero.
+    float denominator    = ( IV_N_dot_V * clamp( dot( iNormal, light_dir ), ZERO, 1.0 ) ) + 0.001; // 0.001 to prevent divide by zero.
     vec3  light_specular = nominator / denominator;
         
 
@@ -299,7 +299,7 @@ vec3 PointLightReflectance( vec2     iUV,
 
     // Get Normal dot LightDir value
     // -----------------------------
-    float normal_dot_light_dir = max( dot( iNormal, light_dir ), ZERO ); 
+    float normal_dot_light_dir = clamp( dot( iNormal, light_dir ), ZERO, 1.0 ); 
     
 
     // Final point light influence
@@ -436,7 +436,7 @@ vec3 PBRLightingCalculation( vec3 iNormal,
   F0 = mix( F0, material._albedo, material._metalness );  
 
   // Pre calcul N dot V
-  float N_dot_V = max( dot( iNormal, iViewDir ), ZERO );
+  float N_dot_V = clamp( dot( iNormal, iViewDir ), ZERO, 1.0 );
 
   
   // BRDF calculation part
@@ -462,15 +462,20 @@ vec3 PBRLightingCalculation( vec3 iNormal,
                                                         iNormal,
                                                         iViewDir,
                                                         iOpacity );
+
   if( !uIBL )
   {
     IBL_ambient_reflectance = vec3( 0.0 );
+  }
+  else
+  {
+    //point_lights_reflectance = vec3( 0.0 );
   }
 
 
   // Return fragment final PBR lighting 
   // ----------------------------------
-  return IBL_ambient_reflectance + point_lights_reflectance;
+  return clamp( IBL_ambient_reflectance, ZERO, 1.0 ) + point_lights_reflectance;
 }
 
 
@@ -555,9 +560,10 @@ void main()
   //FragColor = vec4( vec3( shadow_factor ), 1.0 );
   //FragColor = vec4( vec3( texture( uTexture, oUV ).rgb ), 1.0 );
 
-  if( uID == 23 )
+  if( uID == 27 )
   {
-    //FragColor = vec4( normal, opacity );
+    //FragColor = vec4( vec3( texture( uTextureNormal1, oUV ).rgb ), 1.0 );
+  //FragColor = vec4( normal, opacity );
   }
 
   // Second out color => draw only brightest fragments

@@ -32,7 +32,7 @@ in vec3 oUV;
 void main()
 {    
   //vec3 result_color = texture( uSkyboxTexture, oUV ).rgb;
-  vec3 result_color = textureLod( uSkyboxTexture, oUV, 0.95 ).rgb;
+  vec3 result_color = textureLod( uSkyboxTexture, oUV, 0.3 ).rgb;
 
 
   // Main out color

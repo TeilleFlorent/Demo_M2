@@ -1,6 +1,7 @@
 #version 330 core
 
 #define PI 3.14159265358979323846264338
+#define ZERO 0.00390625
 
 
 //******************************************************************************
@@ -89,7 +90,7 @@ float DistributionGGX( vec3  iNormal,
 {
   float a  = iRoughness * iRoughness;
   float a2 = a * a;
-  float NdotH  = max( dot( iNormal, iHalfway ), 0.0);
+  float NdotH  = max( dot( iNormal, iHalfway ), ZERO );
   float NdotH2 = NdotH * NdotH;
 
   float nom   = a2;
@@ -131,7 +132,7 @@ vec3 PreFilterConvolution()
     vec3 light_dir = normalize( 2.0 * dot( view_dir, biased_halfway ) * biased_halfway - view_dir );
     
     // Get corresponding sample NdotL angle
-    float N_dot_L = max( dot( normal, light_dir ), 0.0 );
+    float N_dot_L = max( dot( normal, light_dir ), ZERO );
 
     if( N_dot_L > 0.0 )
     {
@@ -139,18 +140,22 @@ vec3 PreFilterConvolution()
       float NDF = DistributionGGX( normal,
                                    biased_halfway,
                                    uRoughness );
-      float N_dot_H   = max( dot( normal, biased_halfway ), 0.0 );
-      float H_dot_V   = max( dot( biased_halfway, view_dir ), 0.0 );
+      float N_dot_H   = max( dot( normal, biased_halfway ), ZERO );
+      float H_dot_V   = max( dot( biased_halfway, view_dir ), ZERO );
       float pdf       = NDF * N_dot_H / ( 4.0 * H_dot_V ) + 0.0001;
       float sa_texel   = 4.0 * PI / ( 6.0 * uCubeMapRes * uCubeMapRes );
       float sa_sample  = 1.0 / ( float( uSampleCount ) * pdf + 0.0001 );
       float mip_level = uRoughness == 0.0 ? 0.0 : 0.5 * log2( sa_sample / sa_texel );
 
-      // Sample environment map 
-      prefiltered_color += textureLod( uEnvironmentMap, light_dir, mip_level ).rgb * N_dot_L;
+      vec3 sample_color = textureLod( uEnvironmentMap, light_dir, mip_level ).rgb * N_dot_L;
+      if( length( sample_color ) > 0 )
+      {
+        // Sample environment map 
+        prefiltered_color += sample_color;
 
-      // Add corresponding sample weight ( sample with small N_dot_L == small influence )
-      total_weight += N_dot_L;
+        // Add corresponding sample weight ( sample with small N_dot_L == small influence )
+        total_weight += N_dot_L;
+      }
     }
   }
 

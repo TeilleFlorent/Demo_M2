@@ -208,12 +208,16 @@ class Scene
     Object                _ink_bottle;
     Object                _room1_table1;
     Object                _bottle;
+    Object                _ball;
+    Object                _box_bag;
+    Object                _chest;
+    Object                _sofa;
+    Object                _sack;
+    Object                _room1_table2;
     float                 _ground_size;
     float                 _wall_size;
 
     // Models
-    Model * _table_model;
-    Model * _table2_model;
     Model * _sphere_model;
     Model * _ink_bottle_model;
     Model * _revolving_door_model;
@@ -222,6 +226,12 @@ class Scene
     Model * _wall_light_model;
     Model * _room1_table1_model;
     Model * _bottle_model;
+    Model * _ball_model;
+    Model * _box_bag_model;
+    Model * _chest_model;
+    Model * _sofa_model;
+    Model * _sack_model;
+    Model * _room1_table2_model;
 
     // Revolving door rotation matrix
     glm::mat4 _door_rotation_matrix;

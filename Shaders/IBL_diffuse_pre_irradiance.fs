@@ -1,6 +1,7 @@
 #version 330 core
 
 #define PI 3.14159265358979323846264338
+#define ZERO 0.00390625
 
 
 //******************************************************************************
@@ -49,8 +50,12 @@ void main()
       // Tangent space to world
       vec3 sample_vector = ( tangent_sample.x * right ) + ( tangent_sample.y * up ) + ( tangent_sample.z * normal ); 
 
-      irradiance += texture( uEnvironmentMap, sample_vector ).rgb * cos( theta ) * sin( theta );
-      sample_count++;
+      vec3 sample_color = texture( uEnvironmentMap, sample_vector ).rgb;
+      if( length( sample_color ) > 0.0 )
+      { 
+        irradiance += sample_color * cos( theta ) * sin( theta );
+        sample_count++;
+      }
     }
   }
 
