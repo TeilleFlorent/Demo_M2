@@ -223,6 +223,14 @@ class Scene
     Object                _room2_table1;
     Object                _mask;
     Object                _arm;
+    Object                _tank;
+    Object                _shelving;
+    Object                _gun1;
+    Object                _gun2;
+    Object                _gun3;
+    Object                _room3_table1;
+    Object                _room3_table2;
+    Object                _helmet;
     float                 _ground_size;
     float                 _wall_size;
 
@@ -250,6 +258,14 @@ class Scene
     Model * _room2_table1_model;
     Model * _mask_model;
     Model * _arm_model;
+    Model * _tank_model;
+    Model * _shelving_model;
+    Model * _gun1_model;
+    Model * _gun2_model;
+    Model * _gun3_model;
+    Model * _room3_table1_model;
+    Model * _room3_table2_model;
+    Model * _helmet_model;
 
     // Revolving door rotation matrix
     glm::mat4 _door_rotation_matrix;

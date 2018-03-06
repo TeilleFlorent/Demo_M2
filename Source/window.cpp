@@ -190,15 +190,15 @@ void Window::ManageEvents( Camera * iCamera )
           case 'a' :
             //_scene->_lights[ 0 ]._position.x += 0.1;
             
-            _scene->_room1_table2._shadow_bias += 0.002;
-            std::cout << "bias = " << _scene->_room1_table2._shadow_bias << std::endl;
+            _scene->_grounds_type1[ 4 ]._tessellation_factor += 0.01;
+            std::cout << "factor = " << _scene->_grounds_type1[ 4 ]._tessellation_factor << std::endl;
             break;
 
           case 'e' :
             //_scene->_lights[ 0 ]._position.x -= 0.1;
 
-            _scene->_room1_table2._shadow_bias -= 0.002;
-            std::cout << "bias = " << _scene->_room1_table2._shadow_bias << std::endl;
+            _scene->_grounds_type1[ 4 ]._tessellation_factor -= 0.01;
+            std::cout << "factor = " << _scene->_grounds_type1[ 4 ]._tessellation_factor << std::endl;
             break;
 
           case 'r' :
