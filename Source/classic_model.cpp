@@ -444,6 +444,12 @@ void Model::LoadModel( string iPath )
     // delete [ 9 ]
     _meshes.erase( _meshes.begin() + 9 );
   }
+
+  if( _model_id == 22 )
+  {
+    // delete [ 0 ]
+    _meshes.erase( _meshes.begin() + 0 );
+  }
 }
 
 void Model::ProcessNode( aiNode * iNode )
@@ -518,7 +524,7 @@ Mesh Model::ProcessMesh( aiMesh * 	 iMesh,
       vector.y = iMesh->mBitangents[ i ].y;
       vector.z = iMesh->mBitangents[ i ].z;
       vertex._bi_tangent = vector;
-    } 
+    }
 
     // Add this vertex to the mesh
     vertices.push_back( vertex );
@@ -1524,6 +1530,203 @@ vector< Texture > Model::LoadMeshTextures( aiString     iNodeName,
                                        GL_RED ) );
     }
   }
+
+
+  // Load pilar textures 
+  // -------------------
+  if( this->_model_id == 19 )
+  { 
+    std::string texture_name( "" );
+    
+    // albedo
+    textures.push_back( LoadTexture( "uTextureAlbedo",
+                                     std::string( texture_name + "albedo.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+
+    // normal
+    textures.push_back( LoadTexture( "uTextureNormal",
+                                     std::string( texture_name + "normal.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+
+    // AO
+    textures.push_back( LoadTexture( "uTextureAO",
+                                     std::string( texture_name + "AO.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // roughness 
+    textures.push_back( LoadTexture( "uTextureRoughness",
+                                     std::string( texture_name + "roughness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // metalness
+    textures.push_back( LoadTexture( "uTextureMetalness",
+                                     std::string( texture_name + "metalness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+  }
+
+
+  // Load scanner textures 
+  // ---------------------
+  if( this->_model_id == 20 )
+  { 
+    std::string texture_name( "" );
+    
+    // albedo
+    textures.push_back( LoadTexture( "uTextureAlbedo",
+                                     std::string( texture_name + "albedo.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+
+    // normal
+    textures.push_back( LoadTexture( "uTextureNormal",
+                                     std::string( texture_name + "normal.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+
+    // AO
+    textures.push_back( LoadTexture( "uTextureAO",
+                                     std::string( texture_name + "AO.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // roughness 
+    textures.push_back( LoadTexture( "uTextureRoughness",
+                                     std::string( texture_name + "roughness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // metalness
+    textures.push_back( LoadTexture( "uTextureMetalness",
+                                     std::string( texture_name + "metalness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // emissive
+    textures.push_back( LoadTexture( "uTextureEmissive",
+                                     std::string( "emissive.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+  }
+  
+
+  // Load room2_table1 textures 
+  // --------------------------
+  if( this->_model_id == 21 )
+  { 
+    std::string texture_name( "" );
+    
+    // albedo
+    textures.push_back( LoadTexture( "uTextureAlbedo",
+                                     std::string( texture_name + "albedo.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+
+    // normal
+    textures.push_back( LoadTexture( "uTextureNormal",
+                                     std::string( texture_name + "normal.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+
+    // AO
+    textures.push_back( LoadTexture( "uTextureAO",
+                                     std::string( texture_name + "AO.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // roughness 
+    textures.push_back( LoadTexture( "uTextureRoughness",
+                                     std::string( texture_name + "roughness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // metalness
+    textures.push_back( LoadTexture( "uTextureMetalness",
+                                     std::string( texture_name + "metalness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+  }
+
+
+  // Load mask textures 
+  // ------------------
+  if( this->_model_id == 22 )
+  { 
+    std::string texture_name( "" );
+    
+    // albedo
+    textures.push_back( LoadTexture( "uTextureAlbedo",
+                                     std::string( texture_name + "albedo.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+
+    // normal
+    textures.push_back( LoadTexture( "uTextureNormal",
+                                     std::string( texture_name + "normal.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+
+    // AO
+    textures.push_back( LoadTexture( "uTextureAO",
+                                     std::string( texture_name + "AO.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // roughness 
+    textures.push_back( LoadTexture( "uTextureRoughness",
+                                     std::string( texture_name + "roughness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // metalness
+    textures.push_back( LoadTexture( "uTextureMetalness",
+                                     std::string( texture_name + "metalness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+  }
+
+
+  // Load arm textures 
+  // -----------------
+  if( this->_model_id == 23 )
+  { 
+    std::string texture_name( "" );
+    
+    // albedo
+    textures.push_back( LoadTexture( "uTextureAlbedo",
+                                     std::string( texture_name + "albedo.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+
+    // normal
+    textures.push_back( LoadTexture( "uTextureNormal",
+                                     std::string( texture_name + "normal.png" ),
+                                     GL_RGB,
+                                     GL_RGB ) );
+
+    // AO
+    textures.push_back( LoadTexture( "uTextureAO",
+                                     std::string( texture_name + "AO.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // roughness 
+    textures.push_back( LoadTexture( "uTextureRoughness",
+                                     std::string( texture_name + "roughness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+
+    // metalness
+    textures.push_back( LoadTexture( "uTextureMetalness",
+                                     std::string( texture_name + "metalness.png" ),
+                                     GL_R8,
+                                     GL_RED ) );
+  }
+
 
   return textures;
 }

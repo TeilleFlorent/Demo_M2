@@ -218,6 +218,11 @@ class Scene
     Object                _radio;
     Object                _screen;
     Object                _bike;
+    Object                _pilar;
+    Object                _scanner;
+    Object                _room2_table1;
+    Object                _mask;
+    Object                _arm;
     float                 _ground_size;
     float                 _wall_size;
 
@@ -240,6 +245,11 @@ class Scene
     Model * _radio_model;
     Model * _screen_model;
     Model * _bike_model;
+    Model * _pilar_model;
+    Model * _scanner_model;
+    Model * _room2_table1_model;
+    Model * _mask_model;
+    Model * _arm_model;
 
     // Revolving door rotation matrix
     glm::mat4 _door_rotation_matrix;

@@ -575,5 +575,5 @@ void main()
       bright_color = final_color;
     }
   }
-  FragColorBrightness = vec4( bright_color + emissive, opacity );
+  FragColorBrightness = vec4( bright_color, opacity );
 }
