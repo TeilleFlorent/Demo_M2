@@ -134,7 +134,6 @@ class Scene
     std::vector< unsigned int > _wall2_indices;
 
     // Textures
-    int _current_env;
     std::vector< unsigned int > _hdr_textures;
     std::vector< unsigned int > _env_cubeMaps;
     std::vector< unsigned int > _irradiance_cubeMaps;
@@ -231,6 +230,13 @@ class Scene
     Object                _room3_table1;
     Object                _room3_table2;
     Object                _helmet;
+    Object                _knife;
+    Object                _grenade;
+    Object                _gun4;
+    Object                _gun5;
+    Object                _room3_table3;
+    Object                _katana;
+    Object                _helmet2;
     float                 _ground_size;
     float                 _wall_size;
 
@@ -266,6 +272,13 @@ class Scene
     Model * _room3_table1_model;
     Model * _room3_table2_model;
     Model * _helmet_model;
+    Model * _knife_model;
+    Model * _grenade_model;
+    Model * _gun4_model;
+    Model * _gun5_model;
+    Model * _room3_table3_model;
+    Model * _katana_model;
+    Model * _helmet2_model;
 
     // Revolving door rotation matrix
     glm::mat4 _door_rotation_matrix;
@@ -291,9 +304,6 @@ class Scene
     // grounds render iterators
     unsigned int _grounds_start_it;
     unsigned int _grounds_end_it;
-
-    float _test         = 0.0;
-    unsigned int _test2 = 0;
 };
 
 #endif  // SCENE_H

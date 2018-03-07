@@ -1226,7 +1226,7 @@ unsigned int Toolbox::GenEnvironmentCubemap( glm::vec3    iPosition,
 
     // Draw room1 table1
     // -----------------
-    /*if( iID != _window->_scene->_room1_table1._id )
+    if( iID != _window->_scene->_room1_table1._id )
     {
       glEnable( GL_CULL_FACE );
       glCullFace( GL_BACK );
@@ -1794,12 +1794,12 @@ unsigned int Toolbox::GenEnvironmentCubemap( glm::vec3    iPosition,
       _window->_scene->_radio_model->Draw( _window->_scene->_forward_pbr_shader, model_matrix );
     }
     glDisable( GL_CULL_FACE );
-    */
+    
 
 
     // Draw _screen
     // ------------
-    /*if( iID != _window->_scene->_screen._id )
+    if( iID != _window->_scene->_screen._id )
     {
       model_matrix = _window->_scene->_screen._model_matrix;
 
@@ -2094,7 +2094,7 @@ unsigned int Toolbox::GenEnvironmentCubemap( glm::vec3    iPosition,
       glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uID" ), _window->_scene->_arm._id );  
 
       _window->_scene->_arm_model->Draw( _window->_scene->_forward_pbr_shader, model_matrix );
-    }*/
+    }
 
 
     // Draw _tank
@@ -2397,11 +2397,11 @@ unsigned int Toolbox::GenEnvironmentCubemap( glm::vec3    iPosition,
     }
 
 
-    // Draw _helmet
-    // ------------
-    if( iID != _window->_scene->_helmet._id )
+    // Draw _grenade
+    // -------------
+    if( iID != _window->_scene->_grenade._id )
     {
-      model_matrix = _window->_scene->_helmet._model_matrix;
+      model_matrix = _window->_scene->_grenade._model_matrix;
 
       // Matrices uniforms
       glUniformMatrix4fv( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_projection_matrix ) );
@@ -2429,21 +2429,21 @@ unsigned int Toolbox::GenEnvironmentCubemap( glm::vec3    iPosition,
       glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uReceivShadow" ), false );
 
       // Opacity uniforms
-      glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uAlpha" ), _window->_scene->_helmet._alpha );
-      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uOpacityMap" ), _window->_scene->_helmet._opacity_map );
+      glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uAlpha" ), _window->_scene->_grenade._alpha );
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uOpacityMap" ), _window->_scene->_grenade._opacity_map );
       glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
       
       // Displacement mapping uniforms
-      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uNormalMap" ), _window->_scene->_helmet._normal_map );
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uNormalMap" ), _window->_scene->_grenade._normal_map );
 
       // Emissive uniforms
-      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uEmissive" ), _window->_scene->_helmet._emissive );
-      glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uEmissiveFactor" ), _window->_scene->_helmet._emissive_factor );
+      glUniform1i( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uEmissive" ), _window->_scene->_grenade._emissive );
+      glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uEmissiveFactor" ), _window->_scene->_grenade._emissive_factor );
 
       
-      glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uID" ), _window->_scene->_helmet._id );  
+      glUniform1f( glGetUniformLocation( _window->_scene->_forward_pbr_shader._program, "uID" ), _window->_scene->_grenade._id );  
 
-      _window->_scene->_helmet_model->Draw( _window->_scene->_forward_pbr_shader, model_matrix );
+      _window->_scene->_grenade_model->Draw( _window->_scene->_forward_pbr_shader, model_matrix );
     }
 
   }

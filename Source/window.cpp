@@ -188,29 +188,27 @@ void Window::ManageEvents( Camera * iCamera )
             break;
 
           case 'a' :
-            //_scene->_lights[ 0 ]._position.x += 0.1;
-            
-            _scene->_grounds_type1[ 4 ]._tessellation_factor += 0.01;
-            std::cout << "factor = " << _scene->_grounds_type1[ 4 ]._tessellation_factor << std::endl;
+            if( _scene->_current_room < 3 )
+            {
+              _scene->_current_room++;
+              std::cout << "current room = " << _scene->_current_room << std::endl; 
+            }
             break;
 
           case 'e' :
-            //_scene->_lights[ 0 ]._position.x -= 0.1;
-
-            _scene->_grounds_type1[ 4 ]._tessellation_factor -= 0.01;
-            std::cout << "factor = " << _scene->_grounds_type1[ 4 ]._tessellation_factor << std::endl;
+            if( _scene->_current_room > 1 )
+            {
+              _scene->_current_room--;
+              std::cout << "current room = " << _scene->_current_room << std::endl; 
+            }
             break;
 
           case 'r' :
-            _scene->_test2 += 1;
-            //_scene->_current_shadow_light_source = _scene->_test2;
-            std::cout << "_test2 = " << _scene->_test2 << std::endl;
+           
             break;
 
           case 't' :
-            _scene->_test2 -= 1;
-            //_scene->_current_shadow_light_source = _scene->_test2;
-            std::cout << "_test2 = " << _scene->_test2 << std::endl;
+            
             break;
        
           case SDLK_F1 :
@@ -221,13 +219,11 @@ void Window::ManageEvents( Camera * iCamera )
             break;
 
           case SDLK_F2 :
-            if( _scene->_current_env > 0 )
-              _scene->_current_env--;
+           
             break;
 
           case SDLK_F3 :
-            if( _scene->_current_env < _scene->_hdr_textures.size() - 1 )
-              _scene->_current_env++;
+            
             break;
 
           case SDLK_F4 :

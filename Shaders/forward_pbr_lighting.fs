@@ -467,10 +467,6 @@ vec3 PBRLightingCalculation( vec3 iNormal,
   {
     IBL_ambient_reflectance = vec3( 0.0 );
   }
-  else
-  {
-    //point_lights_reflectance = vec3( 0.0 );
-  }
 
 
   // Return fragment final PBR lighting 
@@ -556,14 +552,6 @@ void main()
 
   // Main out color
   FragColor = vec4( final_color, opacity );
-  //FragColor = vec4( normal, opacity );
-  //FragColor = vec4( vec3( shadow_factor ), 1.0 );
-  //FragColor = vec4( vec3( texture( uTexture, oUV ).rgb ), 1.0 );
-
-  if( uID == 34 )  
-  {
-    //FragColor = vec4( vec3( texture( uTextureMetalness1, oUV ).r ), 1.0 );
-  }
 
   // Second out color => draw only brightest fragments
   vec3 bright_color = vec3( 0.0 );

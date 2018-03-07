@@ -39,7 +39,6 @@ Scene::Scene( Window * iParentWindow )
   _nb_multi_sample = 4;
 
   // Init IBL parameters
-  _current_env              = 2;
   _res_env_cubemap          = 512;
 
   _res_irradiance_cubemap   = 32;
@@ -69,8 +68,8 @@ Scene::Scene( Window * iParentWindow )
   _door_position    = glm::vec3( 0.0 );
   _simple_door_open = false;
 
-  _current_room                = 3;
-  _current_shadow_light_source = 6;
+  _current_room                = 1;
+  _current_shadow_light_source = 1;
 
 
   // Scene data initialization
@@ -2612,7 +2611,7 @@ void Scene::ObjectsInitialization()
                              glm::vec2( 6.0, 6.0 ),   // uv scale
                              1.0,            // alpha
                              true,           // generate shadow
-                             false,          // receiv shadow
+                             true,          // receiv shadow
                              1.0,            // shadow darkness
                              0.015,          // shadow bias
                              false,          // bloom
@@ -2649,7 +2648,7 @@ void Scene::ObjectsInitialization()
                              glm::vec2( 6.0, 6.0 ),   // uv scale
                              1.0,            // alpha
                              true,           // generate shadow
-                             false,          // receiv shadow
+                             true,          // receiv shadow
                              1.0,            // shadow darkness
                              0.015,          // shadow bias
                              false,          // bloom
@@ -2669,7 +2668,7 @@ void Scene::ObjectsInitialization()
   // _helmet object initialization
   // -----------------------------
   scale = glm::vec3( 0.002 );
-  position = _room3_table1._position + glm::vec3( 0.2, 1.0, 0.0 );
+  position = _room3_table1._position + glm::vec3( 0.2, 1.0, -0.2 );
   IBL_position = position + glm::vec3( 0.0, 0.3, 0.0 );
 
   model_matrix = glm::mat4();
@@ -2700,6 +2699,267 @@ void Scene::ObjectsInitialization()
                        17.0,           // emissive factor
                        false,          // need parallax cubemap
                        true ) );       // need IBL
+
+
+  // _knife object initialization
+  // ----------------------------
+  scale = glm::vec3( 0.1 );
+  position = _room3_table1._position + glm::vec3( -0.15, 1.022, -0.15 );
+  IBL_position = position;
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 1.0, 0.0, 0.0 ) ); 
+  model_matrix = glm::scale( model_matrix, scale );
+
+  _knife.Set( Object( 48,             // ID
+                      model_matrix,   // model matrix
+                      position,       // position
+                      IBL_position,   // position use to generate IBL cubemaps
+                      _PI_2,          // angle
+                      scale,          // scale
+                      glm::vec2( 6.0, 6.0 ),   // uv scale
+                      1.0,            // alpha
+                      true,           // generate shadow
+                      false,          // receiv shadow
+                      1.0,            // shadow darkness
+                      0.015,          // shadow bias
+                      false,          // bloom
+                      0.5,            // bloom bright value
+                      false,          // opacity map
+                      true,           // normal map
+                      false,          // height map
+                      0.1,            // displacement factor
+                      0.3,            // tessellation factor
+                      0,              // material ID
+                      false,          // emissive
+                      17.0,           // emissive factor
+                      false,          // need parallax cubemap
+                      true ) );       // need IBL
+
+
+  // _grenade object initialization
+  // ------------------------------
+  scale = glm::vec3( 0.3 );
+  position = _room3_table1._position + glm::vec3( 0.25, 0.84, -0.05 );
+  IBL_position = position + glm::vec3( 0.0, 0.25, 0.0 );
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 0.0, 0.0, 1.0 ) ); 
+  model_matrix = glm::scale( model_matrix, scale );
+
+  _grenade.Set( Object( 49,             // ID
+                        model_matrix,   // model matrix
+                        position,       // position
+                        IBL_position,   // position use to generate IBL cubemaps
+                        _PI_2,          // angle
+                        scale,          // scale
+                        glm::vec2( 6.0, 6.0 ),   // uv scale
+                        1.0,            // alpha
+                        true,           // generate shadow
+                        false,          // receiv shadow
+                        1.0,            // shadow darkness
+                        0.015,          // shadow bias
+                        false,          // bloom
+                        0.5,            // bloom bright value
+                        false,          // opacity map
+                        true,           // normal map
+                        false,          // height map
+                        0.1,            // displacement factor
+                        0.3,            // tessellation factor
+                        0,              // material ID
+                        false,          // emissive
+                        17.0,           // emissive factor
+                        false,          // need parallax cubemap
+                        true ) );       // need IBL
+
+
+  // _gun4 object initialization
+  // ---------------------------
+  scale = glm::vec3( 0.0013 );
+  position = _room3_table2._position + glm::vec3( 0.0, 0.0227, 0.35 );
+  IBL_position = position + glm::vec3( 0.0, 0.3, 0.0 );
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2 * ( float )0.28, glm::vec3( 0.0, 0.0, 1.0 ) ); 
+  model_matrix = glm::scale( model_matrix, scale );
+
+  _gun4.Set( Object( 50,             // ID
+                     model_matrix,   // model matrix
+                     position,       // position
+                     IBL_position,   // position use to generate IBL cubemaps
+                     _PI_2,          // angle
+                     scale,          // scale
+                     glm::vec2( 6.0, 6.0 ),   // uv scale
+                     1.0,            // alpha
+                     true,           // generate shadow
+                     false,          // receiv shadow
+                     1.0,            // shadow darkness
+                     0.015,          // shadow bias
+                     false,          // bloom
+                     0.5,            // bloom bright value
+                     false,          // opacity map
+                     true,           // normal map
+                     false,          // height map
+                     0.1,            // displacement factor
+                     0.3,            // tessellation factor
+                     0,              // material ID
+                     false,          // emissive
+                     17.0,           // emissive factor
+                     false,          // need parallax cubemap
+                     true ) );       // need IBL
+
+
+  // _gun5 object initialization
+  // ---------------------------
+  scale = glm::vec3( 0.015 );
+  position = _room3_table2._position + glm::vec3( -0.1, 0.024, 0.22 );
+  IBL_position = position + glm::vec3( 0.0, 0.0, 0.0 );
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( -1.0, 0.0, 0.0 ) );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2 * ( float )1.5, glm::vec3( 0.0, 0.0, 1.0 ) ); 
+  model_matrix = glm::scale( model_matrix, scale );
+
+  _gun5.Set( Object( 51,             // ID
+                     model_matrix,   // model matrix
+                     position,       // position
+                     IBL_position,   // position use to generate IBL cubemaps
+                     _PI_2,          // angle
+                     scale,          // scale
+                     glm::vec2( 6.0, 6.0 ),   // uv scale
+                     1.0,            // alpha
+                     true,           // generate shadow
+                     false,          // receiv shadow
+                     1.0,            // shadow darkness
+                     0.015,          // shadow bias
+                     false,          // bloom
+                     0.5,            // bloom bright value
+                     false,          // opacity map
+                     true,           // normal map
+                     false,          // height map
+                     0.1,            // displacement factor
+                     0.3,            // tessellation factor
+                     0,              // material ID
+                     false,          // emissive
+                     17.0,           // emissive factor
+                     false,          // need parallax cubemap
+                     true ) );       // need IBL
+
+
+  // _room3_table3 object initialization
+  // -----------------------------------
+  scale = glm::vec3( 0.00045 );
+  position = room3_offset_position + glm::vec3( -1.5, -0.29, -1.6 );
+  IBL_position = position + glm::vec3( 0.0, 0.65, 0.0 );
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::scale( model_matrix, scale );
+
+  _room3_table3.Set( Object( 52,             // ID
+                             model_matrix,   // model matrix
+                             position,       // position
+                             IBL_position,   // position use to generate IBL cubemaps
+                             _PI_2,          // angle
+                             scale,          // scale
+                             glm::vec2( 6.0, 6.0 ),   // uv scale
+                             1.0,            // alpha
+                             true,           // generate shadow
+                             true,           // receiv shadow
+                             1.0,            // shadow darkness
+                             0.015,          // shadow bias
+                             false,          // bloom
+                             0.5,            // bloom bright value
+                             false,          // opacity map
+                             true,           // normal map
+                             false,          // height map
+                             0.1,            // displacement factor
+                             0.3,            // tessellation factor
+                             0,              // material ID
+                             false,          // emissive
+                             17.0,           // emissive factor
+                             false,          // need parallax cubemap
+                             true ) );       // need IBL
+
+
+  // _katana object initialization
+  // -----------------------------
+  scale = glm::vec3( 0.75 );
+  position = _room3_table3._position + glm::vec3( 0.1, 1.02, 0.1 );
+  IBL_position = position + glm::vec3( 0.0, 0.0, 0.0 );
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2 * ( float )0.7, glm::vec3( 0.0, 1.0, 0.0 ) );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( 1.0, 0.0, 0.0 ) );
+  model_matrix = glm::scale( model_matrix, scale );
+
+  _katana.Set( Object( 53,             // ID
+                       model_matrix,   // model matrix
+                       position,       // position
+                       IBL_position,   // position use to generate IBL cubemaps
+                       _PI_2,          // angle
+                       scale,          // scale
+                       glm::vec2( 6.0, 6.0 ),   // uv scale
+                       1.0,            // alpha
+                       true,           // generate shadow
+                       true,           // receiv shadow
+                       1.0,            // shadow darkness
+                       0.015,          // shadow bias
+                       false,          // bloom
+                       0.5,            // bloom bright value
+                       false,          // opacity map
+                       true,           // normal map
+                       false,          // height map
+                       0.1,            // displacement factor
+                       0.3,            // tessellation factor
+                       0,              // material ID
+                       false,          // emissive
+                       17.0,           // emissive factor
+                       false,          // need parallax cubemap
+                       true ) );       // need IBL
+
+
+  // _helmet2 object initialization
+  // -----------------------------
+  scale = glm::vec3( 0.007 );
+  position = _room3_table3._position + glm::vec3( -0.115, 1.12, 0.05 );
+  IBL_position = position + glm::vec3( 0.0, 0.0, 0.0 );
+
+  model_matrix = glm::mat4();
+  model_matrix = glm::translate( model_matrix, position );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI_2, glm::vec3( -1.0, 0.0, 0.0 ) );
+  model_matrix = glm::rotate( model_matrix, ( float )_PI * ( float )0.7, glm::vec3( 0.0, 0.0, -1.0 ) );
+  model_matrix = glm::scale( model_matrix, scale );
+
+  _helmet2.Set( Object( 54,             // ID
+                        model_matrix,   // model matrix
+                        position,       // position
+                        IBL_position,   // position use to generate IBL cubemaps
+                        _PI_2,          // angle
+                        scale,          // scale
+                        glm::vec2( 6.0, 6.0 ),   // uv scale
+                        1.0,            // alpha
+                        true,           // generate shadow
+                        true,           // receiv shadow
+                        1.0,            // shadow darkness
+                        0.015,          // shadow bias
+                        false,          // bloom
+                        0.5,            // bloom bright value
+                        false,          // opacity map
+                        true,           // normal map
+                        false,          // height map
+                        0.1,            // displacement factor
+                        0.3,            // tessellation factor
+                        0,              // material ID
+                        false,          // emissive
+                        17.0,           // emissive factor
+                        false,          // need parallax cubemap
+                        true ) );       // need IBL
 
 
   std::cout << "Scene's objects initialization done.\n" << std::endl;
@@ -3027,7 +3287,7 @@ void Scene::ModelsLoading()
   _wall_light_model->PrintInfos();
 
   // Ink bottle model loading
-  /*_ink_bottle_model = new Model( "../Models/ink_bottle/ink_bottle.FBX", 
+  _ink_bottle_model = new Model( "../Models/ink_bottle/ink_bottle.FBX", 
                                  2, 
                                  "InkBottle",
                                  _ink_bottle._normal_map,
@@ -3112,10 +3372,10 @@ void Scene::ModelsLoading()
                             "radio",
                             _radio._normal_map,
                             _radio._height_map );
-  _radio_model->PrintInfos();*/
+  _radio_model->PrintInfos();
 
   // _screen model loading
-  /*_screen_model = new Model( "../Models/screen/screen.dae", 
+  _screen_model = new Model( "../Models/screen/screen.dae", 
                             17, 
                             "screen",
                             _screen._normal_map,
@@ -3168,7 +3428,7 @@ void Scene::ModelsLoading()
                           "arm",
                           _arm._normal_map,
                           _arm._height_map );
-  _arm_model->PrintInfos();*/
+  _arm_model->PrintInfos();
 
   // _tank model loading
   _tank_model = new Model( "../Models/tank/tank.dae", 
@@ -3233,6 +3493,62 @@ void Scene::ModelsLoading()
                              _helmet._normal_map,
                              _helmet._height_map );
   _helmet_model->PrintInfos();
+
+  // _knife model loading
+  _knife_model = new Model( "../Models/knife/knife.dae", 
+                            32, 
+                            "knife",
+                            _knife._normal_map,
+                            _knife._height_map );
+  _knife_model->PrintInfos();
+
+  // _grenade model loading
+  _grenade_model = new Model( "../Models/grenade/grenade.dae", 
+                              33, 
+                              "grenade",
+                              _grenade._normal_map,
+                              _grenade._height_map );
+  _grenade_model->PrintInfos();
+
+  // _gun4 model loading
+  _gun4_model = new Model( "../Models/gun4/gun4.obj", 
+                           34, 
+                           "gun4",
+                           _gun4._normal_map,
+                           _gun4._height_map );
+  _gun4_model->PrintInfos();
+
+  // _gun5 model loading
+  _gun5_model = new Model( "../Models/gun5/gun5.obj", 
+                           35, 
+                           "gun5",
+                           _gun5._normal_map,
+                           _gun5._height_map );
+  _gun5_model->PrintInfos();
+
+  // _room3_table3 model loading
+  _room3_table3_model = new Model( "../Models/room3_table3/room3_table3.obj", 
+                                   36, 
+                                   "room3_table3",
+                                   _room3_table3._normal_map,
+                                   _room3_table3._height_map );
+  _room3_table3_model->PrintInfos();
+
+  // _katana model loading
+  _katana_model = new Model( "../Models/katana/katana.dae", 
+                             37, 
+                             "katana",
+                             _katana._normal_map,
+                             _katana._height_map );
+  _katana_model->PrintInfos();
+
+  // _helmet2 model loading
+  _helmet2_model = new Model( "../Models/helmet2/helmet2.fbx", 
+                              38, 
+                              "helmet2",
+                              _helmet2._normal_map,
+                              _helmet2._height_map );
+  _helmet2_model->PrintInfos();
 
   std::cout << "Scene's models loading done.\n" << std::endl;
 }
@@ -3550,7 +3866,56 @@ void Scene::SceneDepthPass()
     // ------------------
     model_matrix = _helmet._model_matrix;
     glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
-    _helmet_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
+    _helmet_model->DrawDepth( _point_shadow_depth_shader, model_matrix );
+
+
+    // Draw _knife depth
+    // -----------------
+    model_matrix = _knife._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _knife_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
+
+
+    // Draw _grenade depth
+    // -------------------
+    model_matrix = _grenade._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _grenade_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
+
+
+    // Draw _gun4 depth
+    // ----------------
+    model_matrix = _gun4._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _gun4_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
+
+
+    // Draw _gun5 depth
+    // ----------------
+    model_matrix = _gun5._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _gun5_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
+
+
+    // Draw _room3_table3 depth
+    // ------------------------
+    model_matrix = _room3_table3._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _room3_table3_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
+
+
+    // Draw _katana depth
+    // ------------------
+    model_matrix = _katana._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _katana_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
+
+
+    // Draw _helmet2 depth
+    // -------------------
+    model_matrix = _helmet2._model_matrix;
+    glUniformMatrix4fv( glGetUniformLocation( _point_shadow_depth_shader._program, "uModelMatrix" ), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    _helmet2_model->DrawDepth( _point_shadow_depth_shader, model_matrix ); 
   }
 
 
@@ -3574,7 +3939,7 @@ void Scene::SceneForwardRendering()
 
   // Draw skybox
   // -----------
-  glDepthMask( GL_FALSE ); // desactivé juste pour draw la skybox
+  /*glDepthMask( GL_FALSE ); // desactivé juste pour draw la skybox
   _skybox_shader.Use();   
   glm::mat4 skybox_view_matrix = glm::mat4( glm::mat3( _camera->_view_matrix ) );  // Remove any translation component of the view matrix
 
@@ -3592,17 +3957,17 @@ void Scene::SceneForwardRendering()
   //glBindTexture( GL_TEXTURE_CUBE_MAP, _walls_type1[ _test2 ]._IBL_cubemaps[ 0 ] ); 
   //glBindTexture( GL_TEXTURE_CUBE_MAP, _revolving_door[ _test2 ]._IBL_cubemaps[ _test2 ] ); 
   //glBindTexture( GL_TEXTURE_CUBE_MAP, _room1_table1._IBL_cubemaps[ _test2 ] ); 
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _helmet._IBL_cubemaps[ _test2 ] ); 
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _helmet2._IBL_cubemaps[ _test2 ] ); 
 
   _window->_toolbox->RenderCube();
 
   glDepthMask( GL_TRUE );  // réactivé pour draw le reste
-  glUseProgram( 0 );
+  glUseProgram( 0 );*/
 
 
   // Draw lamps
   // ----------
-  _flat_color_shader.Use();
+  /*_flat_color_shader.Use();
 
   for( int i = 0; i < _lights.size(); i++ )
   {
@@ -3621,7 +3986,7 @@ void Scene::SceneForwardRendering()
     _sphere_model->Draw( _flat_color_shader, model_matrix );
   }
   glBindVertexArray( 0 );
-  glUseProgram( 0 );
+  glUseProgram( 0 );*/
 
 
   // Draw grounds type 1
@@ -5849,6 +6214,489 @@ void Scene::SceneForwardRendering()
     _helmet_model->Draw( _forward_pbr_shader, model_matrix );
     glUseProgram( 0 );
     glDisable( GL_CULL_FACE );
+
+
+    // Draw knife
+    // ----------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+    _forward_pbr_shader.Use();
+
+    // IBL cubemap texture binding
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _knife._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _knife._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    model_matrix = _knife._model_matrix;
+
+     // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), _knife._IBL );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), _knife._parallax_cubemap );
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _knife._bloom );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _knife._bloom_brightness );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _knife._alpha );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _knife._opacity_map );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _knife._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _knife._emissive );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uEmissiveFactor" ), _knife._emissive_factor );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _knife._receiv_shadow );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _knife._shadow_bias );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _knife._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _knife._id );      
+
+    _knife_model->Draw( _forward_pbr_shader, model_matrix );
+    glUseProgram( 0 );
+    glDisable( GL_CULL_FACE );
+
+
+    // Draw grenade
+    // ------------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+    _forward_pbr_shader.Use();
+
+    // IBL cubemap texture binding
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _grenade._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _grenade._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    model_matrix = _grenade._model_matrix;
+
+     // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), _grenade._IBL );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), _grenade._parallax_cubemap );
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _grenade._bloom );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _grenade._bloom_brightness );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _grenade._alpha );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _grenade._opacity_map );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _grenade._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _grenade._emissive );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uEmissiveFactor" ), _grenade._emissive_factor );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _grenade._receiv_shadow );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _grenade._shadow_bias );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _grenade._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _grenade._id );      
+
+    _grenade_model->Draw( _forward_pbr_shader, model_matrix );
+    glUseProgram( 0 );
+    glDisable( GL_CULL_FACE );
+
+
+    // Draw gun4
+    // ---------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+    _forward_pbr_shader.Use();
+
+    // IBL cubemap texture binding
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _gun4._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _gun4._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    model_matrix = _gun4._model_matrix;
+
+     // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), _gun4._IBL );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), _gun4._parallax_cubemap );
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _gun4._bloom );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _gun4._bloom_brightness );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _gun4._alpha );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _gun4._opacity_map );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _gun4._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _gun4._emissive );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uEmissiveFactor" ), _gun4._emissive_factor );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _gun4._receiv_shadow );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _gun4._shadow_bias );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _gun4._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _gun4._id );      
+
+    _gun4_model->Draw( _forward_pbr_shader, model_matrix );
+    glUseProgram( 0 );
+    glDisable( GL_CULL_FACE );
+
+
+    // Draw gun5
+    // ---------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+    _forward_pbr_shader.Use();
+
+    // IBL cubemap texture binding
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _gun5._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _gun5._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    model_matrix = _gun5._model_matrix;
+
+     // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), _gun5._IBL );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), _gun5._parallax_cubemap );
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _gun5._bloom );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _gun5._bloom_brightness );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _gun5._alpha );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _gun5._opacity_map );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _gun5._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _gun5._emissive );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uEmissiveFactor" ), _gun5._emissive_factor );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _gun5._receiv_shadow );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _gun5._shadow_bias );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _gun5._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _gun5._id );      
+
+    _gun5_model->Draw( _forward_pbr_shader, model_matrix );
+    glUseProgram( 0 );
+    glDisable( GL_CULL_FACE );
+
+
+    // Draw room3_table3
+    // -----------------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+    _forward_pbr_shader.Use();
+
+    // IBL cubemap texture binding
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _room3_table3._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _room3_table3._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    model_matrix = _room3_table3._model_matrix;
+
+     // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), _room3_table3._IBL );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), _room3_table3._parallax_cubemap );
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _room3_table3._bloom );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _room3_table3._bloom_brightness );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _room3_table3._alpha );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _room3_table3._opacity_map );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _room3_table3._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _room3_table3._emissive );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uEmissiveFactor" ), _room3_table3._emissive_factor );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _room3_table3._receiv_shadow );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _room3_table3._shadow_bias );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _room3_table3._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _room3_table3._id );      
+
+    _room3_table3_model->Draw( _forward_pbr_shader, model_matrix );
+    glUseProgram( 0 );
+    glDisable( GL_CULL_FACE );
+
+
+    // Draw katana
+    // -----------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+    _forward_pbr_shader.Use();
+
+    // IBL cubemap texture binding
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _katana._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _katana._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    model_matrix = _katana._model_matrix;
+
+     // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), _katana._IBL );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), _katana._parallax_cubemap );
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _katana._bloom );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _katana._bloom_brightness );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _katana._alpha );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _katana._opacity_map );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _katana._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _katana._emissive );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uEmissiveFactor" ), _katana._emissive_factor );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _katana._receiv_shadow );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _katana._shadow_bias );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _katana._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _katana._id );      
+
+    _katana_model->Draw( _forward_pbr_shader, model_matrix );
+    glUseProgram( 0 );
+    glDisable( GL_CULL_FACE );
+
+
+    // Draw helmet2
+    // ------------
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+    _forward_pbr_shader.Use();
+
+    // IBL cubemap texture binding
+    glActiveTexture( GL_TEXTURE7 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _helmet2._IBL_cubemaps[ 1 ] );
+    glActiveTexture( GL_TEXTURE8 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _helmet2._IBL_cubemaps[ 2 ] ); 
+    glActiveTexture( GL_TEXTURE9 );
+    glBindTexture( GL_TEXTURE_2D, _pre_brdf_texture ); 
+    glActiveTexture( GL_TEXTURE10 );
+    glBindTexture( GL_TEXTURE_CUBE_MAP, _window->_toolbox->_depth_cubemap );
+
+    model_matrix = _helmet2._model_matrix;
+
+     // Matrices uniforms
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_view_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( _camera->_projection_matrix ) );
+    glUniformMatrix4fv( glGetUniformLocation( _forward_pbr_shader._program, "uModelMatrix"), 1, GL_FALSE, glm::value_ptr( model_matrix ) );
+    glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, "uViewPos" ), 1, &_camera->_position[ 0 ] );
+
+    // Point lights uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightCount" ), _lights.size() );
+    for( int i = 0; i < _lights.size(); i++ )
+    {
+      string temp = to_string( i );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightPos[" + temp + "]" ).c_str() ),1, &_lights[ i ]._position[ 0 ] );
+      glUniform3fv( glGetUniformLocation( _forward_pbr_shader._program, ( "uLightColor[" + temp + "]" ).c_str() ),1, &_lights[ i ]._color[ 0 ] );
+      glUniform1f(  glGetUniformLocation( _forward_pbr_shader._program, ( "uLightIntensity[" + temp + "]" ).c_str() ), _lights[ i ]._intensity );
+    }
+
+    // IBL uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uIBL" ), _helmet2._IBL );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uMaxMipLevel" ), ( float )( _pre_filter_max_mip_Level - 1 ) );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uParallaxCubemap" ), _helmet2._parallax_cubemap );
+
+    // Bloom uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uBloom" ), _helmet2._bloom );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uBloomBrightness" ), _helmet2._bloom_brightness );
+
+    // Opacity uniforms
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uAlpha" ), _helmet2._alpha );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityMap" ), _helmet2._opacity_map );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uOpacityDiscard" ), 1.0 );
+    
+    // Displacement mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uNormalMap" ), _helmet2._normal_map );
+
+    // Emissive uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uEmissive" ), _helmet2._emissive );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uEmissiveFactor" ), _helmet2._emissive_factor );
+
+    // Omnidirectional shadow mapping uniforms
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uReceivShadow" ), _helmet2._receiv_shadow );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowFar" ), _shadow_far );
+    glUniform1i( glGetUniformLocation( _forward_pbr_shader._program, "uLightSourceIt" ), _current_shadow_light_source );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowBias" ), _helmet2._shadow_bias );
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uShadowDarkness" ), _helmet2._shadow_darkness );
+
+    glUniform1f( glGetUniformLocation( _forward_pbr_shader._program, "uID" ), _helmet2._id );      
+
+    _helmet2_model->Draw( _forward_pbr_shader, model_matrix );
+    glUseProgram( 0 );
+    glDisable( GL_CULL_FACE );
   }
 
 
@@ -6091,8 +6939,8 @@ void Scene::DeferredLightingPass( glm::mat4 * iProjectionMatrix,
     glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 2 ] ); 
     glActiveTexture( GL_TEXTURE3 );
     glBindTexture( GL_TEXTURE_2D, _g_buffer_textures[ 3 ] );
-    glActiveTexture( GL_TEXTURE4 );
-    glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
+    //glActiveTexture( GL_TEXTURE4 );
+    //glBindTexture( GL_TEXTURE_CUBE_MAP, _irradiance_cubeMaps[ _current_env ] );
 
     // Set stencil test to pass only for the stencil values calculated before, when not equal 0 
     glStencilFunc( GL_NOTEQUAL, 0, 0xFF );
@@ -6315,6 +7163,8 @@ void Scene::AnimationsUpdate()
     
       _grounds_start_it = 0;
       _grounds_end_it   = 2;  
+
+      _current_shadow_light_source = 1;
       break;
 
     case 2:
@@ -6323,6 +7173,8 @@ void Scene::AnimationsUpdate()
     
       _grounds_start_it = 2;
       _grounds_end_it   = 4;
+
+      _current_shadow_light_source = 3;
       break;
 
     case 3:
@@ -6331,6 +7183,8 @@ void Scene::AnimationsUpdate()
     
       _grounds_start_it = 4;
       _grounds_end_it   = _grounds_type1.size();
+
+      _current_shadow_light_source = 5;
       break;
 
     default:
@@ -6564,6 +7418,34 @@ void Scene::ObjectsIBLInitialization()
                             0 );
 
   ObjectCubemapsGeneration( &_helmet,
+                            true,
+                            0 );
+
+  ObjectCubemapsGeneration( &_knife,
+                            true,
+                            0 );
+
+  ObjectCubemapsGeneration( &_grenade,
+                            true,
+                            0 );
+
+  ObjectCubemapsGeneration( &_gun4,
+                            true,
+                            0 );
+
+  ObjectCubemapsGeneration( &_gun5,
+                            true,
+                            0 );
+
+  ObjectCubemapsGeneration( &_room3_table3,
+                            true,
+                            0 );
+
+  ObjectCubemapsGeneration( &_katana,
+                            true,
+                            0 );
+
+  ObjectCubemapsGeneration( &_helmet2,
                             true,
                             0 );
 
