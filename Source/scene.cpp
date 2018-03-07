@@ -69,7 +69,7 @@ Scene::Scene( Window * iParentWindow )
   _simple_door_open = false;
 
   _current_room                = 1;
-  _current_shadow_light_source = 1;
+  _current_shadow_light_source = 2;
 
 
   // Scene data initialization
@@ -139,15 +139,6 @@ void Scene::Quit()
     glDeleteTextures( 1, &_window->_toolbox->_pingpong_color_buffers[ 0 ] );
   if( _window->_toolbox->_pingpong_color_buffers[ 1 ] )
     glDeleteTextures( 1, &_window->_toolbox->_pingpong_color_buffers[ 1 ] );
-  for( int i = 0; i < _hdr_textures.size(); i++ )
-  {
-    if( _hdr_textures[ i ] )
-      glDeleteTextures( 1, &_hdr_textures[ i ] );
-    if( _env_cubeMaps[ i ] )
-      glDeleteTextures( 1, &_env_cubeMaps[ i ] );
-    if( _irradiance_cubeMaps[ i ] )
-      glDeleteTextures( 1, &_irradiance_cubeMaps[ i ] );
-  }
   if( _window->_toolbox->_temp_tex_color_buffer[ 0 ] )
     glDeleteTextures( 1, &_window->_toolbox->_temp_tex_color_buffer[ 0 ] );
   if( _window->_toolbox->_temp_tex_color_buffer[ 1 ] )
@@ -540,6 +531,22 @@ void Scene::LightsInitialization()
   {
     _lights[ i ]._intensity *= PointLight::GetLightsMultiplier();
   }
+
+  // room1 lights
+  _room1_lights.push_back( _lights[ 0 ] );
+  _room1_lights.push_back( _lights[ 1 ] );
+  _room1_lights.push_back( _lights[ 2 ] );
+
+
+  // room2 lights
+  _room2_lights.push_back( _lights[ 5 ] );
+  _room2_lights.push_back( _lights[ 6 ] );
+
+  // room3 lights
+  _room3_lights.push_back( _lights[ 3 ] );
+  _room3_lights.push_back( _lights[ 4 ] );
+  _room3_lights.push_back( _lights[ 7 ] );
+  _room3_lights.push_back( _lights[ 8 ] );
 }
 
 void Scene::ObjectsInitialization()
@@ -599,7 +606,7 @@ void Scene::ObjectsInitialization()
                         1.0,            // shadow darkness
                         0.035,          // shadow bias
                         false,          // bloom
-                        0.99,           // bloom bright value
+                        0.4,            // bloom bright value
                         false,          // opacity map
                         true,           // normal map
                         false,          // height map
@@ -680,8 +687,8 @@ void Scene::ObjectsInitialization()
                         true,
                         0.5,
                         0.035,
-                        false,
-                        0.99,
+                        true,
+                        0.4,
                         false,
                         true,
                         true,
@@ -762,8 +769,8 @@ void Scene::ObjectsInitialization()
                         true,
                         1.0,
                         0.035,
-                        false,
-                        0.99,
+                        true,
+                        0.4,
                         false,
                         true,
                         tessellation,
@@ -779,7 +786,7 @@ void Scene::ObjectsInitialization()
   }
 
 
-  // _walls type 3 object initialization ( entrance corridor walls )
+  // _walls type 3 object initialization ( entrance corridor walls ) 
   // ---------------------------------------------------------------
   for( int i = 0; i < 7; i ++ )
   { 
@@ -831,8 +838,8 @@ void Scene::ObjectsInitialization()
                         true,
                         1.0,
                         0.035,
-                        false,
-                        0.99,
+                        true,
+                        0.4,
                         false,
                         true,
                         true,
@@ -936,8 +943,8 @@ void Scene::ObjectsInitialization()
                         true,
                         1.0,
                         0.035,
-                        false,
-                        0.99,
+                        true,
+                        0.4,
                         false,
                         true,
                         true,
@@ -980,8 +987,8 @@ void Scene::ObjectsInitialization()
                         true,
                         1.0,
                         0.035,
-                        false,
-                        0.99,
+                        true,
+                        0.4,
                         false,
                         true,
                         true,
@@ -1039,7 +1046,7 @@ void Scene::ObjectsInitialization()
                         1.0,
                         0.035,
                         true,
-                        0.99,
+                        0.4,
                         false,
                         true,
                         false,
@@ -1079,8 +1086,8 @@ void Scene::ObjectsInitialization()
                       true,           // receiv shadow
                       1.0,            // shadow darkness
                       0.035,          // shadow bias
-                      false,          // bloom
-                      0.99,           // bloom bright value
+                      true,          // bloom
+                      0.4,           // bloom bright value
                       false,          // opacity map
                       true,           // normal map
                       false,          // height map
@@ -1121,7 +1128,7 @@ void Scene::ObjectsInitialization()
                         1.0,            // shadow darkness
                         0.035,          // shadow bias
                         false,          // bloom
-                        0.99,           // bloom bright value
+                        0.4,           // bloom bright value
                         false,          // opacity map
                         true,           // normal map
                         false,          // height map
@@ -1207,7 +1214,7 @@ void Scene::ObjectsInitialization()
                         1.0,
                         0.035,
                         true,
-                        0.99,
+                        0.4,
                         false,
                         true,
                         false,
@@ -1253,8 +1260,8 @@ void Scene::ObjectsInitialization()
                         true,
                         1.0,
                         0.035,
-                        false,
-                        0.99,
+                        true,
+                        0.4,
                         false,
                         true,
                         true,
@@ -1298,8 +1305,8 @@ void Scene::ObjectsInitialization()
                         true,
                         1.0,
                         0.035,
-                        false,
-                        0.99,
+                        true,
+                        0.4,
                         false,
                         true,
                         false,
@@ -1359,8 +1366,8 @@ void Scene::ObjectsInitialization()
                         true,
                         1.0,
                         0.035,
-                        false,
-                        0.99,
+                        true,
+                        0.4,
                         false,
                         true,
                         false,
@@ -1402,8 +1409,8 @@ void Scene::ObjectsInitialization()
                         true,           // receiv shadow
                         1.0,            // shadow darkness
                         0.035,          // shadow bias
-                        false,          // bloom
-                        0.99,           // bloom bright value
+                        true,          // bloom
+                        0.4,           // bloom bright value
                         false,          // opacity map
                         true,           // normal map
                         true,           // height map
@@ -1445,7 +1452,7 @@ void Scene::ObjectsInitialization()
                         1.0,            // shadow darkness
                         0.035,          // shadow bias
                         false,          // bloom
-                        0.99,           // bloom bright value
+                        0.4,           // bloom bright value
                         false,          // opacity map
                         true,           // normal map
                         false,          // height map
@@ -1529,8 +1536,8 @@ void Scene::ObjectsInitialization()
                         true,
                         1.0,
                         0.035,
-                        false,
-                        0.99,
+                        true,
+                        0.4,
                         false,
                         true,
                         false,
@@ -1588,8 +1595,8 @@ void Scene::ObjectsInitialization()
                             true,           // receiv shadow
                             1.0,            // shadow darkness
                             0.035,          // shadow bias
-                            false,          // bloom
-                            0.99,           // bloom bright value
+                            true,          // bloom
+                            0.4,           // bloom bright value
                             false,          // opacity map
                             true,           // normal map
                             false,          // height map
@@ -1663,7 +1670,7 @@ void Scene::ObjectsInitialization()
                                   1.0,            // shadow darkness
                                   0.035,          // shadow bias
                                   true,          // bloom
-                                  0.99,           // bloom bright value
+                                  0.4,           // bloom bright value
                                   false,          // opacity map
                                   true,           // normal map
                                   false,          // height map
@@ -1720,7 +1727,7 @@ void Scene::ObjectsInitialization()
                                    1.0,            // shadow darkness
                                    0.035,          // shadow bias
                                    true,          // bloom
-                                   0.99,           // bloom bright value
+                                   0.4,           // bloom bright value
                                    false,          // opacity map
                                    true,           // normal map
                                    false,          // height map
@@ -1757,8 +1764,8 @@ void Scene::ObjectsInitialization()
                              true,           // receiv shadow
                              1.0,            // shadow darkness
                              0.035,          // shadow bias
-                             false,          // bloom
-                             0.99,           // bloom bright value
+                             true,          // bloom
+                             0.4,           // bloom bright value
                              false,          // opacity map
                              true,           // normal map
                              false,          // height map
@@ -1795,8 +1802,8 @@ void Scene::ObjectsInitialization()
                        false,          // receiv shadow
                        1.0,            // shadow darkness
                        0.035,          // shadow bias
-                       false,          // bloom
-                       0.5,            // bloom bright value
+                       true,          // bloom
+                       0.4,            // bloom bright value
                        false,          // opacity map
                        true,           // normal map
                        false,          // height map
@@ -1834,8 +1841,8 @@ void Scene::ObjectsInitialization()
                      false,          // receiv shadow
                      1.0,            // shadow darkness
                      0.035,          // shadow bias
-                     false,          // bloom
-                     0.5,            // bloom bright value
+                     true,          // bloom
+                     0.4,            // bloom bright value
                      false,          // opacity map
                      true,           // normal map
                      false,          // height map
@@ -1872,8 +1879,8 @@ void Scene::ObjectsInitialization()
                         false,          // receiv shadow
                         1.0,            // shadow darkness
                         0.035,          // shadow bias
-                        false,          // bloom
-                        0.5,            // bloom bright value
+                        true,          // bloom
+                        0.4,            // bloom bright value
                         false,          // opacity map
                         true,           // normal map
                         false,          // height map
@@ -1909,8 +1916,8 @@ void Scene::ObjectsInitialization()
                       false,          // receiv shadow
                       1.0,            // shadow darkness
                       0.035,          // shadow bias
-                      false,          // bloom
-                      0.5,            // bloom bright value
+                      true,          // bloom
+                      0.4,            // bloom bright value
                       false,          // opacity map
                       true,           // normal map
                       false,          // height map
@@ -1946,8 +1953,8 @@ void Scene::ObjectsInitialization()
                      true,          // receiv shadow
                      1.0,            // shadow darkness
                      0.035,          // shadow bias
-                     false,          // bloom
-                     0.5,            // bloom bright value
+                     true,          // bloom
+                     0.4,            // bloom bright value
                      false,          // opacity map
                      true,           // normal map
                      false,          // height map
@@ -1982,8 +1989,8 @@ void Scene::ObjectsInitialization()
                        false,          // receiv shadow
                        1.0,            // shadow darkness
                        0.035,          // shadow bias
-                       false,          // bloom
-                       0.5,            // bloom bright value
+                       true,          // bloom
+                       0.7,            // bloom bright value
                        false,          // opacity map
                        true,           // normal map
                        false,          // height map
@@ -1997,7 +2004,7 @@ void Scene::ObjectsInitialization()
 
 
   // _room1_table2 object initialization
-  // ---------------------------
+  // -----------------------------------
   scale = glm::vec3( 0.5 );
   position = glm::vec3( 0.4, 0.27, -1.0 );
   IBL_position = position;
@@ -2018,8 +2025,8 @@ void Scene::ObjectsInitialization()
                              true,           // receiv shadow
                              1.0,            // shadow darkness
                              0.013,          // shadow bias
-                             false,          // bloom
-                             0.5,            // bloom bright value
+                             true,          // bloom
+                             0.4,            // bloom bright value
                              false,          // opacity map
                              true,           // normal map
                              false,          // height map
@@ -2057,7 +2064,7 @@ void Scene::ObjectsInitialization()
                            1.0,
                            0.035,
                            false,
-                           0.99,
+                           0.4,
                            true,
                            true,
                            false,
@@ -2094,8 +2101,8 @@ void Scene::ObjectsInitialization()
                      true,          // receiv shadow
                      1.0,            // shadow darkness
                      0.035,          // shadow bias
-                     false,          // bloom
-                     0.5,            // bloom bright value
+                     true,          // bloom
+                     0.4,            // bloom bright value
                      false,          // opacity map
                      true,           // normal map
                      false,          // height map
@@ -2131,8 +2138,8 @@ void Scene::ObjectsInitialization()
                       true,          // receiv shadow
                       1.0,            // shadow darkness
                       0.035,          // shadow bias
-                      false,          // bloom
-                      0.5,            // bloom bright value
+                      true,          // bloom
+                      0.4,            // bloom bright value
                       false,          // opacity map
                       true,           // normal map
                       false,          // height map
@@ -2169,7 +2176,7 @@ void Scene::ObjectsInitialization()
                       1.0,            // shadow darkness
                       0.035,          // shadow bias
                       true,          // bloom
-                      0.99,            // bloom bright value
+                      0.4,            // bloom bright value
                       true,          // opacity map
                       true,           // normal map
                       false,          // height map
@@ -2206,8 +2213,8 @@ void Scene::ObjectsInitialization()
                      false,          // receiv shadow
                      1.0,            // shadow darkness
                      0.035,          // shadow bias
-                     false,          // bloom
-                     0.5,            // bloom bright value
+                     true,          // bloom
+                     0.4,            // bloom bright value
                      true,          // opacity map
                      true,           // normal map
                      false,          // height map
@@ -2242,8 +2249,8 @@ void Scene::ObjectsInitialization()
                       true,          // receiv shadow
                       1.0,            // shadow darkness
                       0.015,          // shadow bias
-                      false,          // bloom
-                      0.5,            // bloom bright value
+                      true,          // bloom
+                      0.4,            // bloom bright value
                       false,          // opacity map
                       true,           // normal map
                       false,          // height map
@@ -2288,7 +2295,7 @@ void Scene::ObjectsInitialization()
                         0.3,            // tessellation factor
                         0,              // material ID
                         true,           // emissive
-                        10,             // emissive factor
+                        17,             // emissive factor
                         false,          // need parallax cubemap
                         true ) );       // need IBL
 
@@ -2316,8 +2323,8 @@ void Scene::ObjectsInitialization()
                              true,           // receiv shadow
                              1.0,            // shadow darkness
                              0.015,          // shadow bias
-                             false,          // bloom
-                             0.5,            // bloom bright value
+                             true,          // bloom
+                             0.4,            // bloom bright value
                              false,          // opacity map
                              true,           // normal map
                              false,          // height map
@@ -2353,8 +2360,8 @@ void Scene::ObjectsInitialization()
                      false,           // receiv shadow
                      1.0,            // shadow darkness
                      0.015,          // shadow bias
-                     false,          // bloom
-                     0.5,            // bloom bright value
+                     true,          // bloom
+                     0.4,            // bloom bright value
                      false,          // opacity map
                      true,           // normal map
                      false,          // height map
@@ -2391,8 +2398,8 @@ void Scene::ObjectsInitialization()
                     true,           // receiv shadow
                     1.0,            // shadow darkness
                     0.015,          // shadow bias
-                    false,          // bloom
-                    0.5,            // bloom bright value
+                    true,          // bloom
+                    0.4,            // bloom bright value
                     false,          // opacity map
                     true,           // normal map
                     false,          // height map
@@ -2427,8 +2434,8 @@ void Scene::ObjectsInitialization()
                      true,          // receiv shadow
                      1.0,            // shadow darkness
                      0.015,          // shadow bias
-                     false,          // bloom
-                     0.5,            // bloom bright value
+                     true,          // bloom
+                     0.4,            // bloom bright value
                      false,          // opacity map
                      true,           // normal map
                      false,          // height map
@@ -2464,8 +2471,8 @@ void Scene::ObjectsInitialization()
                          true,          // receiv shadow
                          1.0,            // shadow darkness
                          0.007,          // shadow bias
-                         false,          // bloom
-                         0.5,            // bloom bright value
+                         true,          // bloom
+                         0.4,            // bloom bright value
                          false,          // opacity map
                          true,           // normal map
                          false,          // height map
@@ -2502,8 +2509,8 @@ void Scene::ObjectsInitialization()
                      false,           // receiv shadow
                      1.0,            // shadow darkness
                      0.015,          // shadow bias
-                     false,          // bloom
-                     0.5,            // bloom bright value
+                     true,          // bloom
+                     0.4,            // bloom bright value
                      false,          // opacity map
                      true,           // normal map
                      false,          // height map
@@ -2540,8 +2547,8 @@ void Scene::ObjectsInitialization()
                      false,          // receiv shadow
                      1.0,            // shadow darkness
                      0.015,          // shadow bias
-                     false,          // bloom
-                     0.5,            // bloom bright value
+                     true,          // bloom
+                     0.4,            // bloom bright value
                      false,          // opacity map
                      true,           // normal map
                      false,          // height map
@@ -2577,8 +2584,8 @@ void Scene::ObjectsInitialization()
                      false,          // receiv shadow
                      1.0,            // shadow darkness
                      0.015,          // shadow bias
-                     false,          // bloom
-                     0.5,            // bloom bright value
+                     true,          // bloom
+                     0.4,            // bloom bright value
                      false,          // opacity map
                      true,           // normal map
                      false,          // height map
@@ -2614,8 +2621,8 @@ void Scene::ObjectsInitialization()
                              true,          // receiv shadow
                              1.0,            // shadow darkness
                              0.015,          // shadow bias
-                             false,          // bloom
-                             0.5,            // bloom bright value
+                             true,          // bloom
+                             0.4,            // bloom bright value
                              false,          // opacity map
                              true,           // normal map
                              false,          // height map
@@ -2651,8 +2658,8 @@ void Scene::ObjectsInitialization()
                              true,          // receiv shadow
                              1.0,            // shadow darkness
                              0.015,          // shadow bias
-                             false,          // bloom
-                             0.5,            // bloom bright value
+                             true,          // bloom
+                             0.4,            // bloom bright value
                              false,          // opacity map
                              true,           // normal map
                              false,          // height map
@@ -2687,8 +2694,8 @@ void Scene::ObjectsInitialization()
                        false,          // receiv shadow
                        1.0,            // shadow darkness
                        0.015,          // shadow bias
-                       false,          // bloom
-                       0.5,            // bloom bright value
+                       true,          // bloom
+                       0.4,            // bloom bright value
                        false,          // opacity map
                        true,           // normal map
                        false,          // height map
@@ -2724,8 +2731,8 @@ void Scene::ObjectsInitialization()
                       false,          // receiv shadow
                       1.0,            // shadow darkness
                       0.015,          // shadow bias
-                      false,          // bloom
-                      0.5,            // bloom bright value
+                      true,          // bloom
+                      0.4,            // bloom bright value
                       false,          // opacity map
                       true,           // normal map
                       false,          // height map
@@ -2761,8 +2768,8 @@ void Scene::ObjectsInitialization()
                         false,          // receiv shadow
                         1.0,            // shadow darkness
                         0.015,          // shadow bias
-                        false,          // bloom
-                        0.5,            // bloom bright value
+                        true,          // bloom
+                        0.4,            // bloom bright value
                         false,          // opacity map
                         true,           // normal map
                         false,          // height map
@@ -2798,8 +2805,8 @@ void Scene::ObjectsInitialization()
                      false,          // receiv shadow
                      1.0,            // shadow darkness
                      0.015,          // shadow bias
-                     false,          // bloom
-                     0.5,            // bloom bright value
+                     true,          // bloom
+                     0.4,            // bloom bright value
                      false,          // opacity map
                      true,           // normal map
                      false,          // height map
@@ -2836,8 +2843,8 @@ void Scene::ObjectsInitialization()
                      false,          // receiv shadow
                      1.0,            // shadow darkness
                      0.015,          // shadow bias
-                     false,          // bloom
-                     0.5,            // bloom bright value
+                     true,          // bloom
+                     0.4,            // bloom bright value
                      false,          // opacity map
                      true,           // normal map
                      false,          // height map
@@ -2872,8 +2879,8 @@ void Scene::ObjectsInitialization()
                              true,           // receiv shadow
                              1.0,            // shadow darkness
                              0.015,          // shadow bias
-                             false,          // bloom
-                             0.5,            // bloom bright value
+                             true,          // bloom
+                             0.4,            // bloom bright value
                              false,          // opacity map
                              true,           // normal map
                              false,          // height map
@@ -2910,8 +2917,8 @@ void Scene::ObjectsInitialization()
                        true,           // receiv shadow
                        1.0,            // shadow darkness
                        0.015,          // shadow bias
-                       false,          // bloom
-                       0.5,            // bloom bright value
+                       true,          // bloom
+                       0.4,            // bloom bright value
                        false,          // opacity map
                        true,           // normal map
                        false,          // height map
@@ -2948,8 +2955,8 @@ void Scene::ObjectsInitialization()
                         true,           // receiv shadow
                         1.0,            // shadow darkness
                         0.015,          // shadow bias
-                        false,          // bloom
-                        0.5,            // bloom bright value
+                        true,          // bloom
+                        0.4,            // bloom bright value
                         false,          // opacity map
                         true,           // normal map
                         false,          // height map
@@ -2972,165 +2979,45 @@ void Scene::IBLInitialization()
   unsigned int capture_FBO;
   unsigned int capture_RBO;
 
-  std::vector< std::string > hdr_texture_paths;
-  hdr_texture_paths.push_back( std::string( "../Skybox/hdr skybox 2/Ridgecrest_Road_Ref.hdr" ) );
-  hdr_texture_paths.push_back( std::string( "../Skybox/hdr skybox 1/Arches_E_PineTree_3k.hdr" ) );
-  hdr_texture_paths.push_back( std::string( "../Skybox/hdr skybox 3/QueenMary_Chimney_Ref.hdr" ) );
 
-  for( unsigned int cube_map_it = 0; cube_map_it < hdr_texture_paths.size(); cube_map_it++ )
-  {
-    unsigned int hdr_texture;
-    unsigned int env_cubemap;
-    unsigned int irradiance_cubemap;
-    unsigned int pre_filter_cubemap;
+  // Gen FBO and RBO to render hdr tex into cube map tex
+  // ---------------------------------------------------
+  glGenFramebuffers( 1, &capture_FBO );
+  glGenRenderbuffers( 1, &capture_RBO );
+  glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
+  glBindRenderbuffer( GL_RENDERBUFFER, capture_RBO );
+  glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, _res_env_cubemap, _res_env_cubemap );
+  glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, capture_RBO );
 
 
-    // Load hdr skybox texture
-    // -----------------------
-    _window->_toolbox->_hdr_image_manager->stbi_set_flip_vertically_on_load( true );
-    int width, height, nrComponents;
-    
-    float * data = _window->_toolbox->_hdr_image_manager->stbi_loadf( hdr_texture_paths[ cube_map_it ].c_str(), &width, &height, &nrComponents, 0 );
-    if( data )
-    {
-      glGenTextures( 1, &hdr_texture );
-      glBindTexture( GL_TEXTURE_2D, hdr_texture );
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data ); // note how we specify the texture's data value to be float
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-      _window->_toolbox->_hdr_image_manager->stbi_image_free( data );
-    }
-    else
-    {
-      std::cout << "Failed to load HDR image.\n" << std::endl;
-    }
-
-    // Gen FBO and RBO to render hdr tex into cube map tex
-    // ---------------------------------------------------
-    glGenFramebuffers( 1, &capture_FBO );
-    glGenRenderbuffers( 1, &capture_RBO );
-    glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
-    glBindRenderbuffer( GL_RENDERBUFFER, capture_RBO );
-    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, _res_env_cubemap, _res_env_cubemap );
-    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, capture_RBO );
+  // Gen specular pre brdf texture
+  // -----------------------------    
+  _pre_brdf_texture = _window->_toolbox->CreateEmptyTexture( _res_pre_brdf_texture,
+                                                             _res_pre_brdf_texture,
+                                                             GL_RG16F,
+                                                             GL_RG,
+                                                             false,
+                                                             false,
+                                                             0.0 );
 
 
-    // Gen cubemap textures
-    // --------------------
-    glGenTextures( 1, &env_cubemap );
-    glBindTexture( GL_TEXTURE_CUBE_MAP, env_cubemap );
-    for( unsigned int i = 0; i < 6; ++i )
-    {
-      glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-      0, 
-      GL_RGB16F, 
-      _res_env_cubemap, 
-      _res_env_cubemap, 
-      0, 
-      GL_RGB, 
-      GL_FLOAT, 
-      nullptr );
-    }
-    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR ); // enable pre-filter mipmap sampling (combatting visible dots artifact)
-    glTexParameteri( GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+  // Compute specular pre brdf texture
+  // ---------------------------------
+  
+  // Re configure capture FBO
+  glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
+  glBindRenderbuffer( GL_RENDERBUFFER, capture_RBO );
+  glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, _res_pre_brdf_texture, _res_pre_brdf_texture );
+  glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _pre_brdf_texture, 0 );
 
+  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+  glViewport( 0, 0, _res_pre_brdf_texture, _res_pre_brdf_texture );
+  
+  _specular_pre_brdf_shader.Use();
+  glUniform1ui( glGetUniformLocation( _specular_pre_brdf_shader._program, "uSampleCount" ), _pre_brdf_sample_count );
+  _window->_toolbox->RenderQuad();
 
-    // Create 6 matrix to each cube map face
-    // -------------------------------------
-    glm::mat4 capture_projection_matrix = glm::perspective( glm::radians( 90.0f ), 1.0f, 0.1f, 10.0f );
-    glm::mat4 capture_view_matrices[] =
-    {
-      glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  1.0f,  0.0f,  0.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) ),
-      glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3( -1.0f,  0.0f,  0.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) ),
-      glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f,  1.0f,  0.0f ), glm::vec3( 0.0f,  0.0f,  1.0f ) ),
-      glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f, -1.0f,  0.0f ), glm::vec3( 0.0f,  0.0f, -1.0f ) ),
-      glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f,  0.0f,  1.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) ),
-      glm::lookAt( glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3(  0.0f,  0.0f, -1.0f ), glm::vec3( 0.0f, -1.0f,  0.0f ) )
-    };
-
-    
-    // Convert hdr texture into cube map texture
-    // -----------------------------------------
-    _cube_map_converter_shader.Use();
-    glUniform1i(glGetUniformLocation( _cube_map_converter_shader._program, "uEquirectangularMap" ), 0 );
-    glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, hdr_texture );
-    glUniformMatrix4fv( glGetUniformLocation( _cube_map_converter_shader._program, "uProjectionMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_projection_matrix ) );
-
-    glViewport( 0, 0, _res_env_cubemap, _res_env_cubemap ); // don't forget to configure the viewport to the capture dimensions.
-    glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
-    for( unsigned int i = 0; i < 6; ++i )
-    {
-      glUniformMatrix4fv( glGetUniformLocation( _cube_map_converter_shader._program, "uViewMatrix" ), 1, GL_FALSE, glm::value_ptr( capture_view_matrices[ i ] ) );
-      glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, env_cubemap, 0 );
-      glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-      _window->_toolbox->RenderCube();
-    }
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
-    glBindTexture( GL_TEXTURE_CUBE_MAP, env_cubemap );
-    glGenerateMipmap( GL_TEXTURE_CUBE_MAP ); // generate mipmaps from first mip face (combatting visible dots artifact)
-
-    
-    // Gen & compute irradiance cube map textures
-    // ------------------------------------------
-    irradiance_cubemap = _window->_toolbox->GenIrradianceCubeMap( env_cubemap,
-                                                                  _res_irradiance_cubemap,
-                                                                  _diffuse_irradiance_shader,
-                                                                  _irradiance_sample_delta );
-
-    
-    // Gen & compute specular pre filter cube map textures
-    // ---------------------------------------------------
-    pre_filter_cubemap = _window->_toolbox->GenPreFilterCubeMap( env_cubemap,
-                                                                 _res_pre_filter_cubemap,
-                                                                 _specular_pre_filter_shader,
-                                                                 _pre_filter_sample_count,
-                                                                 _pre_filter_max_mip_Level );
-
-
-    // Gen specular pre brdf texture
-    // -----------------------------    
-    _pre_brdf_texture = _window->_toolbox->CreateEmptyTexture( _res_pre_brdf_texture,
-                                                               _res_pre_brdf_texture,
-                                                               GL_RG16F,
-                                                               GL_RG,
-                                                               false,
-                                                               false,
-                                                               0.0 );
-
-
-    // Compute specular pre brdf texture
-    // ---------------------------------
-    
-    // Re configure capture FBO
-    glBindFramebuffer( GL_FRAMEBUFFER, capture_FBO );
-    glBindRenderbuffer( GL_RENDERBUFFER, capture_RBO );
-    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, _res_pre_brdf_texture, _res_pre_brdf_texture );
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _pre_brdf_texture, 0 );
-
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-    glViewport( 0, 0, _res_pre_brdf_texture, _res_pre_brdf_texture );
-    
-    _specular_pre_brdf_shader.Use();
-    glUniform1ui( glGetUniformLocation( _specular_pre_brdf_shader._program, "uSampleCount" ), _pre_brdf_sample_count );
-    _window->_toolbox->RenderQuad();
-
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
-
-    // Save texture IDs
-    // ----------------
-    _hdr_textures.push_back( hdr_texture );
-    _env_cubeMaps.push_back( env_cubemap);
-    _irradiance_cubeMaps.push_back( irradiance_cubemap );
-    _pre_filter_cubeMaps.push_back( pre_filter_cubemap );
-  }
+  glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 
   std::cout << "Scene's IBL initialization done.\n" << std::endl;
 }
@@ -3939,7 +3826,7 @@ void Scene::SceneForwardRendering()
 
   // Draw skybox
   // -----------
-  /*glDepthMask( GL_FALSE ); // desactivé juste pour draw la skybox
+  glDepthMask( GL_FALSE ); // desactivé juste pour draw la skybox
   _skybox_shader.Use();   
   glm::mat4 skybox_view_matrix = glm::mat4( glm::mat3( _camera->_view_matrix ) );  // Remove any translation component of the view matrix
 
@@ -3953,16 +3840,13 @@ void Scene::SceneForwardRendering()
   glUniform1f( glGetUniformLocation( _skybox_shader._program, "uBloomBrightness" ), 1.0 );
 
   glActiveTexture( GL_TEXTURE0 );
-  //glBindTexture( GL_TEXTURE_CUBE_MAP, _grounds_type1[ _test2 ]._IBL_cubemaps[ 0 ] ); 
-  //glBindTexture( GL_TEXTURE_CUBE_MAP, _walls_type1[ _test2 ]._IBL_cubemaps[ 0 ] ); 
-  //glBindTexture( GL_TEXTURE_CUBE_MAP, _revolving_door[ _test2 ]._IBL_cubemaps[ _test2 ] ); 
-  //glBindTexture( GL_TEXTURE_CUBE_MAP, _room1_table1._IBL_cubemaps[ _test2 ] ); 
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _helmet2._IBL_cubemaps[ _test2 ] ); 
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _walls_type1[ _test ]._IBL_cubemaps[ 0 ] ); 
+  //glBindTexture( GL_TEXTURE_CUBE_MAP,_revolving_door[ 0 ]._IBL_cubemaps[ 0 ] ); 
 
   _window->_toolbox->RenderCube();
 
   glDepthMask( GL_TRUE );  // réactivé pour draw le reste
-  glUseProgram( 0 );*/
+  glUseProgram( 0 );
 
 
   // Draw lamps
@@ -7164,7 +7048,8 @@ void Scene::AnimationsUpdate()
       _grounds_start_it = 0;
       _grounds_end_it   = 2;  
 
-      _current_shadow_light_source = 1;
+      _current_shadow_light_source = 2;
+
       break;
 
     case 2:
@@ -7184,7 +7069,7 @@ void Scene::AnimationsUpdate()
       _grounds_start_it = 4;
       _grounds_end_it   = _grounds_type1.size();
 
-      _current_shadow_light_source = 5;
+      _current_shadow_light_source = 6;
       break;
 
     default:
@@ -7303,12 +7188,138 @@ void Scene::ObjectsIBLInitialization()
                               0 );
   }
 
-  for( int i = 0; i < _walls_type1.size(); i++ )
+  // room1 wall
+  ObjectCubemapsGeneration( &_walls_type1[ 0 ],
+                            true,
+                            0 );
+  for( int i = 1; i < 10; i++ )
   {
-    ObjectCubemapsGeneration( &_walls_type1[ i ],
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 0 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 1 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 2 ] );  
+  }
+
+  // entrance floor
+  ObjectCubemapsGeneration( &_walls_type1[ 10 ],
+                            true,
+                            0 );
+  for( int i = 11; i < 13; i++ )
+  {
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 10 ]._IBL_cubemaps[ 0 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 10 ]._IBL_cubemaps[ 1 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 10 ]._IBL_cubemaps[ 2 ] );  
+  }
+
+  // entrance roof
+  ObjectCubemapsGeneration( &_walls_type1[ 13 ],
+                            true,
+                            0 );
+  for( int i = 14; i < 16; i++ )
+  {
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 13 ]._IBL_cubemaps[ 0 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 13 ]._IBL_cubemaps[ 1 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 13 ]._IBL_cubemaps[ 2 ] );  
+  }
+
+  // entrance wall
+  ObjectCubemapsGeneration( &_walls_type1[ 16 ],
+                            true,
+                            0 );
+  for( int i = 17; i < 23; i++ )
+  {
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 16 ]._IBL_cubemaps[ 0 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 16 ]._IBL_cubemaps[ 1 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 16 ]._IBL_cubemaps[ 2 ] );  
+  }
+
+  // corridor 1 to 2 ground
+  ObjectCubemapsGeneration( &_walls_type1[ 23 ],
+                            true,
+                            0 );  
+  for( int i = 24; i < 27; i++ )
+  {
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 23 ]._IBL_cubemaps[ 0 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 23 ]._IBL_cubemaps[ 1 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 23 ]._IBL_cubemaps[ 2 ] );  
+  }
+
+  // corridor 1 to 2 roof  
+  ObjectCubemapsGeneration( &_walls_type1[ 27 ],
+                            true,
+                            0 );
+  for( int i = 28; i < 31; i++ )
+  {
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 27 ]._IBL_cubemaps[ 0 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 27 ]._IBL_cubemaps[ 1 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 27 ]._IBL_cubemaps[ 2 ] );  
+  }
+  
+  // corridor 1 to 2 wall
+  ObjectCubemapsGeneration( &_walls_type1[ 31 ],
                               true,
                               0 );
+  for( int i = 32; i < 39; i++ )
+  {
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 31 ]._IBL_cubemaps[ 0 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 31 ]._IBL_cubemaps[ 1 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 31 ]._IBL_cubemaps[ 2 ] );  
   }
+  
+  // room2 wall
+  ObjectCubemapsGeneration( &_walls_type1[ 39 ],
+                            true,
+                            0 );
+  for( int i = 40; i < 49; i++ )
+  {
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 39 ]._IBL_cubemaps[ 0 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 39 ]._IBL_cubemaps[ 1 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 39 ]._IBL_cubemaps[ 2 ] );  
+  }
+
+  // corridor 2 to 3 ground
+  ObjectCubemapsGeneration( &_walls_type1[ 49 ],
+                            true,
+                            0 );
+  for( int i = 50; i < 53; i++ )
+  {
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 49 ]._IBL_cubemaps[ 0 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 49 ]._IBL_cubemaps[ 1 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 49 ]._IBL_cubemaps[ 2 ] );  
+  }
+
+  // corridor 2 to 3 roof
+  ObjectCubemapsGeneration( &_walls_type1[ 53 ],
+                            true,
+                            0 );
+  for( int i = 54; i < 57; i++ )
+  {
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 53 ]._IBL_cubemaps[ 0 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 53 ]._IBL_cubemaps[ 1 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 53 ]._IBL_cubemaps[ 2 ] );  
+  }
+
+  // corridor 2 to 3 wall
+  ObjectCubemapsGeneration( &_walls_type1[ 57 ],
+                            true,
+                            0 );
+  for( int i = 58; i < 65; i++ )
+  {
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 57 ]._IBL_cubemaps[ 0 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 57 ]._IBL_cubemaps[ 1 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 57 ]._IBL_cubemaps[ 2 ] );  
+  }
+
+  // room3 wall
+  ObjectCubemapsGeneration( &_walls_type1[ 65 ],
+                            true,
+                            0 );
+  for( int i = 66; i < 76; i++ )
+  {
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 0 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 1 ] );
+    _walls_type1[ i ]._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );  
+  }
+
 
   for( int i = 0; i < _grounds_type1.size(); i++ )
   {
@@ -7317,137 +7328,137 @@ void Scene::ObjectsIBLInitialization()
                               0 );
   }
   
-  ObjectCubemapsGeneration( &_ink_bottle,
-                            true,
-                            0 );
+  _ink_bottle._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 0 ] );
+  _ink_bottle._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 1 ] );
+  _ink_bottle._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_room1_table1,
-                            true,
-                            0 );
+  _room1_table1._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 0 ] );
+  _room1_table1._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 1 ] );
+  _room1_table1._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_bottle,
-                            true,
-                            0 );
+  _bottle._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 0 ] );
+  _bottle._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 1 ] );
+  _bottle._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_ball,
-                            true,
-                            0 );
+  _ball._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 0 ] );
+  _ball._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 1 ] );
+  _ball._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_box_bag,
-                            true,
-                            0 );
+  _box_bag._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 0 ] );
+  _box_bag._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 1 ] );
+  _box_bag._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_chest,
-                            true,
-                            0 );
+  _chest._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 0 ] );
+  _chest._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 1 ] );
+  _chest._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_sofa,
-                            true,
-                            0 );
+  _sofa._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 0 ] );
+  _sofa._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 1 ] );
+  _sofa._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_sack,
-                            true,
-                            0 );
+  _sack._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 0 ] );
+  _sack._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 1 ] );
+  _sack._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_room1_table2,
-                            true,
-                            0 );
+  _room1_table2._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 0 ] );
+  _room1_table2._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 1 ] );
+  _room1_table2._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_book,
-                            true,
-                            0 );
+  _book._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 0 ] );
+  _book._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 1 ] );
+  _book._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_radio,
-                            true,
-                            0 );
+  _radio._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 0 ] );
+  _radio._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 1 ] );
+  _radio._IBL_cubemaps.push_back( _walls_type1[ 0 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_screen,
-                            true,
-                            0 );
+  _screen._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 0 ] );
+  _screen._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 1 ] );
+  _screen._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_bike,
-                            true,
-                            0 );
+  _bike._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 0 ] );
+  _bike._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 1 ] );
+  _bike._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_pilar,
-                            true,
-                            0 );
+  _pilar._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 0 ] );
+  _pilar._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 1 ] );
+  _pilar._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_scanner,
-                            true,
-                            0 );
+  _scanner._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 0 ] );
+  _scanner._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 1 ] );
+  _scanner._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_room2_table1,
-                            true,
-                            0 );
+  _room2_table1._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 0 ] );
+  _room2_table1._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 1 ] );
+  _room2_table1._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_mask,
-                            true,
-                            0 );
+  _mask._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 0 ] );
+  _mask._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 1 ] );
+  _mask._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_arm,
-                            true,
-                            0 );
+  _arm._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 0 ] );
+  _arm._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 1 ] );
+  _arm._IBL_cubemaps.push_back( _walls_type1[ 45 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_tank,
-                            true,
-                            0 );
+  _tank._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 0 ] );
+  _tank._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 1 ] );
+  _tank._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_shelving,
-                            true,
-                            0 );
+  _shelving._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 0 ] );
+  _shelving._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 1 ] );
+  _shelving._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_gun1,
-                            true,
-                            0 );
+  _gun1._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 0 ] );
+  _gun1._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 1 ] );
+  _gun1._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_gun2,
-                            true,
-                            0 );
+  _gun2._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 0 ] );
+  _gun2._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 1 ] );
+  _gun2._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_gun3,
-                            true,
-                            0 );
+  _gun3._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 0 ] );
+  _gun3._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 1 ] );
+  _gun3._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_room3_table1,
-                            true,
-                            0 );
+  _room3_table1._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 0 ] );
+  _room3_table1._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 1 ] );
+  _room3_table1._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_room3_table2,
-                            true,
-                            0 );
+  _room3_table2._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 0 ] );
+  _room3_table2._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 1 ] );
+  _room3_table2._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_helmet,
-                            true,
-                            0 );
+  _helmet._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 0 ] );
+  _helmet._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 1 ] );
+  _helmet._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_knife,
-                            true,
-                            0 );
+  _knife._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 0 ] );
+  _knife._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 1 ] );
+  _knife._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_grenade,
-                            true,
-                            0 );
+  _grenade._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 0 ] );
+  _grenade._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 1 ] );
+  _grenade._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_gun4,
-                            true,
-                            0 );
+  _gun4._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 0 ] );
+  _gun4._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 1 ] );
+  _gun4._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_gun5,
-                            true,
-                            0 );
+  _gun5._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 0 ] );
+  _gun5._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 1 ] );
+  _gun5._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_room3_table3,
-                            true,
-                            0 );
+  _room3_table3._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 0 ] );
+  _room3_table3._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 1 ] );
+  _room3_table3._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_katana,
-                            true,
-                            0 );
+  _katana._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 0 ] );
+  _katana._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 1 ] );
+  _katana._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );
 
-  ObjectCubemapsGeneration( &_helmet2,
-                            true,
-                            0 );
-
+  _helmet2._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 0 ] );
+  _helmet2._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 1 ] );
+  _helmet2._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );
+  
   std::cout << "Scene's objects environment generation done.\n" << std::endl;
 }

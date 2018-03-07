@@ -134,20 +134,10 @@ class Scene
     std::vector< unsigned int > _wall2_indices;
 
     // Textures
-    std::vector< unsigned int > _hdr_textures;
-    std::vector< unsigned int > _env_cubeMaps;
-    std::vector< unsigned int > _irradiance_cubeMaps;
-    std::vector< unsigned int > _pre_filter_cubeMaps;
     unsigned int _pre_brdf_texture;
     
     std::vector< std::vector< unsigned int > > _loaded_materials;
-    unsigned int _tex_albedo_ground1;
-    unsigned int _tex_normal_ground1;
-    unsigned int _tex_height_ground1;
-    unsigned int _tex_AO_ground1;
-    unsigned int _tex_roughness_ground1;
-    unsigned int _tex_metalness_ground1;
-
+   
     // Deferred rendering data
     unsigned int _g_buffer_FBO;
     std::vector< unsigned int > _g_buffer_textures; // [ position, normal, color, roughness_metalness_AO, depth, lighting, brightest ]
@@ -193,7 +183,10 @@ class Scene
     Camera * _camera;
 
     // Point Lights
-    std::vector < PointLight > _lights;
+    std::vector < PointLight >  _lights;
+    std::vector < PointLight >  _room1_lights;
+    std::vector < PointLight >  _room2_lights;
+    std::vector < PointLight >  _room3_lights;
     bool _render_lights_volume;
 
     // Scene's objects
@@ -304,6 +297,8 @@ class Scene
     // grounds render iterators
     unsigned int _grounds_start_it;
     unsigned int _grounds_end_it;
+
+    unsigned int _test = 0;
 };
 
 #endif  // SCENE_H
