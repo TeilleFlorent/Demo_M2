@@ -45,11 +45,11 @@ Scene::Scene( Window * iParentWindow )
   _irradiance_sample_delta  = 0.025;
   
   _res_pre_filter_cubemap   = 256;
-  _pre_filter_sample_count  = 1024 * 1;
+  _pre_filter_sample_count  = 1024 * 2;
   _pre_filter_max_mip_Level = 5;
 
   _res_pre_brdf_texture     = 512;
-  _pre_brdf_sample_count    = 1024 * 1;    
+  _pre_brdf_sample_count    = 1024 * 2;    
 
   // Init tessellation parameters
   _tess_patch_vertices_count = 3;
@@ -68,9 +68,7 @@ Scene::Scene( Window * iParentWindow )
   _door_position    = glm::vec3( 0.0 );
   _simple_door_open = false;
 
-  _current_room                = 1;
-  _current_shadow_light_source = 2;
-
+  _current_room = 1;
 
   // Scene data initialization
   // -------------------------
@@ -90,7 +88,7 @@ Scene::Scene( Window * iParentWindow )
   _clock = new Clock();
 
   // Create and init scene camera
-  _camera = new Camera( glm::vec3( 17.2967, 0.514014, -17.9306 ),
+  _camera = new Camera( glm::vec3( -7.6752, 1.28052, -0.042658 ),
                         glm::vec3( 0.724498, -0.409127, 0.554724 ),
                         glm::vec3( 0.0f, 1.0f,  0.0f ),
                         37.44,
@@ -100,7 +98,9 @@ Scene::Scene( Window * iParentWindow )
                         45.0f,
                         ( float )_window->_width,
                         ( float )_window->_height,
-                        2.0 );
+                        2.0,
+                        true,
+                        this );
 
   // Create and init all shaders
   ShadersInitialization(); 
@@ -466,6 +466,13 @@ void Scene::SceneDataInitialization()
                                                                         anisotropy_value,
                                                                         false ) );
 
+
+  // Audio initialization & loading
+  //-------------------------------
+  AudioInitialization();
+  LoadAudio();
+
+
   std::cout << "Scene's data initialization done.\n" << std::endl;
 }
 
@@ -539,12 +546,12 @@ void Scene::LightsInitialization()
 
 
   // room2 lights
-  _room2_lights.push_back( _lights[ 5 ] );
-  _room2_lights.push_back( _lights[ 6 ] );
+  _room2_lights.push_back( _lights[ 3 ] );
+  _room2_lights.push_back( _lights[ 4 ] );
 
   // room3 lights
-  _room3_lights.push_back( _lights[ 3 ] );
-  _room3_lights.push_back( _lights[ 4 ] );
+  _room3_lights.push_back( _lights[ 5 ] );
+  _room3_lights.push_back( _lights[ 6 ] );
   _room3_lights.push_back( _lights[ 7 ] );
   _room3_lights.push_back( _lights[ 8 ] );
 }
@@ -1241,8 +1248,8 @@ void Scene::ObjectsInitialization()
 
     position = glm::vec3( -( _wall_size * 0.5 ) + 0.0, 0.0, -( _wall_size * 0.5 ) + 0.0 );
     position += room2_offset_position;
-    position += glm::vec3( _wall_size * ( 2 + i ), -0.02, 0.0 );
-    IBL_position = room2_offset_position + glm::vec3( _wall_size * ( 2 + 1.5 ), -0.02, 0.0 );
+    position += glm::vec3( _wall_size * ( 2 + i ), 0.0, 0.0 );
+    IBL_position = room2_offset_position + glm::vec3( _wall_size * ( 2 + 1.5 ), 0.0, 0.0 );
         
     model_matrix = glm::mat4();
     model_matrix = glm::translate( model_matrix, position );
@@ -1260,13 +1267,13 @@ void Scene::ObjectsInitialization()
                         true,
                         1.0,
                         0.035,
-                        true,
+                        false,
                         0.4,
                         false,
                         true,
-                        true,
+                        false,
                         0.06,
-                        0.2,
+                        0.1,
                         9,
                         false,
                         1.0,
@@ -2210,10 +2217,10 @@ void Scene::ObjectsInitialization()
                      glm::vec2( 6.0, 6.0 ),   // uv scale
                      1.0,            // alpha
                      true,           // generate shadow
-                     false,          // receiv shadow
+                     true,          // receiv shadow
                      1.0,            // shadow darkness
-                     0.035,          // shadow bias
-                     true,          // bloom
+                     0.015,          // shadow bias
+                     false,          // bloom
                      0.4,            // bloom bright value
                      true,          // opacity map
                      true,           // normal map
@@ -2694,7 +2701,7 @@ void Scene::ObjectsInitialization()
                        false,          // receiv shadow
                        1.0,            // shadow darkness
                        0.015,          // shadow bias
-                       true,          // bloom
+                       false,          // bloom
                        0.4,            // bloom bright value
                        false,          // opacity map
                        true,           // normal map
@@ -3826,7 +3833,7 @@ void Scene::SceneForwardRendering()
 
   // Draw skybox
   // -----------
-  glDepthMask( GL_FALSE ); // desactivé juste pour draw la skybox
+  /*glDepthMask( GL_FALSE ); // desactivé juste pour draw la skybox
   _skybox_shader.Use();   
   glm::mat4 skybox_view_matrix = glm::mat4( glm::mat3( _camera->_view_matrix ) );  // Remove any translation component of the view matrix
 
@@ -3840,13 +3847,13 @@ void Scene::SceneForwardRendering()
   glUniform1f( glGetUniformLocation( _skybox_shader._program, "uBloomBrightness" ), 1.0 );
 
   glActiveTexture( GL_TEXTURE0 );
-  glBindTexture( GL_TEXTURE_CUBE_MAP, _walls_type1[ _test ]._IBL_cubemaps[ 0 ] ); 
+  glBindTexture( GL_TEXTURE_CUBE_MAP, _walls_type1[ 0 ]._IBL_cubemaps[ 0 ] ); 
   //glBindTexture( GL_TEXTURE_CUBE_MAP,_revolving_door[ 0 ]._IBL_cubemaps[ 0 ] ); 
 
   _window->_toolbox->RenderCube();
 
   glDepthMask( GL_TRUE );  // réactivé pour draw le reste
-  glUseProgram( 0 );
+  glUseProgram( 0 );*/
 
 
   // Draw lamps
@@ -7059,7 +7066,7 @@ void Scene::AnimationsUpdate()
       _grounds_start_it = 2;
       _grounds_end_it   = 4;
 
-      _current_shadow_light_source = 3;
+      _current_shadow_light_source = 0;
       break;
 
     case 3:
@@ -7069,7 +7076,7 @@ void Scene::AnimationsUpdate()
       _grounds_start_it = 4;
       _grounds_end_it   = _grounds_type1.size();
 
-      _current_shadow_light_source = 6;
+      _current_shadow_light_source = 1;
       break;
 
     default:
@@ -7461,4 +7468,36 @@ void Scene::ObjectsIBLInitialization()
   _helmet2._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );
   
   std::cout << "Scene's objects environment generation done.\n" << std::endl;
+}
+
+
+void Scene::AudioInitialization()
+{
+  int mixFlags = MIX_INIT_MP3 | MIX_INIT_OGG, res;
+
+  res = Mix_Init(mixFlags);
+  
+  if( ( res & mixFlags ) != mixFlags )
+  {
+    fprintf(stderr, "Mix_Init: Erreur lors de l'initialisation de la bibliothèque SDL_Mixer\n");
+    fprintf(stderr, "Mix_Init: %s\n", Mix_GetError());
+  }
+
+  if( Mix_OpenAudio(44100  /*22050*/ , /*AUDIO_S16LSB*/ MIX_DEFAULT_FORMAT, 2, 1024 ) < 0 )
+  {
+    printf("BUG init audio\n");  
+    //exit(-4);
+  }
+
+  Mix_VolumeMusic( MIX_MAX_VOLUME / 3 );
+
+  Mix_AllocateChannels( 10 );
+}
+
+void Scene::LoadAudio()
+{
+  if( !( _window->_main_music = Mix_LoadMUS( "../Sounds/theme.mp3" ) ) )
+  {
+    fprintf( stderr, "BUG : %s\n", Mix_GetError() );
+  }
 }

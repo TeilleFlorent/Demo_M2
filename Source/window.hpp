@@ -6,6 +6,7 @@
 #define WINDOW_H
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
 
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -61,6 +62,9 @@ class Window
     int _width;
 
     int _height;
+
+    // theme song
+    Mix_Music * _main_music;
 
 };
 

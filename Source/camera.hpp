@@ -10,6 +10,7 @@
 #include "glm/ext.hpp"
 
 #include <iostream>
+#include <vector>
 
 #include <SDL2/SDL.h>
 
@@ -19,6 +20,8 @@ using namespace std;
 //******************************************************************************
 //**********  Class Camera  ****************************************************
 //******************************************************************************
+class Scene;
+
 
 class Camera
 {
@@ -39,19 +42,33 @@ class Camera
             float     iFov,
             float     iWidth,
             float     iHeight,
-            float     iMoveSpeed );
+            float     iMoveSpeed,
+            bool      iDemoScript,
+            Scene *   iScene );
 
     void CameraUpdate( float iDeltaTime );
 
     void KeyboardPositionUpdate( float iDeltaTime );
 
-    void MouseFrontUpdate();
+    void MouseUpdate();
+
+    void FrontUpdate();
 
     void PrintState();
 
     void SetProjectionMatrix( glm::mat4 * iProjectionMatrix );
 
     void UpdateViewMatrix();
+
+    void DemoScript( float iDeltaTime );
+
+    void InitBezierData();
+
+    float BezierCalculation( float A,
+                             float B,
+                             float C,
+                             float D,
+                             float t );
     
  
     // Camera class members
@@ -75,7 +92,17 @@ class Camera
     int _D_state;
     int _Q_state;
     int _S_state;
- 
+
+    bool         _demo_script;
+    float        _bezier_acc;
+    float        _bezier_speed;
+    float        _current_speed;
+    unsigned int _bezier_step;
+    float        _current_time;
+    std::vector < std::vector< glm::vec3 > > _demo_bezier_data;
+
+    Scene * _scene;
+     
 };
 
 #endif  // CAMERA_H

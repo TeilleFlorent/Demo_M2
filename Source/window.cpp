@@ -204,13 +204,9 @@ void Window::ManageEvents( Camera * iCamera )
             break;
 
           case 'r' :
-            _scene->_test += 1;
-            std::cout << "_test = " << _scene->_test << std::endl;
             break;
 
           case 't' :
-            _scene->_test -= 1;
-            std::cout << "_test = " << _scene->_test << std::endl;
             break;
        
           case SDLK_F1 :
@@ -221,11 +217,11 @@ void Window::ManageEvents( Camera * iCamera )
             break;
 
           case SDLK_F2 :
-           
+            _scene->_camera->PrintState();
             break;
 
           case SDLK_F3 :
-            
+            _scene->_camera->_demo_script = ( _scene->_camera->_demo_script == true ) ? false : true;
             break;
 
           case SDLK_F4 :
@@ -320,8 +316,6 @@ void Window::Draw()
 
   // Render scene
   _scene->_pipeline_type == FORWARD_RENDERING ? _scene->SceneForwardRendering() : _scene->SceneDeferredRendering();  
-
-  //_toolbox->RenderObserver();
 
   // Blur calculation on bloom's bright texture
   if( _scene->_bloom )
