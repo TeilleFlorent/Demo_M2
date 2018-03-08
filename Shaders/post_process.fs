@@ -17,6 +17,7 @@ uniform sampler2D uBaseColorTexture;
 uniform sampler2D uBloomBrightnessTexture;
 uniform bool uBloom;
 uniform float uExposure;
+uniform float uEnd;
 
 
 // Fragment inputs from vertex shader 
@@ -45,7 +46,7 @@ void main()
   vec3 color_result = vec3( 1.0 ) - exp( -hdr_base_color * uExposure );
 
   // Gamma correction post process       
-  color_result = pow( color_result, vec3( 1.0 / gamma ) );
+  color_result = pow( color_result, vec3( 1.0 / gamma ) ) * uEnd;
 
   // Main out color
   FragColor = vec4( color_result, 1.0f );

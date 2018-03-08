@@ -79,10 +79,6 @@ class Scene
 
     void SimpleDoorScript();
 
-    void AudioInitialization();
-
-    void LoadAudio();
-
 
     // Scene class members
     // -------------------
@@ -301,6 +297,8 @@ class Scene
     // grounds render iterators
     unsigned int _grounds_start_it;
     unsigned int _grounds_end_it;
+
+    float _end;
 };
 
 #endif  // SCENE_H

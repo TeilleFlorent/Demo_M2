@@ -63,9 +63,6 @@ class Window
 
     int _height;
 
-    // theme song
-    Mix_Music * _main_music;
-
 };
 
 #endif  // WINDOW_H

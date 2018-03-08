@@ -1,7 +1,6 @@
 #include "camera.hpp"
 #include "scene.hpp"
 #include "window.hpp"
-#include <SDL2/SDL_mixer.h>
 
 
 //******************************************************************************
@@ -79,10 +78,10 @@ void Camera::InitBezierData()
   positions.resize( 8 );
 
   // 0
-  positions[ 0 ] = glm::vec3( -10.7526, 1.5, -0.0499162 );
-  positions[ 1 ] = glm::vec3( -10.7526, 1.0, -0.0536648 );
-  positions[ 2 ] = glm::vec3( -10.7526, 0.5, -0.0517071 );
-  positions[ 3 ] = glm::vec3( -10.7526, 0.44, -0.042658 );
+  positions[ 0 ] = glm::vec3( -11.0636, 1.5, -0.0499162 );
+  positions[ 1 ] = glm::vec3( -11.0636, 1.0, -0.0536648 );
+  positions[ 2 ] = glm::vec3( -11.0636, 0.5, -0.0517071 );
+  positions[ 3 ] = glm::vec3( -11.0636, 0.44, -0.042658 );
   positions[ 4 ] = glm::vec3( 358, -6, 0.0 );
   positions[ 5 ] = glm::vec3( 310, -5, 0.0 );
   positions[ 6 ] = glm::vec3( 395, 0.75, 0.0 );
@@ -90,7 +89,7 @@ void Camera::InitBezierData()
   _demo_bezier_data.push_back( positions );
 
   // 1
-  positions[ 0 ] = glm::vec3( -10.7526, 0.445425, -0.0499162 );
+  positions[ 0 ] = glm::vec3( -11.0636, 0.445425, -0.0499162 );
   positions[ 1 ] = glm::vec3( -9.24771, 1.1407, -0.0536648 );
   positions[ 2 ] = glm::vec3( -8.30806, 1.16629, -0.0517071 );
   positions[ 3 ] = glm::vec3( -7.6752, 1.28052, -0.042658 );
@@ -411,7 +410,7 @@ void Camera::DemoScript( float iDeltaTime )
     if( _current_speed < _bezier_speed && _current_time < total_time )
     {
       float temp = ( _current_time / total_time );
-      _current_speed += iDeltaTime * ( temp * temp ) * 0.3;
+      _current_speed += iDeltaTime * temp * 0.3;
     }
 
     _current_time += iDeltaTime;
@@ -444,18 +443,15 @@ void Camera::DemoScript( float iDeltaTime )
       {
         _scene->_lights = _scene->_room1_lights;
       }
+
+      if( _bezier_acc > 0.5 )
+      {
+        _scene->_revolving_door_open = true;
+      }
       break;
 
     case 1:
       _bezier_speed  = 0.1; 
-      if( _bezier_acc > 0.9 )
-      {
-        _scene->_revolving_door_open = true;
-      }
-      if( !Mix_PlayingMusic() )
-      {
-        Mix_FadeInMusic( _scene->_window->_main_music, 1, 5000 );  
-      }
       break;
 
     case 2:
@@ -536,6 +532,16 @@ void Camera::DemoScript( float iDeltaTime )
       _bezier_speed  = 0.18; 
       break;
 
+    case 27:
+      if( _scene->_end > 0.0 )
+      {
+        _scene->_end -= iDeltaTime * 0.18;
+      }
+      else
+      {
+        exit( 0 );        
+      }
+      break;
     default:
       _bezier_speed  = 0.1; 
       break;

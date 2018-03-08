@@ -1,5 +1,5 @@
-Real time demo entirely realise in C++ and openGL-GLSL 3.3.
------------------------------------------------------------
+PBR engine real time demo entirely realise in C++ and openGL-GLSL 4.1.
+----------------------------------------------------------------------
 
 
 1) Compile Cmake module :

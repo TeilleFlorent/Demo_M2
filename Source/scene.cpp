@@ -69,6 +69,7 @@ Scene::Scene( Window * iParentWindow )
   _simple_door_open = false;
 
   _current_room = 1;
+  _end          = 1.0;
 
   // Scene data initialization
   // -------------------------
@@ -465,12 +466,6 @@ void Scene::SceneDataInitialization()
   _loaded_materials.push_back( _window->_toolbox->LoadMaterialTextures( "room3_walls",
                                                                         anisotropy_value,
                                                                         false ) );
-
-
-  // Audio initialization & loading
-  //-------------------------------
-  AudioInitialization();
-  LoadAudio();
 
 
   std::cout << "Scene's data initialization done.\n" << std::endl;
@@ -1422,7 +1417,7 @@ void Scene::ObjectsInitialization()
                         true,           // normal map
                         true,           // height map
                         0.08,          // displacement factor
-                        0.1,
+                        0.25,
                         11,
                         false,
                         1.0,
@@ -7038,6 +7033,7 @@ void Scene::PostProcess()
 
   glUniform1i( glGetUniformLocation( _post_process_shader._program, "uBloom" ), _bloom );
   glUniform1f( glGetUniformLocation( _post_process_shader._program, "uExposure" ), _exposure );
+  glUniform1f( glGetUniformLocation( _post_process_shader._program, "uEnd" ), _end );
   _window->_toolbox->RenderQuad();
 
   glUseProgram( 0 );
@@ -7468,36 +7464,4 @@ void Scene::ObjectsIBLInitialization()
   _helmet2._IBL_cubemaps.push_back( _walls_type1[ 65 ]._IBL_cubemaps[ 2 ] );
   
   std::cout << "Scene's objects environment generation done.\n" << std::endl;
-}
-
-
-void Scene::AudioInitialization()
-{
-  int mixFlags = MIX_INIT_MP3 | MIX_INIT_OGG, res;
-
-  res = Mix_Init(mixFlags);
-  
-  if( ( res & mixFlags ) != mixFlags )
-  {
-    fprintf(stderr, "Mix_Init: Erreur lors de l'initialisation de la bibliothèque SDL_Mixer\n");
-    fprintf(stderr, "Mix_Init: %s\n", Mix_GetError());
-  }
-
-  if( Mix_OpenAudio(44100  /*22050*/ , /*AUDIO_S16LSB*/ MIX_DEFAULT_FORMAT, 2, 1024 ) < 0 )
-  {
-    printf("BUG init audio\n");  
-    //exit(-4);
-  }
-
-  Mix_VolumeMusic( MIX_MAX_VOLUME / 3 );
-
-  Mix_AllocateChannels( 10 );
-}
-
-void Scene::LoadAudio()
-{
-  if( !( _window->_main_music = Mix_LoadMUS( "../Sounds/theme.mp3" ) ) )
-  {
-    fprintf( stderr, "BUG : %s\n", Mix_GetError() );
-  }
 }

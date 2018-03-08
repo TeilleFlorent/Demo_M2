@@ -11,8 +11,8 @@ Window::Window()
   _SDL_window     = NULL;
   _openGL_context = NULL;
 
-  _width  = 800 * 1.5;
-  _height = 600 * 1.5;
+  _width  = 1440;
+  _height = 900;
 
   // Init the window
   Initialization();
@@ -43,7 +43,7 @@ void Window::Quit()
 void Window::Initialization()
 {
   // Init SDL
-  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
+  if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
   {
     fprintf( stderr, "\nErreur lors de l'initialisation de SDL :  %s", SDL_GetError() );
     exit( 1 );
